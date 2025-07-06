@@ -1,0 +1,5 @@
+{
+  "/not-found": "app/not-found.js",
+  "/api/auth/login/route": "app/api/auth/login/route.js",
+  "/auth/login/page": "app/auth/login/page.js"
+}
