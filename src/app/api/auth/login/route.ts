@@ -71,8 +71,8 @@ export async function POST(request: NextRequest) {
     
     console.log('Farm found:', farm.name, 'with slug:', farm.slug);
     
-    // Generate token
-    const token = generateToken(user);
+    // Generate token with farm slug
+    const token = await generateToken(user, farm.slug);
     
     // Create response
     console.log('Creating successful login response with farm slug:', farm.slug);

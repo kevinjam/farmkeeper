@@ -168,6 +168,28 @@ const WeatherWidget = () => {
   );
 };
 
+// New Quick Link Card Component
+const QuickLinkCard = ({
+  href,
+  icon,
+  label,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+}) => (
+  <Link
+    href={href}
+    className="group flex flex-col items-center justify-center p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300"
+  >
+    <div className="p-3 bg-primary-100 dark:bg-primary-900 rounded-full text-primary-600 dark:text-primary-300 group-hover:scale-110 transition-transform duration-300">
+      {icon}
+    </div>
+    <span className="mt-2 text-sm font-medium text-gray-700 dark:text-gray-200">{label}</span>
+  </Link>
+);
+
+
 export default function Dashboard({ params }: { params: { farmId: string } }) {
   const { farmId } = params;
   const router = useRouter();
@@ -219,6 +241,29 @@ export default function Dashboard({ params }: { params: { farmId: string } }) {
       )
     }
   ]);
+  
+  const quickLinks = [
+    {
+      label: 'Add Livestock',
+      href: `/${farmId}/dashboard/livestock/add`,
+      icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>,
+    },
+    {
+      label: 'Record Eggs',
+      href: `/${farmId}/dashboard/eggs/record`,
+      icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>,
+    },
+    {
+      label: 'Add Expense',
+      href: `/${farmId}/dashboard/finances/expense`,
+      icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+    },
+    {
+      label: 'Record Sale',
+      href: `/${farmId}/dashboard/finances/income`,
+      icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>,
+    },
+  ];
   
   const [tasks, setTasks] = useState([
     {
@@ -385,33 +430,17 @@ export default function Dashboard({ params }: { params: { farmId: string } }) {
           
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
             <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-medium">Quick Links</h3>
+              <h3 className="text-lg font-medium">Quick Actions</h3>
             </div>
-            <div className="p-4 grid grid-cols-2 gap-3">
-              <Link
-                href={`/${farmId}/dashboard/livestock/add`}
-                className="btn bg-primary-50 hover:bg-primary-100 dark:bg-primary-900 dark:hover:bg-primary-800 text-primary-700 dark:text-primary-300 text-center py-3"
-              >
-                Add Livestock
-              </Link>
-              <Link
-                href={`/${farmId}/dashboard/eggs/record`}
-                className="btn bg-primary-50 hover:bg-primary-100 dark:bg-primary-900 dark:hover:bg-primary-800 text-primary-700 dark:text-primary-300 text-center py-3"
-              >
-                Record Eggs
-              </Link>
-              <Link
-                href={`/${farmId}/dashboard/finances/expense`}
-                className="btn bg-primary-50 hover:bg-primary-100 dark:bg-primary-900 dark:hover:bg-primary-800 text-primary-700 dark:text-primary-300 text-center py-3"
-              >
-                Add Expense
-              </Link>
-              <Link
-                href={`/${farmId}/dashboard/finances/income`}
-                className="btn bg-primary-50 hover:bg-primary-100 dark:bg-primary-900 dark:hover:bg-primary-800 text-primary-700 dark:text-primary-300 text-center py-3"
-              >
-                Record Sale
-              </Link>
+            <div className="p-4 grid grid-cols-2 gap-4">
+              {quickLinks.map((link) => (
+                <QuickLinkCard
+                  key={link.label}
+                  href={link.href}
+                  icon={link.icon}
+                  label={link.label}
+                />
+              ))}
             </div>
           </div>
         </div>

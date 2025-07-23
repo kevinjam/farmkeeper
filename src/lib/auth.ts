@@ -1,31 +1,68 @@
-import jwt from 'jsonwebtoken';
+import * as jose from 'jose';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { IUser } from '@/models/User';
+import mongoose from 'mongoose';
 
 // JWT Secret - use environment variable in production
-const JWT_SECRET = process.env.JWT_SECRET || '7x9mZqP3kL8vN2rT5wY6uJ0hF4gB1cA';
+const JWT_SECRET = process.env.JWT_SECRET || 'Bbblo3soZyvyAYD+mEMGO2lIz/H35tmssHcE8eMWfeQ=';
 const JWT_EXPIRE = process.env.JWT_EXPIRE || '7d';
 
+const secretKey = new TextEncoder().encode(JWT_SECRET);
+
 // Generate JWT token
-export const generateToken = (user: IUser): string => {
-  return jwt.sign(
-    { 
-      id: user._id,
+export const generateToken = async (user: IUser, farmSlug: string): Promise<string> => {
+  try {
+    // Ensure user and required fields exist
+    if (!user || !user._id) {
+      throw new Error('Invalid user data for token generation');
+    }
+
+    // Ensure farmId is present before creating the token
+    if (!user.farmId) {
+      throw new Error('User does not have a farmId, cannot generate token.');
+    }
+
+    const token = await new jose.SignJWT({
+      id: user._id.toString(), // Ensure string conversion
       email: user.email,
       role: user.role,
-      farmId: user.farmId
-    },
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRE }
-  );
+      farmId: user.farmId.toString(), // Ensure string conversion
+      farmSlug: farmSlug
+    })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(JWT_EXPIRE)
+    .sign(secretKey);
+
+    console.log('[generateToken] Token generated successfully');
+    return token;
+  } catch (error) {
+    console.error('[generateToken] Failed to generate token:', error);
+    throw error; // Re-throw to handle in the calling function
+  }
 };
 
 // Verify JWT token
-export const verifyToken = (token: string): any => {
+export const verifyToken = async (token: string): Promise<any> => {
   try {
-    return jwt.verify(token, JWT_SECRET);
+    if (!token) {
+      console.error('[verifyToken] No token provided');
+      return null;
+    }
+
+    const { payload } = await jose.jwtVerify(token, secretKey, {
+      algorithms: ['HS256']
+    });
+
+    if (!payload || !payload.id) {
+      console.error('[verifyToken] Invalid token payload');
+      return null;
+    }
+
+    return payload;
   } catch (error) {
+    console.error('[verifyToken] Token verification failed:', error);
     return null;
   }
 };
@@ -64,25 +101,35 @@ export const getTokenFromCookies = (): string | undefined => {
 
 // Get current user from token
 export const getCurrentUser = async (request: NextRequest) => {
-  const token = request.cookies.get('token')?.value;
-  
-  if (!token) {
+  try {
+    const token = request.cookies.get('token')?.value;
+    
+    if (!token) {
+      console.log('[getCurrentUser] No token found in cookies');
+      return null;
+    }
+    
+    const decoded = await verifyToken(token);
+    if (!decoded) {
+      console.log('[getCurrentUser] Token verification failed');
+      return null;
+    }
+    
+    if (!decoded.id) {
+      console.log('[getCurrentUser] Token payload missing user ID');
+      return null;
+    }
+
+    return {
+      id: decoded.id,
+      email: decoded.email,
+      role: decoded.role,
+      farmId: decoded.farmId
+    };
+  } catch (error) {
+    console.error('[getCurrentUser] Error:', error);
     return null;
   }
-  
-  const decoded = verifyToken(token);
-  if (!decoded) {
-    return null;
-  }
-  
-  // Here you would typically fetch the user from the database
-  // using the decoded.id, but for simplicity we'll return the decoded data
-  return {
-    id: decoded.id,
-    email: decoded.email,
-    role: decoded.role,
-    farmId: decoded.farmId
-  };
 };
 
 // Authentication middleware
