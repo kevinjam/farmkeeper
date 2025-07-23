@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     } catch (dbError) {
       console.error('Database operation failed:', dbError);
       return NextResponse.json(
-        { message: 'Database operation failed', error: dbError.message },
+        { message: 'Database operation failed', error: dbError instanceof Error ? dbError.message : 'Unknown error' },
         { status: 500 }
       );
     }
