@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Login() {
@@ -12,6 +12,13 @@ export default function Login() {
   const [loginSuccess, setLoginSuccess] = useState(false);
   const [dashboardUrl, setDashboardUrl] = useState('');
   const router = useRouter();
+
+  // Pro fix: useEffect for redirect after login
+  useEffect(() => {
+    if (loginSuccess && dashboardUrl) {
+      window.location.href = dashboardUrl;
+    }
+  }, [loginSuccess, dashboardUrl]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,16 +61,6 @@ export default function Login() {
       setDashboardUrl(targetUrl);
       setLoginSuccess(true);
       setIsLoading(false);
-      
-      // Step 5: Try redirect after short delay
-      setTimeout(() => {
-        try {
-          console.log('Now redirecting to dashboard:', targetUrl);
-          window.location.href = targetUrl;
-        } catch (err) {
-          console.error('Redirect failed:', err);
-        }
-      }, 1000);
     } catch (error) {
       console.error('Login error:', error);
       if (error instanceof Error) {

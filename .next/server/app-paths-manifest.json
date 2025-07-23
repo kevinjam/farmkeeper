@@ -1,5 +1,12 @@
 {
   "/not-found": "app/not-found.js",
+  "/page": "app/page.js",
+  "/auth/login/page": "app/auth/login/page.js",
   "/api/auth/login/route": "app/api/auth/login/route.js",
-  "/auth/login/page": "app/auth/login/page.js"
+  "/api/auth/status/route": "app/api/auth/status/route.js",
+  "/[farmId]/dashboard/eggs/page": "app/[farmId]/dashboard/eggs/page.js",
+  "/[farmId]/dashboard/analytics/page": "app/[farmId]/dashboard/analytics/page.js",
+  "/[farmId]/dashboard/weather/page": "app/[farmId]/dashboard/weather/page.js",
+  "/[farmId]/dashboard/settings/page": "app/[farmId]/dashboard/settings/page.js",
+  "/[farmId]/dashboard/page": "app/[farmId]/dashboard/page.js"
 }

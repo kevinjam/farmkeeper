@@ -123,34 +123,19 @@ export default function DashboardLayout({
         const data = await response.json();
         console.log('Dashboard: Auth status response:', data);
 
-        if (!response.ok) {
-          console.log('Dashboard: Auth API error, redirecting to login');
+        if (!response.ok || !data.isAuthenticated) {
+          console.log('Dashboard: Auth failed, redirecting to login');
           setIsAuthenticated(false);
-          // Redirect to login page
-          window.location.replace('/auth/login');
-          return;
-        }
-        
-        if (!data.isAuthenticated) {
-          console.log('Dashboard: User not authenticated, redirecting to login');
-          setIsAuthenticated(false);
-          // Redirect to login page
-          window.location.replace('/auth/login');
+          router.replace('/auth/login');
           return;
         }
         
         if (!data.isSignedUp) {
           console.log('Dashboard: User not signed up with farm, redirecting to registration');
-          // Redirect to registration to complete signup
-          window.location.replace('/auth/register');
+          router.replace('/auth/register');
           return;
         }
         
-        // Don't verify farm slug match for now - this may be causing issues
-        // Instead, just use whatever farm the user is authenticated for
-        console.log(`Dashboard: User authenticated for farm slug ${data.farm?.slug}, URL has ${farmId}`);
-        // We'll continue with the current farmId in the URL
-
         // Set farm and user data from API response
         setFarmName(data.farm?.name || farmId.charAt(0).toUpperCase() + farmId.slice(1) + ' Farm');
         setUserName(data.user?.name || 'Farm Owner');
