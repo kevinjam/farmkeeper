@@ -21,55 +21,15 @@
       "static/chunks/main-app.js",
       "static/chunks/app/[farmId]/dashboard/layout.js"
     ],
-    "/auth/logout/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/auth/logout/page.js"
-    ],
-    "/auth/login/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/auth/login/page.js"
-    ],
     "/[farmId]/dashboard/livestock/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/[farmId]/dashboard/livestock/page.js"
     ],
-    "/[farmId]/dashboard/crops/page": [
+    "/auth/login/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/[farmId]/dashboard/crops/page.js"
-    ],
-    "/[farmId]/dashboard/finances/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/[farmId]/dashboard/finances/page.js"
-    ],
-    "/[farmId]/dashboard/feed/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/[farmId]/dashboard/feed/page.js"
-    ],
-    "/[farmId]/dashboard/eggs/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/[farmId]/dashboard/eggs/page.js"
-    ],
-    "/[farmId]/dashboard/weather/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/[farmId]/dashboard/weather/page.js"
-    ],
-    "/[farmId]/dashboard/analytics/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/[farmId]/dashboard/analytics/page.js"
-    ],
-    "/[farmId]/dashboard/settings/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/[farmId]/dashboard/settings/page.js"
+      "static/chunks/app/auth/login/page.js"
     ],
     "/not-found": [
       "static/chunks/webpack.js",

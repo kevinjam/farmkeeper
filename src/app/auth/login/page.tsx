@@ -13,6 +13,8 @@ export default function Login() {
   const [dashboardUrl, setDashboardUrl] = useState('');
   const router = useRouter();
 
+  const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+
   // Pro fix: useEffect for redirect after login
   useEffect(() => {
     if (loginSuccess && dashboardUrl) {
@@ -29,8 +31,8 @@ export default function Login() {
     try {
       console.log('Attempting login with email:', email);
       
-      // Step 1: Direct login API call
-      const response = await fetch('/api/auth/login', {
+      // Step 1: Direct login API call/api/auth/login
+      const response = await fetch(`${BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

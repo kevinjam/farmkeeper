@@ -1,4 +1,4 @@
-// File: /Users/kevin/Documents/projects/frontend/farmkeeper/src/app/api/auth/status/route.ts
+// File: /Users/kevin/Documents/projects/frontend/farmkeeper/frontend/src/app/api/auth/status/route.ts
 import * as entry from '../../../../../../src/app/api/auth/status/route.js'
 import type { NextRequest } from 'next/server.js'
 

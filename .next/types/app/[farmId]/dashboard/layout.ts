@@ -1,4 +1,4 @@
-// File: /Users/kevin/Documents/projects/frontend/farmkeeper/src/app/[farmId]/dashboard/layout.tsx
+// File: /Users/kevin/Documents/projects/frontend/farmkeeper/frontend/src/app/[farmId]/dashboard/layout.tsx
 import * as entry from '../../../../../src/app/[farmId]/dashboard/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
