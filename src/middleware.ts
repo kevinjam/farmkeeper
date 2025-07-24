@@ -1,12 +1,28 @@
 // src/middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifyToken } from '@/lib/auth';
 
 // Force Node.js runtime for middleware
 export const runtime = 'nodejs';
 // Ensure this middleware executes on the server only
 export const preferredRegion = 'auto';
+
+// API base URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:5001';
+
+async function verifyTokenWithBackend(token: string) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok) return null;
+    return response.json();
+  } catch (error) {
+    console.error('[verifyTokenWithBackend] Error:', error);
+    return null;
+  }
+}
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
@@ -24,7 +40,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (token) {
-    const decodedToken = await verifyToken(token);
+    const decodedToken = await verifyTokenWithBackend(token);
     console.log('[Middleware] Decoded token:', decodedToken);
 
     if (isProtectedPath && !decodedToken) {
@@ -33,12 +49,12 @@ export async function middleware(request: NextRequest) {
     }
 
     if (isPublicPath && decodedToken) {
-      const farmSlug = (decodedToken as any).farmSlug;
+      const farmSlug = decodedToken.farmSlug;
       if (farmSlug) {
         console.log('[Middleware] Public path, valid token. Redirecting to dashboard:', `/${farmSlug}/dashboard`);
         return NextResponse.redirect(new URL(`/${farmSlug}/dashboard`, request.url));
+      }
     }
-  }
   }
 
   console.log('[Middleware] No redirect, proceeding.');
