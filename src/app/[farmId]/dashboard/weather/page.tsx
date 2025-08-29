@@ -29,11 +29,37 @@ type WeatherData = {
       };
     }>;
   };
+  historical?: {
+    forecastday: Array<{
+      date: string;
+      day: {
+        maxtemp_c: number;
+        mintemp_c: number;
+        condition: {
+          text: string;
+          icon: string;
+        };
+        totalprecip_mm: number;
+      };
+    }>;
+  };
   location: {
     name: string;
     region: string;
     country: string;
   };
+  suggestions?: string[];
+  nearbyFarms?: Array<{
+    farmName: string;
+    distance: number;
+    weather: {
+      temp_c: number;
+      condition: {
+        text: string;
+        icon: string;
+      };
+    };
+  }>;
 };
 
 type FarmingTip = {
@@ -52,150 +78,106 @@ const farmingTips: FarmingTip[] = [
 
 export default function WeatherPage({ params }: { params: { farmId: string } }) {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
-  const [farmLocation, setFarmLocation] = useState('Kampala');
+  const [nearbyFarms, setNearbyFarms] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentTip, setCurrentTip] = useState('');
   
   // Fetch weather data
   useEffect(() => {
-    // In a real app, this would use an actual API key and location from the farm settings
-    // This is a mock implementation
     const fetchWeatherData = async () => {
       setIsLoading(true);
+      setError('');
+      
       try {
-        // In production, you'd make an actual API call like:
-        // const response = await fetch(`https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${farmLocation}&days=7&aqi=no&alerts=yes`);
-        // const data = await response.json();
+        const response = await fetch(`/api/weather/${params.farmId}`);
         
-        // For demonstration, we'll use mock data
-        setTimeout(() => {
-          const mockWeatherData: WeatherData = {
-            current: {
-              temp_c: 26,
-              condition: {
-                text: 'Partly cloudy',
-                icon: '//cdn.weatherapi.com/weather/64x64/day/116.png'
-              },
-              humidity: 65,
-              wind_kph: 12,
-              precip_mm: 0.2,
-              uv: 6
-            },
-            forecast: {
-              forecastday: [
-                {
-                  date: '2025-07-06',
-                  day: {
-                    maxtemp_c: 28,
-                    mintemp_c: 18,
-                    condition: {
-                      text: 'Partly cloudy',
-                      icon: '//cdn.weatherapi.com/weather/64x64/day/116.png'
-                    },
-                    daily_chance_of_rain: 20
-                  }
-                },
-                {
-                  date: '2025-07-07',
-                  day: {
-                    maxtemp_c: 27,
-                    mintemp_c: 17,
-                    condition: {
-                      text: 'Moderate rain',
-                      icon: '//cdn.weatherapi.com/weather/64x64/day/302.png'
-                    },
-                    daily_chance_of_rain: 70
-                  }
-                },
-                {
-                  date: '2025-07-08',
-                  day: {
-                    maxtemp_c: 26,
-                    mintemp_c: 16,
-                    condition: {
-                      text: 'Heavy rain',
-                      icon: '//cdn.weatherapi.com/weather/64x64/day/308.png'
-                    },
-                    daily_chance_of_rain: 90
-                  }
-                },
-                {
-                  date: '2025-07-09',
-                  day: {
-                    maxtemp_c: 25,
-                    mintemp_c: 16,
-                    condition: {
-                      text: 'Moderate rain',
-                      icon: '//cdn.weatherapi.com/weather/64x64/day/302.png'
-                    },
-                    daily_chance_of_rain: 80
-                  }
-                },
-                {
-                  date: '2025-07-10',
-                  day: {
-                    maxtemp_c: 26,
-                    mintemp_c: 17,
-                    condition: {
-                      text: 'Light rain',
-                      icon: '//cdn.weatherapi.com/weather/64x64/day/296.png'
-                    },
-                    daily_chance_of_rain: 60
-                  }
-                },
-                {
-                  date: '2025-07-11',
-                  day: {
-                    maxtemp_c: 27,
-                    mintemp_c: 18,
-                    condition: {
-                      text: 'Partly cloudy',
-                      icon: '//cdn.weatherapi.com/weather/64x64/day/116.png'
-                    },
-                    daily_chance_of_rain: 20
-                  }
-                },
-                {
-                  date: '2025-07-12',
-                  day: {
-                    maxtemp_c: 28,
-                    mintemp_c: 19,
-                    condition: {
-                      text: 'Sunny',
-                      icon: '//cdn.weatherapi.com/weather/64x64/day/113.png'
-                    },
-                    daily_chance_of_rain: 0
-                  }
-                }
-              ]
-            },
-            location: {
-              name: 'Kampala',
-              region: 'Kampala',
-              country: 'Uganda'
-            }
-          };
-          
-          setWeatherData(mockWeatherData);
-          setIsLoading(false);
-          
-          // Find matching farming tip
-          const condition = mockWeatherData.current.condition.text.toLowerCase();
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to fetch weather data');
+        }
+        
+        const data = await response.json();
+        setWeatherData(data);
+        
+        // Set farming suggestions if available
+        if (data.suggestions && data.suggestions.length > 0) {
+          setCurrentTip(data.suggestions[0]);
+        } else {
+          // Fallback to static tips based on current weather
+          const condition = data.current.condition.text.toLowerCase();
           const tip = farmingTips.find(t => 
             condition.includes(t.condition.toLowerCase())
           ) || farmingTips[0];
-          
           setCurrentTip(tip.tip);
-        }, 1000);
+        }
+        
+        // Fetch nearby farms weather
+        try {
+          const nearbyResponse = await fetch(`/api/weather/${params.farmId}/nearby`);
+          if (nearbyResponse.ok) {
+            const nearbyData = await nearbyResponse.json();
+            setNearbyFarms(nearbyData.nearbyFarms || []);
+          }
+        } catch (nearbyError) {
+          console.warn('Failed to fetch nearby farms weather:', nearbyError);
+        }
+        
       } catch (err) {
-        setError('Failed to fetch weather data. Please try again later.');
+        console.error('Weather fetch error:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch weather data');
+      } finally {
         setIsLoading(false);
       }
     };
     
-    fetchWeatherData();
-  }, [farmLocation]);
+    if (params.farmId) {
+      fetchWeatherData();
+    }
+  }, [params.farmId]);
+  
+  // Refresh weather data
+  const refreshWeather = () => {
+    if (params.farmId) {
+      setIsLoading(true);
+      setError('');
+      
+      // Re-fetch weather data
+      const fetchData = async () => {
+        try {
+          const response = await fetch(`/api/weather/${params.farmId}`);
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to fetch weather data');
+          }
+          
+          const data = await response.json();
+          setWeatherData(data);
+          
+          // Set farming suggestions if available
+          if (data.suggestions && data.suggestions.length > 0) {
+            setCurrentTip(data.suggestions[0]);
+          } else {
+            // Fallback to static tips based on current weather
+            const condition = data.current.condition.text.toLowerCase();
+            const tip = farmingTips.find(t => 
+              condition.includes(t.condition.toLowerCase())
+            ) || farmingTips[0];
+            setCurrentTip(tip.tip);
+          }
+          
+        } catch (err) {
+          console.error('Weather refresh error:', err);
+          setError(err instanceof Error ? err.message : 'Failed to refresh weather data');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      
+      fetchData();
+    }
+  };
   
   // Format date for display
   const formatDate = (dateString: string) => {
@@ -235,12 +217,10 @@ export default function WeatherPage({ params }: { params: { farmId: string } }) 
           <div className="mt-4 md:mt-0">
             <button 
               className="btn btn-primary"
-              onClick={() => {
-                const newLocation = prompt('Enter location (e.g., Kampala, Entebbe, Jinja):', farmLocation);
-                if (newLocation) setFarmLocation(newLocation);
-              }}
+              onClick={refreshWeather}
+              disabled={isLoading}
             >
-              Change Location
+              {isLoading ? 'Refreshing...' : 'Refresh Weather'}
             </button>
           </div>
         </div>
@@ -291,16 +271,89 @@ export default function WeatherPage({ params }: { params: { farmId: string } }) 
         </div>
       </div>
       
-      {/* Farming Tip */}
+      {/* AI Farming Suggestions */}
       <div className="bg-primary-50 dark:bg-primary-900/30 rounded-lg shadow p-6">
         <div className="flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
           </svg>
-          <h3 className="text-xl font-bold ml-2">Today's Farming Tip</h3>
+          <h3 className="text-xl font-bold ml-2">AI Farming Suggestions</h3>
         </div>
-        <p className="mt-4 text-lg">{currentTip}</p>
+        <div className="mt-4">
+          {weatherData.suggestions && weatherData.suggestions.length > 0 ? (
+            <div className="space-y-3">
+              {weatherData.suggestions.map((suggestion, index) => (
+                <div key={index} className="bg-white dark:bg-gray-800 p-4 rounded-lg border-l-4 border-primary-500">
+                  <p className="text-sm">{suggestion}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-lg">{currentTip}</p>
+          )}
+        </div>
       </div>
+
+      {/* Nearby Farms Weather */}
+      {nearbyFarms.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h3 className="text-xl font-bold mb-4">Nearby Farms Weather</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {nearbyFarms.map((farm, index) => (
+              <div key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-medium">{farm.farmName}</h4>
+                  <span className="text-sm text-gray-500">{farm.distance.toFixed(1)} km</span>
+                </div>
+                <div className="flex items-center">
+                  <img 
+                    src={`https:${farm.weather.condition.icon}`}
+                    alt={farm.weather.condition.text}
+                    width={32}
+                    height={32}
+                    className="mr-2"
+                  />
+                  <div>
+                    <span className="text-lg font-bold">{farm.weather.temp_c}°C</span>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{farm.weather.condition.text}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Historical Weather (Past 10 Days) */}
+      {weatherData.historical && weatherData.historical.forecastday.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h3 className="text-xl font-bold mb-6">Historical Weather (Past 10 Days)</h3>
+          <div className="grid grid-cols-1 md:grid-cols-5 lg:grid-cols-10 gap-2">
+            {weatherData.historical.forecastday.map((day, index) => (
+              <div key={index} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-center">
+                <h4 className="text-xs font-medium mb-1">{formatDate(day.date)}</h4>
+                <img 
+                  src={`https:${day.day.condition.icon}`}
+                  alt={day.day.condition.text}
+                  className="mx-auto mb-1"
+                  width={32}
+                  height={32}
+                />
+                <div className="text-xs">
+                  <div className="flex justify-center space-x-1">
+                    <span className="font-medium">{Math.round(day.day.mintemp_c)}°</span>
+                    <span className="text-gray-400">|</span>
+                    <span className="font-medium">{Math.round(day.day.maxtemp_c)}°</span>
+                  </div>
+                  <div className="mt-1 text-blue-500">
+                    {day.day.totalprecip_mm}mm
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       
       {/* 7-Day Forecast */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
