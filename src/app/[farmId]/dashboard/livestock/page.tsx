@@ -2,17 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { AddLivestockModal } from '@/components/AddLivestockModal';
 
 // Define type for livestock data
 type Livestock = {
-  id: string;
+  _id: string;
+  name: string;
   type: string;
-  breed: string;
-  quantity: number;
+  breed?: string;
+  age: number;
+  gender: 'male' | 'female';
+  weight?: number;
   acquisitionDate: string;
-  status: 'healthy' | 'sick' | 'quarantined';
-  notes: string;
-  lastUpdated: string;
+  healthStatus: 'healthy' | 'sick' | 'recovering' | 'quarantine';
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 // Define types for filter and sort options
@@ -21,17 +26,17 @@ type FilterOption = {
   value: string;
 };
 
-// Define livestock type options for Ugandan farmers
+// Define livestock type options
 const livestockTypes: FilterOption[] = [
   { label: 'All Types', value: 'all' },
-  { label: 'Chicken - Layers', value: 'chicken-layers' },
-  { label: 'Chicken - Broilers', value: 'chicken-broilers' },
-  { label: 'Cattle - Dairy', value: 'cattle-dairy' },
-  { label: 'Cattle - Beef', value: 'cattle-beef' },
-  { label: 'Goats', value: 'goats' },
+  { label: 'Chicken', value: 'chicken' },
+  { label: 'Cow', value: 'cow' },
+  { label: 'Goat', value: 'goat' },
   { label: 'Sheep', value: 'sheep' },
-  { label: 'Pigs', value: 'pigs' },
-  { label: 'Fish', value: 'fish' },
+  { label: 'Pig', value: 'pig' },
+  { label: 'Duck', value: 'duck' },
+  { label: 'Turkey', value: 'turkey' },
+  { label: 'Other', value: 'other' },
 ];
 
 // Define status options
@@ -39,15 +44,16 @@ const statusOptions: FilterOption[] = [
   { label: 'All Statuses', value: 'all' },
   { label: 'Healthy', value: 'healthy' },
   { label: 'Sick', value: 'sick' },
-  { label: 'Quarantined', value: 'quarantined' },
+  { label: 'Recovering', value: 'recovering' },
+  { label: 'Quarantine', value: 'quarantine' },
 ];
 
 // Define sort options
 const sortOptions: FilterOption[] = [
   { label: 'Date Added (Newest)', value: 'date-desc' },
   { label: 'Date Added (Oldest)', value: 'date-asc' },
-  { label: 'Quantity (Highest)', value: 'quantity-desc' },
-  { label: 'Quantity (Lowest)', value: 'quantity-asc' },
+  { label: 'Age (Oldest)', value: 'quantity-desc' },
+  { label: 'Age (Youngest)', value: 'quantity-asc' },
 ];
 
 export default function LivestockPage({ params }: { params: { farmId: string } }) {
@@ -60,7 +66,7 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
   const [selectedType, setSelectedType] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('date-desc');
+  const [selectedSort, setSelectedSort] = useState('date-desc');
   
   // State for loading and error
   const [isLoading, setIsLoading] = useState(true);
@@ -70,173 +76,85 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   
+  // State for delete confirmation
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  
+  // State for add livestock modal
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  
   // Fetch livestock data
   useEffect(() => {
-    // In a real app, this would be an API call like:
-    // fetch(`/api/${farmId}/livestock`)
-    //   .then(response => response.json())
-    //   .then(data => {
-    //     setLivestock(data);
-    //     setIsLoading(false);
-    //   })
-    //   .catch(err => {
-    //     setError('Failed to load livestock data');
-    //     setIsLoading(false);
-    //   });
-    
-    // For demonstration, we'll use mock data
-    setTimeout(() => {
-      const mockLivestock: Livestock[] = [
-        {
-          id: 'ls-001',
-          type: 'chicken-layers',
-          breed: 'Rhode Island Red',
-          quantity: 150,
-          acquisitionDate: '2025-01-15',
-          status: 'healthy',
-          notes: 'Batch from Central Hatchery. Vaccinated on arrival.',
-          lastUpdated: '2025-07-01'
-        },
-        {
-          id: 'ls-002',
-          type: 'chicken-broilers',
-          breed: 'Cobb 500',
-          quantity: 200,
-          acquisitionDate: '2025-03-20',
-          status: 'healthy',
-          notes: 'Growing well. Ready for market in 3 weeks.',
-          lastUpdated: '2025-07-02'
-        },
-        {
-          id: 'ls-003',
-          type: 'cattle-dairy',
-          breed: 'Holstein Friesian',
-          quantity: 5,
-          acquisitionDate: '2024-11-10',
-          status: 'healthy',
-          notes: 'Producing an average of 15L per cow per day.',
-          lastUpdated: '2025-07-03'
-        },
-        {
-          id: 'ls-004',
-          type: 'goats',
-          breed: 'Boer',
-          quantity: 12,
-          acquisitionDate: '2025-02-05',
-          status: 'healthy',
-          notes: 'Breeding stock. 3 females pregnant.',
-          lastUpdated: '2025-07-01'
-        },
-        {
-          id: 'ls-005',
-          type: 'chicken-layers',
-          breed: 'White Leghorn',
-          quantity: 100,
-          acquisitionDate: '2025-04-15',
-          status: 'quarantined',
-          notes: 'Showing signs of respiratory issues. Under medication.',
-          lastUpdated: '2025-07-04'
-        },
-        {
-          id: 'ls-006',
-          type: 'pigs',
-          breed: 'Large White',
-          quantity: 8,
-          acquisitionDate: '2025-01-30',
-          status: 'healthy',
-          notes: '2 sows with piglets. Rest are growers.',
-          lastUpdated: '2025-07-02'
-        },
-        {
-          id: 'ls-007',
-          type: 'cattle-beef',
-          breed: 'Ankole',
-          quantity: 10,
-          acquisitionDate: '2024-12-20',
-          status: 'healthy',
-          notes: 'Local breed. Good adaptation to climate.',
-          lastUpdated: '2025-07-01'
-        },
-        {
-          id: 'ls-008',
-          type: 'fish',
-          breed: 'Tilapia',
-          quantity: 500,
-          acquisitionDate: '2025-05-01',
-          status: 'healthy',
-          notes: 'Stocked in main pond. Expected harvest in September.',
-          lastUpdated: '2025-07-03'
-        },
-        {
-          id: 'ls-009',
-          type: 'sheep',
-          breed: 'Dorper',
-          quantity: 15,
-          acquisitionDate: '2025-02-15',
-          status: 'sick',
-          notes: 'Some showing symptoms of worms. Deworming scheduled.',
-          lastUpdated: '2025-07-05'
-        },
-        {
-          id: 'ls-010',
-          type: 'chicken-broilers',
-          breed: 'Ross 308',
-          quantity: 150,
-          acquisitionDate: '2025-06-01',
-          status: 'healthy',
-          notes: 'New batch. 2 weeks old.',
-          lastUpdated: '2025-07-04'
-        },
-        {
-          id: 'ls-011',
-          type: 'cattle-dairy',
-          breed: 'Jersey',
-          quantity: 3,
-          acquisitionDate: '2025-03-15',
-          status: 'healthy',
-          notes: 'High butterfat content milk producers.',
-          lastUpdated: '2025-07-02'
-        },
-        {
-          id: 'ls-012',
-          type: 'pigs',
-          breed: 'Landrace',
-          quantity: 6,
-          acquisitionDate: '2025-04-10',
-          status: 'quarantined',
-          notes: 'Recently purchased. Under observation period.',
-          lastUpdated: '2025-07-05'
+    const fetchLivestock = async () => {
+      try {
+        setIsLoading(true);
+        setError('');
+        
+        const response = await fetch(`/api/farms/${farmId}/livestock`, {
+          credentials: 'include',
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch livestock data');
         }
-      ];
-      
-      setLivestock(mockLivestock);
-      setIsLoading(false);
-    }, 1000);
+        
+        const result = await response.json();
+        setLivestock(result.data || []);
+      } catch (err) {
+        console.error('Error fetching livestock:', err);
+        setError('Failed to load livestock data. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLivestock();
   }, [farmId]);
+
+  // Delete livestock function
+  const handleDeleteLivestock = async (livestockId: string) => {
+    try {
+      const response = await fetch(`/api/farms/${farmId}/livestock/${livestockId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete livestock');
+      }
+
+      // Remove from local state
+      setLivestock(prev => prev.filter(item => item._id !== livestockId));
+      setDeleteConfirm(null);
+    } catch (err) {
+      console.error('Error deleting livestock:', err);
+      setError('Failed to delete livestock. Please try again.');
+    }
+  };
   
   // Filter and sort livestock data
   const filteredAndSortedLivestock = livestock
     // Filter by type
     .filter(item => selectedType === 'all' || item.type === selectedType)
     // Filter by status
-    .filter(item => selectedStatus === 'all' || item.status === selectedStatus)
+    .filter(item => selectedStatus === 'all' || item.healthStatus === selectedStatus)
     // Filter by search query
     .filter(item => 
-      item.breed.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.notes.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.id.toLowerCase().includes(searchQuery.toLowerCase())
+      item.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.breed || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.notes || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.name.toLowerCase().includes(searchQuery.toLowerCase())
     )
-    // Sort by selected option
+    // Sort data
     .sort((a, b) => {
-      switch (sortBy) {
+      switch (selectedSort) {
         case 'date-desc':
           return new Date(b.acquisitionDate).getTime() - new Date(a.acquisitionDate).getTime();
         case 'date-asc':
           return new Date(a.acquisitionDate).getTime() - new Date(b.acquisitionDate).getTime();
         case 'quantity-desc':
-          return b.quantity - a.quantity;
+          return b.age - a.age; // Sort by age instead of quantity
         case 'quantity-asc':
-          return a.quantity - b.quantity;
+          return a.age - b.age;
         default:
           return 0;
       }
@@ -261,17 +179,11 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
     return type ? type.label : typeValue;
   };
 
-  // Calculate total livestock counts
-  const totalCount = livestock.reduce((sum, item) => sum + item.quantity, 0);
-  const healthyCount = livestock
-    .filter(item => item.status === 'healthy')
-    .reduce((sum, item) => sum + item.quantity, 0);
-  const sickCount = livestock
-    .filter(item => item.status === 'sick')
-    .reduce((sum, item) => sum + item.quantity, 0);
-  const quarantinedCount = livestock
-    .filter(item => item.status === 'quarantined')
-    .reduce((sum, item) => sum + item.quantity, 0);
+  // Calculate summary statistics
+  const totalAnimals = livestock.length;
+  const healthyCount = livestock.filter(item => item.healthStatus === 'healthy').length;
+  const sickCount = livestock.filter(item => item.healthStatus === 'sick').length;
+  const quarantinedCount = livestock.filter(item => item.healthStatus === 'quarantine').length;
 
   if (isLoading) {
     return (
@@ -315,7 +227,7 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">Total Livestock</p>
-          <h3 className="text-2xl font-bold mt-1">{totalCount}</h3>
+          <h3 className="text-2xl font-bold mt-1">{totalAnimals}</h3>
           <p className="text-xs mt-2 text-gray-500 dark:text-gray-400">
             Across {livestock.length} different groups
           </p>
@@ -325,7 +237,7 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
           <p className="text-sm text-gray-500 dark:text-gray-400">Healthy</p>
           <h3 className="text-2xl font-bold mt-1 text-green-600">{healthyCount}</h3>
           <p className="text-xs mt-2 text-gray-500 dark:text-gray-400">
-            {((healthyCount / totalCount) * 100).toFixed(1)}% of total livestock
+            {((healthyCount / totalAnimals) * 100).toFixed(1)}% of total livestock
           </p>
         </div>
         
@@ -333,7 +245,7 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
           <p className="text-sm text-gray-500 dark:text-gray-400">Sick</p>
           <h3 className="text-2xl font-bold mt-1 text-red-600">{sickCount}</h3>
           <p className="text-xs mt-2 text-gray-500 dark:text-gray-400">
-            {((sickCount / totalCount) * 100).toFixed(1)}% of total livestock
+            {((sickCount / totalAnimals) * 100).toFixed(1)}% of total livestock
           </p>
         </div>
         
@@ -341,7 +253,7 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
           <p className="text-sm text-gray-500 dark:text-gray-400">Quarantined</p>
           <h3 className="text-2xl font-bold mt-1 text-yellow-600">{quarantinedCount}</h3>
           <p className="text-xs mt-2 text-gray-500 dark:text-gray-400">
-            {((quarantinedCount / totalCount) * 100).toFixed(1)}% of total livestock
+            {((quarantinedCount / totalAnimals) * 100).toFixed(1)}% of total livestock
           </p>
         </div>
       </div>
@@ -398,8 +310,8 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
             <select
               id="sort-by"
               className="input w-full"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
+              value={selectedSort}
+              onChange={(e) => setSelectedSort(e.target.value)}
             >
               {sortOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -441,7 +353,7 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
                   Type/Breed
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Quantity
+                  Age
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Acquisition Date
@@ -460,58 +372,62 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {paginatedLivestock.length > 0 ? (
                 paginatedLivestock.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <tr key={item._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                      {item.id}
+                      {item._id}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       <div>{getLivestockTypeLabel(item.type)}</div>
-                      <div className="text-xs text-gray-400 dark:text-gray-500">{item.breed}</div>
+                      <div className="text-xs text-gray-400 dark:text-gray-500">{item.breed || 'N/A'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {item.quantity}
+                      {item.age}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {formatDate(item.acquisitionDate)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs rounded-full ${
-                        item.status === 'healthy' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                        item.status === 'sick' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                        item.healthStatus === 'healthy' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                        item.healthStatus === 'sick' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
                         'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
                       }`}>
-                        {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                        {item.healthStatus.charAt(0).toUpperCase() + item.healthStatus.slice(1)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {formatDate(item.lastUpdated)}
+                      {formatDate(item.updatedAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <Link 
-                        href={`/${farmId}/dashboard/livestock/${item.id}`}
+                        href={`/${farmId}/dashboard/livestock/${item._id}`}
                         className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-3"
                       >
                         View
                       </Link>
                       <Link 
-                        href={`/${farmId}/dashboard/livestock/${item.id}/edit`}
-                        className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                        href={`/${farmId}/dashboard/livestock/${item._id}/edit`}
+                        className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3"
                       >
                         Edit
                       </Link>
+                      <button
+                        onClick={() => setDeleteConfirm(item._id)}
+                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
                   <td colSpan={7} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                    No livestock records found. Try adjusting your filters or{' '}
-                    <Link 
-                      href={`/${farmId}/dashboard/livestock/add`}
-                      className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
-                    >
-                      add new livestock
-                    </Link>.
+                    <div className="text-center text-gray-500 py-12">
+                      <div className="text-6xl mb-4">🐄</div>
+                      <h3 className="text-lg font-medium mb-2">No livestock found</h3>
+                      <p className="text-gray-400">Try adjusting your filters or add some livestock to get started.</p>
+                    </div>
                   </td>
                 </tr>
               )}
@@ -608,6 +524,47 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
           </div>
         )}
       </div>
+
+      {/* Add Livestock Modal */}
+      <AddLivestockModal 
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)}
+        farmId={farmId}
+        onSuccess={() => {
+          // Refresh livestock list after successful creation
+          const fetchLivestock = async () => {
+            try {
+              const response = await fetch(`/api/farms/${farmId}/livestock`, {
+                credentials: 'include',
+              });
+              
+              if (response.ok) {
+                const result = await response.json();
+                setLivestock(result.data || []);
+              }
+            } catch (err) {
+              console.error('Error refreshing livestock:', err);
+            }
+          };
+          fetchLivestock();
+        }}
+      />
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+            <div className="mt-3 text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900">
+                <svg className="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white mt-2">Delete Livestock</h3>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

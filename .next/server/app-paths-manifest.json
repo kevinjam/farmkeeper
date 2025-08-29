@@ -1,7 +1,17 @@
 {
   "/not-found": "app/not-found.js",
-  "/page": "app/page.js",
+  "/api/auth/status/route": "app/api/auth/status/route.js",
+  "/api/finances/analytics/route": "app/api/finances/analytics/route.js",
+  "/api/feedstock/route": "app/api/feedstock/route.js",
+  "/api/livestock/total/route": "app/api/livestock/total/route.js",
+  "/api/eggs/today/route": "app/api/eggs/today/route.js",
+  "/api/tasks/upcoming/route": "app/api/tasks/upcoming/route.js",
+  "/api/activity/recent/route": "app/api/activity/recent/route.js",
+  "/api/auth/logout/route": "app/api/auth/logout/route.js",
+  "/auth/logout/page": "app/auth/logout/page.js",
   "/auth/login/page": "app/auth/login/page.js",
+  "/api/auth/login/route": "app/api/auth/login/route.js",
   "/[farmId]/dashboard/page": "app/[farmId]/dashboard/page.js",
+  "/[farmId]/dashboard/analytics/page": "app/[farmId]/dashboard/analytics/page.js",
   "/[farmId]/dashboard/livestock/page": "app/[farmId]/dashboard/livestock/page.js"
 }

@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
-import EggCollection from '@/models/EggCollection';
-import Farm from '@/models/Farm';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import mongoose from 'mongoose';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:5001';
 
 // GET handler - Retrieve all egg collections for a farm
 export async function GET(
@@ -14,33 +10,47 @@ export async function GET(
   try {
     const { farmId } = params;
     
-    // Verify auth session
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Get token from cookies
+    const token = req.cookies.get('token')?.value;
+    if (!token) {
+      console.error('GET: No authentication token found in cookies');
+      return NextResponse.json({ error: 'Authentication required - please log in' }, { status: 401 });
     }
     
-    await connectToDatabase();
+    // Forward request to backend
+    const response = await fetch(`${API_BASE_URL}/api/farms/${farmId}/eggs/collections`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
     
-    // Get the farm by slug to get its ObjectId
-    const farm = await Farm.findOne({ slug: farmId });
-    if (!farm) {
-      return NextResponse.json({ error: 'Farm not found' }, { status: 404 });
+    if (!response.ok) {
+      let errorMessage = 'Failed to retrieve egg collections';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorMessage;
+        console.error('Backend error response:', errorData);
+      } catch {
+        // If response is not JSON (e.g., HTML error page), use default message
+        errorMessage = `Backend error: ${response.status} ${response.statusText}`;
+      }
+      
+      console.error(`Backend request failed: ${response.status} ${response.statusText}`, {
+        url: `${API_BASE_URL}/api/farms/${farmId}/eggs/collections`,
+        token: token ? 'present' : 'missing'
+      });
+      
+      return NextResponse.json(
+        { error: errorMessage },
+        { status: response.status }
+      );
     }
+
+    const data = await response.json();
     
-    // Check if user is authorized to access this farm
-    const userHasAccess = farm.owner.toString() === session.user.id;
-    if (!userHasAccess) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-    
-    // Get collections for this farm, sorted by date (newest first)
-    const collections = await EggCollection.find({ farmId: farm._id })
-      .sort({ date: -1 })
-      .lean();
-    
-    // Return the collections
-    return NextResponse.json(collections);
+    return NextResponse.json(data);
     
   } catch (error) {
     console.error('Error retrieving egg collections:', error);
@@ -59,63 +69,39 @@ export async function POST(
   try {
     const { farmId } = params;
     
-    // Verify auth session
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Get token from cookies
+    const token = req.cookies.get('token')?.value;
+    if (!token) {
+      console.error('POST: No authentication token found in cookies');
+      return NextResponse.json({ error: 'Authentication required - please log in' }, { status: 401 });
     }
     
     // Get request body
-    const { date, quantity, chickens, notes } = await req.json();
+    const body = await req.json();
     
-    // Validate required fields
-    if (!date || quantity === undefined || chickens === undefined) {
+    // Forward request to backend
+    const response = await fetch(`${API_BASE_URL}/api/farms/${farmId}/eggs/collections`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
+        { error: data.message || 'Failed to create egg collection record' },
+        { status: response.status }
       );
     }
     
-    await connectToDatabase();
-    
-    // Get the farm by slug
-    const farm = await Farm.findOne({ slug: farmId });
-    if (!farm) {
-      return NextResponse.json({ error: 'Farm not found' }, { status: 404 });
-    }
-    
-    // Check if user is authorized to add data for this farm
-    const userHasAccess = farm.owner.toString() === session.user.id;
-    if (!userHasAccess) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-    
-    // Create new collection record
-    const collection = new EggCollection({
-      farmId: farm._id,
-      date: new Date(date),
-      quantity,
-      chickens,
-      notes
-    });
-    
-    // Save the record
-    await collection.save();
-    
-    // Return success response
-    return NextResponse.json(collection, { status: 201 });
+    return NextResponse.json(data, { status: 201 });
     
   } catch (error) {
     console.error('Error creating egg collection:', error);
-    
-    // Handle duplicate entry error
-    if (error instanceof mongoose.Error.ValidationError) {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.message },
-        { status: 400 }
-      );
-    }
-    
     return NextResponse.json(
       { error: 'Failed to create egg collection record' },
       { status: 500 }

@@ -12,7 +12,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:5001'
 
 async function verifyTokenWithBackend(token: string) {
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+    const response = await fetch(`${API_BASE_URL}/api/auth/verify`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 

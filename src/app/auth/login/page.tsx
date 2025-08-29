@@ -31,8 +31,8 @@ export default function Login() {
     try {
       console.log('Attempting login with email:', email);
       
-      // Step 1: Direct login API call/api/auth/login
-      const response = await fetch(`${BASE_URL}/api/auth/login`, {
+      // Step 1: Direct login API call to frontend API route
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

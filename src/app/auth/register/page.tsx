@@ -59,8 +59,9 @@ export default function Register() {
         throw new Error(data.message || 'Registration failed');
       }
       
-      // On successful registration, redirect to dashboard
-      router.push(`/${data.farmId}/dashboard`);
+      // On successful registration, redirect to dashboard using farm slug
+      const farmSlug = data.farm?.slug || data.farmId;
+      router.push(`/${farmSlug}/dashboard`);
     } catch (error: any) {
       setError(error.message || 'Something went wrong. Please try again.');
     } finally {
