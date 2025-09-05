@@ -53,3 +53,6 @@ logs/
 # Optional: ignore local SSL certs
 *.pem
 *.key
+.next
+*.md
+node_modules/
