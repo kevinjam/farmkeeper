@@ -25,6 +25,8 @@ export async function GET(
         'Content-Type': 'application/json',
       },
     });
+
+    console.log('response------', response);
     
     if (!response.ok) {
       let errorMessage = 'Failed to retrieve egg collections';
