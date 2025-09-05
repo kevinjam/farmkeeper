@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import GoogleSignInNextScript from '../../../components/GoogleSignInNextScript';
 
 export default function Register() {
   const router = useRouter();
@@ -69,6 +70,17 @@ export default function Register() {
     }
   };
 
+  const handleGoogleSuccess = (user: any) => {
+    console.log('Google Sign-In successful:', user);
+    // For registration page, we want to redirect new users to setup
+    // The GoogleSignIn component will handle this automatically
+  };
+
+  const handleGoogleError = (error: string) => {
+    console.error('Google Sign-In error:', error);
+    setError(error);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -81,7 +93,36 @@ export default function Register() {
           </p>
         </div>
         
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        {/* Google Sign-In Section */}
+        <div className="space-y-4">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-gray-50 dark:bg-gray-900 text-gray-500">Quick start with</span>
+            </div>
+          </div>
+          
+          <GoogleSignInNextScript 
+            key="register-google-signin"
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            enableFarmSetup
+          />
+        </div>
+
+        {/* Divider */}
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-gray-50 dark:bg-gray-900 text-gray-500">Or create account manually</span>
+          </div>
+        </div>
+        
+        <form className="space-y-6" onSubmit={handleSubmit}>
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
               <span className="block sm:inline">{error}</span>
