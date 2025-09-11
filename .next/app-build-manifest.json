@@ -21,31 +21,6 @@
       "static/chunks/main-app.js",
       "static/chunks/app/[farmId]/dashboard/livestock/page.js"
     ],
-    "/[farmId]/dashboard/livestock/add/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/[farmId]/dashboard/livestock/add/page.js"
-    ],
-    "/[farmId]/dashboard/livestock/[livestockId]/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/[farmId]/dashboard/livestock/[livestockId]/page.js"
-    ],
-    "/[farmId]/dashboard/livestock/[livestockId]/edit/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/[farmId]/dashboard/livestock/[livestockId]/edit/page.js"
-    ],
-    "/[farmId]/dashboard/eggs/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/[farmId]/dashboard/eggs/page.js"
-    ],
-    "/[farmId]/dashboard/weather/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/[farmId]/dashboard/weather/page.js"
-    ],
     "/not-found": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",

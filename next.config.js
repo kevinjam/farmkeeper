@@ -11,10 +11,6 @@ const nextConfig = {
   images: {
     domains: ['images.unsplash.com', 'farmkeeper.app'],
   },
-  // Middleware needs Node.js runtime
-  experimental: {
-    serverComponentsExternalPackages: ['mongoose'],
-  },
   // Add headers for CORS and CSP
   async headers() {
     return [

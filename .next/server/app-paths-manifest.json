@@ -1,17 +1,13 @@
 {
   "/not-found": "app/not-found.js",
-  "/api/weather/[farmId]/route": "app/api/weather/[farmId]/route.js",
-  "/api/feedstock/route": "app/api/feedstock/route.js",
   "/api/auth/status/route": "app/api/auth/status/route.js",
-  "/api/livestock/total/route": "app/api/livestock/total/route.js",
   "/api/eggs/today/route": "app/api/eggs/today/route.js",
-  "/api/activity/recent/route": "app/api/activity/recent/route.js",
+  "/api/feedstock/route": "app/api/feedstock/route.js",
   "/api/tasks/upcoming/route": "app/api/tasks/upcoming/route.js",
+  "/api/activity/recent/route": "app/api/activity/recent/route.js",
+  "/api/livestock/total/route": "app/api/livestock/total/route.js",
   "/api/finances/analytics/route": "app/api/finances/analytics/route.js",
+  "/api/farms/[farmId]/livestock/route": "app/api/farms/[farmId]/livestock/route.js",
   "/[farmId]/dashboard/page": "app/[farmId]/dashboard/page.js",
-  "/[farmId]/dashboard/livestock/add/page": "app/[farmId]/dashboard/livestock/add/page.js",
-  "/[farmId]/dashboard/livestock/[livestockId]/page": "app/[farmId]/dashboard/livestock/[livestockId]/page.js",
-  "/[farmId]/dashboard/livestock/[livestockId]/edit/page": "app/[farmId]/dashboard/livestock/[livestockId]/edit/page.js",
-  "/[farmId]/dashboard/eggs/page": "app/[farmId]/dashboard/eggs/page.js",
-  "/[farmId]/dashboard/weather/page": "app/[farmId]/dashboard/weather/page.js"
+  "/[farmId]/dashboard/livestock/page": "app/[farmId]/dashboard/livestock/page.js"
 }
