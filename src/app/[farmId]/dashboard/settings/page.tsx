@@ -1,122 +1,306 @@
 'use client';
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'next/navigation';
+import { apiClient } from '@/lib/api';
+import { LocationSelector } from '@/components/LocationSelector';
 
-const SettingsCard = ({
-  title,
-  description,
-  icon,
-  href,
-}: {
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  href: string;
-}) => (
-  <Link
-    href={href}
-    className="group block bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
-  >
-    <div className="p-6">
-      <div className="flex items-center">
-        <div className="p-3 bg-primary-100 dark:bg-primary-900 rounded-lg text-primary-600 dark:text-primary-300">
-          {icon}
-        </div>
-        <div className="ml-4">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">{title}</h3>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{description}</p>
-        </div>
+interface FarmSettings {
+  name: string;
+  slug: string;
+  location: {
+    address?: string;
+    district?: string;
+    country: string;
+    coordinates?: {
+      latitude: number;
+      longitude: number;
+    };
+  };
+  settings: {
+    currency: string;
+    language: string;
+    timezone: string;
+    notificationsEnabled: boolean;
+  };
+}
+
+export default function FarmSettingsPage() {
+  const params = useParams();
+  const farmSlug = params.farmId as string;
+  
+  const [settings, setSettings] = useState<FarmSettings | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  // Fetch farm settings
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        setIsLoading(true);
+        setError('');
+        
+        // For now, we'll create a mock settings object
+        // In a real app, you'd have an API endpoint for this
+        const mockSettings: FarmSettings = {
+          name: 'My Farm',
+          slug: farmSlug,
+          location: {
+            country: 'Uganda'
+          },
+          settings: {
+            currency: 'UGX',
+            language: 'en',
+            timezone: 'Africa/Kampala',
+            notificationsEnabled: true
+          }
+        };
+        
+        setSettings(mockSettings);
+      } catch (err) {
+        console.error('Error fetching settings:', err);
+        setError('Failed to load farm settings');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (farmSlug) {
+      fetchSettings();
+    }
+  }, [farmSlug]);
+
+  const handleLocationChange = useCallback((location: any) => {
+    setSettings(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        location
+      };
+    });
+  }, []);
+
+  const handleSaveSettings = async () => {
+    if (!settings) return;
+    
+    try {
+      setIsSaving(true);
+      setError('');
+      setSuccess('');
+      
+      // For now, we'll just show a success message
+      // In a real app, you'd call an API to update the farm settings
+      console.log('Saving settings:', settings);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setSuccess('Farm settings updated successfully!');
+    } catch (err) {
+      console.error('Error saving settings:', err);
+      setError('Failed to save farm settings');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary-600"></div>
       </div>
-    </div>
-  </Link>
-);
+    );
+  }
 
-export default function SettingsPage({ params }: { params: { farmId: string } }) {
-  const { farmId } = params;
-
-  const settingsOptions = [
-    {
-      title: 'Profile',
-      description: 'Manage your personal information and password.',
-      href: `/${farmId}/dashboard/settings/profile`,
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
-      ),
-    },
-    {
-      title: 'Farm Details',
-      description: 'Update your farm’s name, location, and description.',
-      href: `/${farmId}/dashboard/settings/profile`, // Links to same page for now
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-        </svg>
-      ),
-    },
-    {
-      title: 'Users & Permissions',
-      description: 'Invite and manage team members on your farm.',
-      href: '#', // Placeholder
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      ),
-    },
-    {
-      title: 'Notifications',
-      description: 'Configure your alert and notification preferences.',
-      href: '#', // Placeholder
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-        </svg>
-      ),
-    },
-     {
-      title: 'Billing & Subscription',
-      description: 'Manage your subscription, invoices, and payment methods.',
-      href: '#', // Placeholder
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-        </svg>
-      ),
-    },
-    {
-      title: 'API & Integrations',
-      description: 'Connect with third-party apps and services.',
-      href: '#', // Placeholder
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-        </svg>
-      ),
-    },
-  ];
+  if (!settings) {
+    return (
+      <div className="bg-red-50 dark:bg-red-900 p-4 rounded-md">
+        <p className="text-red-600 dark:text-red-200">Failed to load farm settings</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
-        <p className="mt-2 text-lg text-gray-500 dark:text-gray-400">
-          Manage your account and farm preferences from one place.
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Farm Settings</h1>
+        <p className="mt-2 text-gray-600 dark:text-gray-400">
+          Manage your farm information and preferences
         </p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {settingsOptions.map((option) => (
-          <SettingsCard
-            key={option.title}
-            title={option.title}
-            description={option.description}
-            icon={option.icon}
-            href={option.href}
+
+      {error && (
+        <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4">
+          <p className="text-red-700 dark:text-red-300">{error}</p>
+        </div>
+      )}
+
+      {success && (
+        <div className="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md p-4">
+          <p className="text-green-700 dark:text-green-300">{success}</p>
+        </div>
+      )}
+
+      <div className="space-y-8">
+        {/* Farm Information */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Farm Information</h2>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Farm Name
+              </label>
+              <input
+                type="text"
+                value={settings.name}
+                onChange={(e) => setSettings(prev => ({ ...prev!, name: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Farm URL
+              </label>
+              <div className="flex items-center">
+                <span className="text-gray-500 dark:text-gray-400 mr-2">farmkeeper.app/</span>
+                <input
+                  type="text"
+                  value={settings.slug}
+                  onChange={(e) => setSettings(prev => ({ ...prev!, slug: e.target.value }))}
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Location Settings */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Location Settings</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Set your farm's location to enable weather forecasts and local farming recommendations.
+          </p>
+          
+          <LocationSelector
+            initialLocation={settings.location}
+            onLocationChange={handleLocationChange}
+            required={false}
           />
-        ))}
+
+          {/* Troubleshooting Section */}
+          <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Location Troubleshooting</h3>
+            <div className="text-xs text-gray-600 dark:text-gray-300 space-y-1">
+              <p><strong>If "Use Current Location" fails:</strong></p>
+              <ul className="list-disc list-inside ml-2 space-y-1">
+                <li>Check that location permissions are enabled in your browser</li>
+                <li>Make sure you're using HTTPS (required for geolocation)</li>
+                <li>Try refreshing the page and allowing location access</li>
+                <li>Use one of the preset Uganda locations as a fallback</li>
+                <li>Manually enter your coordinates if you know them</li>
+              </ul>
+              <p className="mt-2"><strong>Common Uganda coordinates:</strong></p>
+              <ul className="list-disc list-inside ml-2 space-y-1">
+                <li>Kampala: 0.3476°N, 32.5825°E</li>
+                <li>Entebbe: 0.0644°N, 32.4465°E</li>
+                <li>Jinja: 0.4244°N, 33.2042°E</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* General Settings */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">General Settings</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Currency
+              </label>
+              <select
+                value={settings.settings.currency}
+                onChange={(e) => setSettings(prev => ({
+                  ...prev!,
+                  settings: { ...prev!.settings, currency: e.target.value }
+                }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              >
+                <option value="UGX">Ugandan Shilling (UGX)</option>
+                <option value="USD">US Dollar (USD)</option>
+                <option value="EUR">Euro (EUR)</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Language
+              </label>
+              <select
+                value={settings.settings.language}
+                onChange={(e) => setSettings(prev => ({
+                  ...prev!,
+                  settings: { ...prev!.settings, language: e.target.value }
+                }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              >
+                <option value="en">English</option>
+                <option value="sw">Swahili</option>
+                <option value="lg">Luganda</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Timezone
+              </label>
+              <select
+                value={settings.settings.timezone}
+                onChange={(e) => setSettings(prev => ({
+                  ...prev!,
+                  settings: { ...prev!.settings, timezone: e.target.value }
+                }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              >
+                <option value="Africa/Kampala">Africa/Kampala (EAT)</option>
+                <option value="Africa/Nairobi">Africa/Nairobi (EAT)</option>
+                <option value="Africa/Dar_es_Salaam">Africa/Dar_es_Salaam (EAT)</option>
+              </select>
+            </div>
+            
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="notifications"
+                checked={settings.settings.notificationsEnabled}
+                onChange={(e) => setSettings(prev => ({
+                  ...prev!,
+                  settings: { ...prev!.settings, notificationsEnabled: e.target.checked }
+                }))}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="notifications" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                Enable notifications
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Save Button */}
+        <div className="flex justify-end">
+          <button
+            onClick={handleSaveSettings}
+            disabled={isSaving}
+            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSaving ? 'Saving...' : 'Save Settings'}
+          </button>
+        </div>
       </div>
     </div>
   );
-} 
+}

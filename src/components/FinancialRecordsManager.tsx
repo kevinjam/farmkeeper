@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import { apiClient } from '@/lib/api';
 
 interface FinancialRecord {
   _id: string;
@@ -32,7 +33,7 @@ interface FormData {
 
 const FinancialRecordsManager = () => {
   const params = useParams();
-  const farmId = params.farmId as string;
+  const farmSlug = params.farmId as string;
 
   const [records, setRecords] = useState<FinancialRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,12 +99,11 @@ const FinancialRecordsManager = () => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/finances?farmId=${farmId}&limit=20`);
-      if (response.ok) {
-        const result = await response.json();
-        setRecords(result.data || []);
+      const response = await apiClient.getFinancialTransactions(farmSlug);
+      if (response.success) {
+        setRecords(response.data || []);
       } else {
-        setError('Failed to fetch financial records');
+        setError(response.error || 'Failed to fetch financial records');
       }
     } catch (err) {
       console.error('Error fetching records:', err);
@@ -121,7 +121,6 @@ const FinancialRecordsManager = () => {
 
     try {
       const payload = {
-        farmId,
         type: formData.type,
         category: formData.category,
         amount: parseFloat(formData.amount),
@@ -135,27 +134,18 @@ const FinancialRecordsManager = () => {
 
       let response;
       if (editingRecord) {
-        response = await fetch(`/api/finances/${editingRecord._id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+        response = await apiClient.updateFinancialTransaction(farmSlug, editingRecord._id, payload);
       } else {
-        response = await fetch('/api/finances', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+        response = await apiClient.createFinancialTransaction(farmSlug, payload);
       }
 
-      if (response.ok) {
+      if (response.success) {
         setShowForm(false);
         setEditingRecord(null);
         resetForm();
         fetchRecords();
       } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Failed to save record');
+        setError(response.error || 'Failed to save record');
       }
     } catch (err) {
       console.error('Error saving record:', err);
@@ -170,14 +160,12 @@ const FinancialRecordsManager = () => {
     if (!confirm('Are you sure you want to delete this record?')) return;
 
     try {
-      const response = await fetch(`/api/finances/${recordId}?farmId=${farmId}`, {
-        method: 'DELETE'
-      });
+      const response = await apiClient.deleteFinancialTransaction(farmSlug, recordId);
 
-      if (response.ok) {
+      if (response.success) {
         fetchRecords();
       } else {
-        setError('Failed to delete record');
+        setError(response.error || 'Failed to delete record');
       }
     } catch (err) {
       console.error('Error deleting record:', err);

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { apiClient } from '@/lib/api';
 
 type WeatherData = {
   current: {
@@ -90,22 +91,20 @@ export default function WeatherPage({ params }: { params: { farmId: string } }) 
       setError('');
       
       try {
-        const response = await fetch(`/api/weather/${params.farmId}`);
+        const response = await apiClient.getWeather(params.farmId);
         
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to fetch weather data');
+        if (!response.success) {
+          throw new Error(response.error || 'Failed to fetch weather data');
         }
         
-        const data = await response.json();
-        setWeatherData(data);
+        setWeatherData(response.data);
         
         // Set farming suggestions if available
-        if (data.suggestions && data.suggestions.length > 0) {
-          setCurrentTip(data.suggestions[0]);
+        if (response.data.suggestions && response.data.suggestions.length > 0) {
+          setCurrentTip(response.data.suggestions[0]);
         } else {
           // Fallback to static tips based on current weather
-          const condition = data.current.condition.text.toLowerCase();
+          const condition = response.data.current.condition.text.toLowerCase();
           const tip = farmingTips.find(t => 
             condition.includes(t.condition.toLowerCase())
           ) || farmingTips[0];
@@ -114,10 +113,9 @@ export default function WeatherPage({ params }: { params: { farmId: string } }) 
         
         // Fetch nearby farms weather
         try {
-          const nearbyResponse = await fetch(`/api/weather/${params.farmId}/nearby`);
-          if (nearbyResponse.ok) {
-            const nearbyData = await nearbyResponse.json();
-            setNearbyFarms(nearbyData.nearbyFarms || []);
+          const nearbyResponse = await apiClient.getNearbyFarmsWeather(params.farmId);
+          if (nearbyResponse.success) {
+            setNearbyFarms(nearbyResponse.data?.nearbyFarms || []);
           }
         } catch (nearbyError) {
           console.warn('Failed to fetch nearby farms weather:', nearbyError);
@@ -145,22 +143,20 @@ export default function WeatherPage({ params }: { params: { farmId: string } }) 
       // Re-fetch weather data
       const fetchData = async () => {
         try {
-          const response = await fetch(`/api/weather/${params.farmId}`);
+          const response = await apiClient.getWeather(params.farmId);
           
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to fetch weather data');
+          if (!response.success) {
+            throw new Error(response.error || 'Failed to fetch weather data');
           }
           
-          const data = await response.json();
-          setWeatherData(data);
+          setWeatherData(response.data);
           
           // Set farming suggestions if available
-          if (data.suggestions && data.suggestions.length > 0) {
-            setCurrentTip(data.suggestions[0]);
+          if (response.data.suggestions && response.data.suggestions.length > 0) {
+            setCurrentTip(response.data.suggestions[0]);
           } else {
             // Fallback to static tips based on current weather
-            const condition = data.current.condition.text.toLowerCase();
+            const condition = response.data.current.condition.text.toLowerCase();
             const tip = farmingTips.find(t => 
               condition.includes(t.condition.toLowerCase())
             ) || farmingTips[0];

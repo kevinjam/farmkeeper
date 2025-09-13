@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { apiClient } from '@/lib/api';
 
 // Dashboard Statistics Card Component
 const StatCard = ({ 
@@ -278,7 +279,15 @@ const QuickLinkCard = ({
 
 
 export default function Dashboard({ params }: { params: { farmId: string } }) {
-  const { farmId } = params;
+  const { farmId: farmSlug } = params;
+
+  if (!farmSlug) {
+    return (
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-8 mx-auto max-w-xl text-center" role="alert">
+        <span className="block sm:inline">Error: Farm ID is missing. Please log in again or select a farm from your account.</span>
+      </div>
+    );
+  }
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -356,22 +365,22 @@ export default function Dashboard({ params }: { params: { farmId: string } }) {
   const quickLinks = [
     {
       label: 'Add Livestock',
-      href: `/${farmId}/dashboard/livestock/add`,
+      href: `/${farmSlug}/dashboard/livestock/add`,
       icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>,
     },
     {
       label: 'Record Eggs',
-      href: `/${farmId}/dashboard/eggs/record`,
+      href: `/${farmSlug}/dashboard/eggs/record`,
       icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>,
     },
     {
       label: 'Add Expense',
-      href: `/${farmId}/dashboard/finances/expense`,
+      href: `/${farmSlug}/dashboard/finances/expense`,
       icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
     },
     {
       label: 'Record Sale',
-      href: `/${farmId}/dashboard/finances/income`,
+      href: `/${farmSlug}/dashboard/finances/income`,
       icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>,
     },
   ];
@@ -396,12 +405,11 @@ export default function Dashboard({ params }: { params: { farmId: string } }) {
     const fetchFeedStock = async () => {
       try {
         setFeedStockLoading(true);
-        const response = await fetch('/api/feedstock');
-        if (response.ok) {
-          const data = await response.json();
-          setFeedStock(data.data);
+        const response = await apiClient.getFeedstockSummary();
+        if (response.success) {
+          setFeedStock(response.data);
         } else {
-          console.error('Failed to fetch feed stock data');
+          console.error('Failed to fetch feed stock data:', response.error);
         }
       } catch (error) {
         console.error('Error fetching feed stock data:', error);
@@ -456,7 +464,7 @@ export default function Dashboard({ params }: { params: { farmId: string } }) {
         title: 'Feed Stock',
         value: feedStock ? `${feedStock.stockPercentage}%` : '0%',
         change: feedStock && feedStock.totalItems > 0 ? `${feedStock.lowStockItems.length > 0 ? '-' : '+'}${Math.abs(feedStock.stockPercentage - 75).toFixed(1)}%` : '+0.0%',
-        positive: feedStock ? feedStock.lowStockItems.length === 0 : true,
+        positive: feedStock ? Array.isArray(feedStock.lowStockItems) ? feedStock.lowStockItems.length === 0 : true : true,
         loading: feedStockLoading,
         icon: (
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -472,38 +480,35 @@ export default function Dashboard({ params }: { params: { farmId: string } }) {
     try {
       setStatsLoading(true);
       
-      // Fetch total livestock and today's eggs in parallel
+      // Fetch total livestock and today's eggs in parallel using API client
       const [livestockResponse, eggsResponse] = await Promise.all([
-        fetch('/api/livestock/total', { credentials: 'include' }),
-        fetch('/api/eggs/today', { credentials: 'include' })
-    ]);
+        apiClient.getTotalLivestock(),
+        apiClient.getTodayEggCollection()
+      ]);
 
-    if (livestockResponse.ok) {
-      const livestockData = await livestockResponse.json();
-      setTotalLivestock(livestockData.totalLivestock || 0);
-    }
+      if (livestockResponse.success) {
+        setTotalLivestock(livestockResponse.data?.totalLivestock || 0);
+      }
 
-    if (eggsResponse.ok) {
-      const eggsData = await eggsResponse.json();
-      setEggsToday(eggsData.eggsCollected || 0);
+      if (eggsResponse.success) {
+        setEggsToday(eggsResponse.data?.eggsCollected || 0);
+      }
+    } catch (err) {
+      console.error('Error fetching dashboard stats:', err);
+    } finally {
+      setStatsLoading(false);
     }
-  } catch (err) {
-    console.error('Error fetching dashboard stats:', err);
-  } finally {
-    setStatsLoading(false);
-  }
-};
+  };
 
 // Fetch financial analytics
 const fetchFinancialAnalytics = async () => {
   try {
     setFinancialLoading(true);
-    const response = await fetch('/api/finances/analytics');
-    if (response.ok) {
-      const data = await response.json();
-      setFinancialAnalytics(data.data);
+    const response = await apiClient.getFinancialAnalytics();
+    if (response.success) {
+      setFinancialAnalytics(response.data);
     } else {
-      console.error('Failed to fetch financial analytics');
+      console.error('Failed to fetch financial analytics:', response.error);
     }
   } catch (error) {
     console.error('Error fetching financial analytics:', error);
@@ -518,16 +523,12 @@ const fetchFinancialAnalytics = async () => {
       setTasksLoading(true);
       setTasksError(null);
       
-      const response = await fetch('/api/tasks/upcoming?limit=5', { 
-        credentials: 'include' 
-      });
+      const response = await apiClient.getUpcomingTasks(5);
 
-      if (response.ok) {
-        const data = await response.json();
-        setTasks(data.data || []);
+      if (response.success) {
+        setTasks(response.data || []);
       } else {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to fetch tasks' }));
-        setTasksError(errorData.error || 'Failed to fetch tasks');
+        setTasksError(response.error || 'Failed to fetch tasks');
       }
     } catch (err) {
       console.error('Error fetching upcoming tasks:', err);
@@ -543,16 +544,12 @@ const fetchFinancialAnalytics = async () => {
       setActivitiesLoading(true);
       setActivitiesError(null);
       
-      const response = await fetch('/api/activity/recent?limit=5', { 
-        credentials: 'include' 
-      });
+      const response = await apiClient.getRecentActivities(5);
 
-      if (response.ok) {
-        const data = await response.json();
-        setActivities(data.data || []);
+      if (response.success) {
+        setActivities(response.data || []);
       } else {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to fetch activities' }));
-        setActivitiesError(errorData.error || 'Failed to fetch activities');
+        setActivitiesError(response.error || 'Failed to fetch activities');
       }
     } catch (err) {
       console.error('Error fetching recent activities:', err);
@@ -565,12 +562,9 @@ const fetchFinancialAnalytics = async () => {
   useEffect(() => {
     const checkUserStatus = async () => {
       try {
-        const response = await fetch('/api/auth/status', {
-          credentials: 'include',
-        });
-        const data = await response.json();
+        const response = await apiClient.getAuthStatus();
 
-        if (!response.ok || !data.isSignedUp) {
+        if (!response.success || !response.data?.isSignedUp) {
           router.replace('/auth/register');
           return;
         }
@@ -675,7 +669,7 @@ const fetchFinancialAnalytics = async () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
           <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
             <h3 className="text-lg font-medium">Upcoming Tasks</h3>
-            <Link href={`/${farmId}/dashboard/tasks`} className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
+            <Link href={`/${farmSlug}/dashboard/tasks`} className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
               View all
             </Link>
           </div>
@@ -750,7 +744,7 @@ const fetchFinancialAnalytics = async () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
           <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
             <h3 className="text-lg font-medium">Recent Activity</h3>
-            <Link href={`/${farmId}/dashboard/activity`} className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
+            <Link href={`/${farmSlug}/dashboard/activity`} className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
               View all
             </Link>
           </div>
@@ -802,7 +796,7 @@ const fetchFinancialAnalytics = async () => {
             <p className="mt-1">Complete your farm profile to get personalized recommendations.</p>
           </div>
           <Link
-            href={`/${farmId}/dashboard/settings/profile`}
+            href={`/${farmSlug}/dashboard/settings/profile`}
             className="btn bg-white text-primary-700 hover:bg-gray-100"
           >
             Complete Profile

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { apiClient } from '@/lib/api';
 
 interface AddLivestockModalProps {
   isOpen: boolean;
@@ -31,18 +32,10 @@ export function AddLivestockModal({ isOpen, onClose, farmId, onSuccess }: AddLiv
         healthStatus: 'healthy' as const, // Default health status
       };
 
-      const response = await fetch(`/api/farms/${farmId}/livestock`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(livestockData),
-      });
+      const response = await apiClient.createLivestock(farmId, livestockData);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create livestock');
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to create livestock');
       }
 
       // Success - close modal, reset form, and refresh list

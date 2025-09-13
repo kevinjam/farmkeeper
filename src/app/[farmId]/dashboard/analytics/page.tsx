@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { apiClient } from '@/lib/api';
 
 interface AnalyticsData {
   incomeExpenses: {
@@ -62,14 +63,13 @@ export default function AnalyticsPage() {
             setLoading(true);
             setError(null);
             const currentYear = new Date().getFullYear();
-            const response = await fetch(`/api/analytics/farms/${farmId}?year=${currentYear}&period=${period}&sortBy=${sortBy}`);
+            const response = await apiClient.getAnalytics(farmId, currentYear, period, sortBy);
             
-            if (!response.ok) {
-                throw new Error('Failed to fetch analytics data');
+            if (!response.success) {
+                throw new Error(response.error || 'Failed to fetch analytics data');
             }
             
-            const data = await response.json();
-            setAnalyticsData(data);
+            setAnalyticsData(response.data);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
         } finally {

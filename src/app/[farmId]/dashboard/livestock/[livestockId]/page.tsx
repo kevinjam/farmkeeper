@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { apiClient } from '@/lib/api';
 
 // Define type for livestock data
 type Livestock = {
@@ -40,16 +41,19 @@ export default function LivestockViewPage({
         setIsLoading(true);
         setError('');
         
-        const response = await fetch(`/api/farms/${farmId}/livestock/${livestockId}`, {
-          credentials: 'include',
-        });
+        const response = await apiClient.getLivestock(farmId);
         
-        if (!response.ok) {
-          throw new Error('Failed to fetch livestock data');
+        if (!response.success) {
+          throw new Error(response.error || 'Failed to fetch livestock data');
         }
         
-        const result = await response.json();
-        setLivestock(result.data);
+        // Find the specific livestock item from the list
+        const livestockItem = response.data?.find((item: any) => item._id === livestockId);
+        if (!livestockItem) {
+          throw new Error('Livestock not found');
+        }
+        
+        setLivestock(livestockItem);
       } catch (err) {
         console.error('Error fetching livestock:', err);
         setError('Failed to load livestock data. Please try again.');
@@ -65,13 +69,10 @@ export default function LivestockViewPage({
   const handleDeleteLivestock = async () => {
     try {
       setIsDeleting(true);
-      const response = await fetch(`/api/farms/${farmId}/livestock/${livestockId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
+      const response = await apiClient.deleteLivestock(farmId, livestockId);
 
-      if (!response.ok) {
-        throw new Error('Failed to delete livestock');
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to delete livestock');
       }
 
       router.push(`/${farmId}/dashboard/livestock`);

@@ -11,7 +11,7 @@ export default function Logout() {
   useEffect(() => {
     async function performLogout() {
       try {
-        const response = await fetch('/api/auth/logout', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:5001'}/api/auth/logout`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',

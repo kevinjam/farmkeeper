@@ -11,9 +11,29 @@ const nextConfig = {
   images: {
     domains: ['images.unsplash.com', 'farmkeeper.app'],
   },
-  // Add headers for CORS and CSP
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        process: require.resolve('process/browser'),
+        buffer: require.resolve('buffer'),
+        stream: require.resolve('stream-browserify'),
+        util: require.resolve('util'),
+      };
+    }
+    return config;
+  },
   async headers() {
     return [
+      {
+        source: '/api/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Credentials', value: 'true' },
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET,OPTIONS,PATCH,DELETE,POST,PUT' },
+          { key: 'Access-Control-Allow-Headers', value: '*' },
+        ],
+      },
       {
         source: '/(.*)',
         headers: [

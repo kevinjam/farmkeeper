@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiClient } from '@/lib/api';
 
 export default function AddLivestockPage({ params }: { params: { farmId: string } }) {
   const router = useRouter();
@@ -26,17 +27,10 @@ export default function AddLivestockPage({ params }: { params: { farmId: string 
         notes: formData.get('notes') as string || undefined,
       };
 
-      const response = await fetch(`/api/farms/${farmId}/livestock`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(data),
-      });
+      const response = await apiClient.createLivestock(farmId, data);
 
-      if (!response.ok) {
-        throw new Error('Failed to add livestock');
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to add livestock');
       }
 
       router.push(`/${farmId}/dashboard/livestock`);

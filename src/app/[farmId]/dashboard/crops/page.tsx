@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import AddCropModal from '../../../../components/AddCropModal';
+import { apiClient } from '../../../../lib/api';
 
 interface Crop {
   _id: string;
@@ -32,16 +33,13 @@ export default function CropsDashboard({ params }: { params: { farmId: string } 
   const fetchCrops = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/farms/${farmId}/crops`, {
-        credentials: 'include',
-      });
+      const response = await apiClient.getCrops(farmId);
       
-      if (response.ok) {
-        const result = await response.json();
-        setCrops(result.data || []);
+      if (response.success) {
+        setCrops(response.data || []);
         setError(null);
       } else {
-        setError('Failed to fetch crops');
+        setError(response.error || 'Failed to fetch crops');
       }
     } catch (err) {
       console.error('Error fetching crops:', err);
@@ -54,16 +52,13 @@ export default function CropsDashboard({ params }: { params: { farmId: string } 
   // Delete crop
   const handleDelete = async (cropId: string) => {
     try {
-      const response = await fetch(`/api/farms/${farmId}/crops/${cropId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
+      const response = await apiClient.deleteCrop(farmId, cropId);
       
-      if (response.ok) {
+      if (response.success) {
         setCrops(crops.filter(crop => crop._id !== cropId));
         setDeleteConfirm(null);
       } else {
-        setError('Failed to delete crop');
+        setError(response.error || 'Failed to delete crop');
       }
     } catch (err) {
       console.error('Error deleting crop:', err);

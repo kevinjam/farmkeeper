@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import { format } from 'date-fns';
+import { apiClient } from '@/lib/api';
 
 interface EggCollectionFormProps {
   farmId: string;
@@ -29,22 +30,15 @@ export default function EggCollectionForm({ farmId }: EggCollectionFormProps) {
       setError('');
       setSuccess('');
       
-      const response = await fetch(`/api/farms/${farmId}/eggs/collection`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          date,
-          quantity: parseInt(quantity),
-          chickens: parseInt(chickens),
-          notes
-        }),
+      const response = await apiClient.createEggCollection(farmId, {
+        date,
+        quantity: parseInt(quantity),
+        chickens: parseInt(chickens),
+        notes
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save egg collection record');
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to save egg collection record');
       }
       
       // Reset form

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { apiClient } from '@/lib/api';
 
 interface FinancialData {
   summary: {
@@ -60,12 +61,11 @@ const FinancialAnalyticsWidget = () => {
         setLoading(true);
         setError(null);
         
-        const response = await fetch('/api/finances/analytics');
-        if (response.ok) {
-          const result = await response.json();
-          setData(result.data);
+        const response = await apiClient.getFinancialAnalytics();
+        if (response.success) {
+          setData(response.data);
         } else {
-          setError('Failed to fetch financial analytics');
+          setError(response.error || 'Failed to fetch financial analytics');
         }
       } catch (err) {
         console.error('Error fetching financial analytics:', err);

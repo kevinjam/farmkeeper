@@ -3,12 +3,19 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import GoogleSignInNextScript from '../../../components/GoogleSignInNextScript';
-import EnvTest from '../../../components/EnvTest';
+import { motion } from 'framer-motion';
+import { Sprout, Eye, EyeOff, ArrowRight, CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { apiClient } from '@/lib/api';
+import { GoogleSignInButton } from '@/components/auth/google-signin-button';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [loginSuccess, setLoginSuccess] = useState(false);
@@ -33,35 +40,33 @@ export default function Login() {
     try {
       console.log('Attempting login with email:', email);
       
-      // Step 1: Direct login API call to frontend API route
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password }),
-        cache: 'no-store'
-      });
+      // Use the centralized API client
+      const response = await apiClient.login({ email, password });
 
-      const data = await response.json();
-      
-      if (!response.ok) {
-        console.log('Login failed:', data.message);
-        throw new Error(data.message || 'Login failed');
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Login failed');
       }
 
-      // Step 2: Log success details
+      const data = response.data;
+
+      // Log success details
       console.log('Login successful!');
-      console.log('Farm ID:', data.farmId);
+      console.log('Farm Slug:', data.farmSlug);
       console.log('Farm name:', data.farmName || 'Unknown Farm');
       
-      // Step 3: Store farm info for potential backup use
+      // Store farm info and token for client-side use
       if (typeof window !== 'undefined') {
-        localStorage.setItem('farmId', data.farmId);
+        localStorage.setItem('farmSlug', data.farmSlug);
         localStorage.setItem('farmName', data.farmName || '');
+        
+        // Store token if provided
+        if (data.token) {
+          localStorage.setItem('auth-token', data.token);
+        }
       }
       
-      // Step 4: Setup redirect URL and update UI
-      const targetUrl = `/${data.farmId}/dashboard`;
+      // Setup redirect URL and update UI
+      const targetUrl = `/${data.farmSlug}/dashboard`;
       setDashboardUrl(targetUrl);
       setLoginSuccess(true);
       setIsLoading(false);
@@ -83,149 +88,165 @@ export default function Login() {
     }
   };
 
-  const handleGoogleSuccess = (user: any) => {
-    console.log('Google Sign-In successful:', user);
-    // For login page, existing users will be redirected to dashboard
-    // New users will be redirected to setup-profile
-    // The GoogleSignIn component handles this automatically
-  };
-
-  const handleGoogleError = (error: string) => {
-    console.error('Google Sign-In error:', error);
-    setError(error);
-  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h1 className="text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-            Welcome back to <span className="text-primary-600">FarmKeeper</span>
-          </h1>
-          <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-            Sign in to access your farm management dashboard
-          </p>
-        </div>
-        
-        {loginSuccess ? (
-          <div className="text-center space-y-6">
-            <div className="bg-green-50 border border-green-200 rounded-md p-4">
-              <div className="flex items-center justify-center">
-                <svg className="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <p className="ml-3 text-green-700 font-medium">Login successful!</p>
-              </div>
-              <p className="mt-2 text-sm text-gray-600">You should be redirected to your dashboard shortly.</p>
-            </div>
-            
-            <div>
-              <p className="text-sm text-gray-500 mb-3">If you're not redirected automatically, click the button below:</p>
-              <button
-                type="button"
-                onClick={navigateToDashboard}
-                className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Continue to Dashboard
-              </button>
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* Environment Variables Test - Temporary for debugging */}
-            {/* <EnvTest /> */}
-            
-            {/* Google Sign-In Section */}
-            <div className="space-y-4">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-gray-50 dark:bg-gray-900 text-gray-500">Or continue with</span>
-                </div>
-              </div>
-              
-              <GoogleSignInNextScript 
-                key="login-google-signin"
-                onSuccess={handleGoogleSuccess}
-                onError={handleGoogleError}
-                enableFarmSetup
-              />
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-900 dark:to-green-900/20">
+      {/* Header */}
+      <div className="flex items-center justify-between p-6">
+        <Link href="/" className="flex items-center space-x-2">
+          <Sprout className="h-8 w-8 text-primary-600" />
+          <span className="text-2xl font-heading font-bold text-primary-600">FarmKeeper</span>
+        </Link>
+      </div>
 
-            {/* Divider */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-gray-50 dark:bg-gray-900 text-gray-500">Or use email</span>
-              </div>
-            </div>
+      <div className="flex items-center justify-center px-4 sm:px-6 lg:px-8 pb-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="w-full max-w-md"
+        >
+          <Card className="shadow-xl border-0">
+            <CardHeader className="text-center pb-8">
+              <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white font-heading">
+                Welcome back
+              </CardTitle>
+              <CardDescription className="text-lg text-gray-600 dark:text-gray-300">
+                Sign in to access your farm management dashboard
+              </CardDescription>
+            </CardHeader>
 
-            {/* Email/Password Form */}
-            <form className="space-y-6" onSubmit={handleSubmit}>
-              {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                  <span className="block sm:inline">{error}</span>
-                </div>
+            <CardContent className="space-y-6">
+              {loginSuccess ? (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-center space-y-6"
+                >
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
+                    <div className="flex items-center justify-center mb-4">
+                      <CheckCircle className="h-12 w-12 text-green-500" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-2">
+                      Login Successful!
+                    </h3>
+                    <p className="text-sm text-green-600 dark:text-green-300">
+                      You should be redirected to your dashboard shortly.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      If you're not redirected automatically, click below:
+                    </p>
+                    <Button onClick={navigateToDashboard} className="w-full" size="lg">
+                      Continue to Dashboard
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </motion.div>
+              ) : (
+                <>
+                  {/* Email/Password Form */}
+                  <form className="space-y-4" onSubmit={handleSubmit}>
+                    {error && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg"
+                      >
+                        {error}
+                      </motion.div>
+                    )}
+
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email address</Label>
+                        <Input
+                          id="email"
+                          name="email"
+                          type="email"
+                          autoComplete="email"
+                          required
+                          placeholder="you@example.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          disabled={isLoading}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="password">Password</Label>
+                        <div className="relative">
+                          <Input
+                            id="password"
+                            name="password"
+                            type={showPassword ? "text" : "password"}
+                            autoComplete="current-password"
+                            required
+                            placeholder="Enter your password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            disabled={isLoading}
+                            className="pr-10"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                            onClick={() => setShowPassword(!showPassword)}
+                            disabled={isLoading}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4 text-gray-500" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-gray-500" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+                      {isLoading ? 'Signing in...' : 'Sign in'}
+                      {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
+                    </Button>
+                  </form>
+
+                  {/* Divider */}
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t border-gray-300 dark:border-gray-600" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-white dark:bg-gray-900 px-2 text-gray-500 dark:text-gray-400">
+                        Or continue with
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Google Sign-In */}
+                  <GoogleSignInButton 
+                    className="w-full" 
+                    variant="outline" 
+                    size="lg"
+                    showUserMenu={false}
+                  />
+                </>
               )}
 
-              <div className="rounded-md shadow-sm -space-y-px">
-                <div>
-                  <label htmlFor="email-address" className="sr-only">Email address</label>
-                  <input
-                    id="email-address"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                    placeholder="Email address"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={isLoading}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="password" className="sr-only">Password</label>
-                  <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    autoComplete="current-password"
-                    required
-                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={isLoading}
-                  />
-                </div>
+              <div className="text-center pt-4 border-t border-gray-200 dark:border-gray-700">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Don't have an account?{' '}
+                  <Link href="/auth/register" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
+                    Sign up for free
+                  </Link>
+                </p>
               </div>
-
-              <div>
-                <button
-                  type="submit"
-                  className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Signing in...' : 'Sign in'}
-                </button>
-              </div>
-            </form>
-          </>
-        )}
-
-        <div className="text-center">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Don't have an account?{' '}
-            <Link href="/auth/register" className="font-medium text-primary-600 hover:text-primary-500">
-              Sign up for free
-            </Link>
-          </p>
-        </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
     </div>
   );

@@ -115,7 +115,7 @@ export default function DashboardLayout({
         setIsLoading(true);
         console.log('Dashboard: Fetching user authentication status');
         
-        const response = await fetch('/api/auth/status', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:5001'}/api/auth/status`, {
           credentials: 'include',
           cache: 'no-store' // Don't cache authentication status
         });

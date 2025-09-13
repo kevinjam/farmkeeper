@@ -13,7 +13,7 @@ export default function LoginSuccess() {
         
         // Add a timestamp to prevent caching
         const timestamp = new Date().getTime();
-        const response = await fetch(`/api/auth/status?t=${timestamp}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:5001'}/api/auth/status?t=${timestamp}`, {
           credentials: 'include',
           headers: { 'Cache-Control': 'no-cache' }
         });

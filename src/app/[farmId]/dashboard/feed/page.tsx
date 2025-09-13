@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { apiClient } from '@/lib/api';
 
 // Types
 interface FeedStock {
@@ -86,14 +87,13 @@ export default function FeedManagementPage({ params }: { params: { farmId: strin
   const fetchFeedStock = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/farms/${farmId}/feedstock`);
+      const response = await apiClient.getFeedstock(farmId);
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch feedstock');
+      if (response.success) {
+        setFeedStock(response.data || []);
+      } else {
+        setError(response.error || 'Failed to fetch feedstock');
       }
-      
-      const data = await response.json();
-      setFeedStock(data.data || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch feedstock');
     } finally {
@@ -107,22 +107,12 @@ export default function FeedManagementPage({ params }: { params: { farmId: strin
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const url = editingItem 
-        ? `/api/farms/${farmId}/feedstock/${editingItem._id}`
-        : `/api/farms/${farmId}/feedstock`;
-      
-      const method = editingItem ? 'PUT' : 'POST';
-      
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = editingItem 
+        ? await apiClient.updateFeedstock(farmId, editingItem._id, formData)
+        : await apiClient.createFeedstock(farmId, formData);
 
-      if (!response.ok) {
-        throw new Error(`Failed to ${editingItem ? 'update' : 'create'} feedstock`);
+      if (!response.success) {
+        throw new Error(response.error || `Failed to ${editingItem ? 'update' : 'create'} feedstock`);
       }
 
       await fetchFeedStock();
@@ -166,12 +156,10 @@ export default function FeedManagementPage({ params }: { params: { farmId: strin
     }
 
     try {
-      const response = await fetch(`/api/farms/${farmId}/feedstock/${id}`, {
-        method: 'DELETE',
-      });
+      const response = await apiClient.deleteFeedstock(farmId, id);
 
-      if (!response.ok) {
-        throw new Error('Failed to delete feedstock');
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to delete feedstock');
       }
 
       await fetchFeedStock();

@@ -103,6 +103,7 @@ function RegisterForm() {
     }
   };
 
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-900 dark:to-green-900/20">
       {/* Header */}
@@ -185,139 +186,139 @@ function RegisterForm() {
                     </motion.div>
                   )}
                 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="farmName">Farm Name</Label>
-                      <Input
-                        id="farmName"
-                        name="farmName"
-                        type="text"
-                        required
-                        placeholder="Your farm name"
-                        value={formData.farmName}
-                        onChange={handleChange}
-                        disabled={isLoading}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Your Name</Label>
-                      <Input
-                        id="name"
-                        name="name"
-                        type="text"
-                        required
-                        placeholder="Your full name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        disabled={isLoading}
-                      />
-                    </div>
-                  </div>
-
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email address</Label>
+                    <Label htmlFor="farmName">Farm Name</Label>
                     <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      autoComplete="email"
+                      id="farmName"
+                      name="farmName"
+                      type="text"
                       required
-                      placeholder="you@example.com"
-                      value={formData.email}
+                      placeholder="Your farm name"
+                      value={formData.farmName}
                       onChange={handleChange}
                       disabled={isLoading}
                     />
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="password">Password</Label>
-                      <div className="relative">
-                        <Input
-                          id="password"
-                          name="password"
-                          type={showPassword ? "text" : "password"}
-                          autoComplete="new-password"
-                          required
-                          placeholder="Create a password"
-                          value={formData.password}
-                          onChange={handleChange}
-                          disabled={isLoading}
-                          className="pr-10"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          onClick={() => setShowPassword(!showPassword)}
-                          disabled={isLoading}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4 text-gray-500" />
-                          ) : (
-                            <Eye className="h-4 w-4 text-gray-500" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirm Password</Label>
-                      <div className="relative">
-                        <Input
-                          id="confirmPassword"
-                          name="confirmPassword"
-                          type={showConfirmPassword ? "text" : "password"}
-                          autoComplete="new-password"
-                          required
-                          placeholder="Confirm your password"
-                          value={formData.confirmPassword}
-                          onChange={handleChange}
-                          disabled={isLoading}
-                          className="pr-10"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          disabled={isLoading}
-                        >
-                          {showConfirmPassword ? (
-                            <EyeOff className="h-4 w-4 text-gray-500" />
-                          ) : (
-                            <Eye className="h-4 w-4 text-gray-500" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="plan">Subscription Plan</Label>
-                    <select
-                      id="plan"
-                      name="plan"
+                    <Label htmlFor="name">Your Name</Label>
+                    <Input
+                      id="name"
+                      name="name"
+                      type="text"
                       required
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-                      value={formData.plan}
+                      placeholder="Your full name"
+                      value={formData.name}
                       onChange={handleChange}
                       disabled={isLoading}
-                    >
-                      <option value="trial">Free Trial - 14 days</option>
-                      <option value="pro">Pro Plan - UGX 75,000/month</option>
-                      <option value="enterprise">Enterprise Plan - UGX 150,000/month</option>
-                    </select>
+                    />
                   </div>
-
-                  <LocationSelector
-                    initialLocation={location}
-                    onLocationChange={handleLocationChange}
-                    required={true}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    placeholder="you@example.com"
+                    value={formData.email}
+                    onChange={handleChange}
+                    disabled={isLoading}
                   />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        required
+                        placeholder="Create a secure password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        disabled={isLoading}
+                        className="pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                        disabled={isLoading}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-gray-500" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-gray-500" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirm Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        required
+                        placeholder="Confirm your password"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        disabled={isLoading}
+                        className="pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        disabled={isLoading}
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-4 w-4 text-gray-500" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-gray-500" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="plan">Subscription Plan</Label>
+                  <select
+                    id="plan"
+                    name="plan"
+                    required
+                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                    value={formData.plan}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                  >
+                    <option value="trial">Free Trial - 14 days</option>
+                    <option value="pro">Pro Plan - UGX 75,000/month</option>
+                    <option value="enterprise">Enterprise Plan - UGX 150,000/month</option>
+                  </select>
+                </div>
+
+                <LocationSelector
+                  initialLocation={location}
+                  onLocationChange={handleLocationChange}
+                  required={true}
+                />
 
                   <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
                     {isLoading ? 'Creating account...' : 'Create account'}
@@ -344,16 +345,16 @@ function RegisterForm() {
                     showUserMenu={false}
                   />
                 </form>
-              )}
 
-              <div className="text-center pt-4 border-t border-gray-200 dark:border-gray-700">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Already have an account?{' '}
-                  <Link href="/auth/login" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
-                    Sign in
-                  </Link>
-                </p>
-              </div>
+                <div className="text-center pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Already have an account?{' '}
+                    <Link href="/auth/login" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
+                      Sign in
+                    </Link>
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>

@@ -1,6 +1,9 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter, Poppins } from 'next/font/google';
+import { ThemeProvider } from '@/components/theme-provider';
+import { AuthProvider } from '@/components/providers/session-provider';
+import '@/lib/suppress-warnings';
 
 // Initialize fonts
 const inter = Inter({ 
@@ -31,9 +34,31 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${poppins.variable}`}>
+    <html lang="en" className={`${inter.variable} ${poppins.variable}`} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                if (localStorage.getItem('farmkeeper-ui-theme') === 'dark' || (!('farmkeeper-ui-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                  document.documentElement.classList.add('dark')
+                } else {
+                  document.documentElement.classList.remove('dark')
+                }
+              } catch (_) {}
+            `,
+          }}
+        />
+      </head>
       <body>
-        {children}
+        <AuthProvider>
+          <ThemeProvider
+            defaultTheme="system"
+            storageKey="farmkeeper-ui-theme"
+          >
+            {children}
+          </ThemeProvider>
+        </AuthProvider>
       </body>
     </html>
   );

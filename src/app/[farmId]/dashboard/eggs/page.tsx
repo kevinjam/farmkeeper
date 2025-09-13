@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
+import { apiClient } from '@/lib/api';
 
 // Components
 import EggCollectionForm from './components/EggCollectionForm';
@@ -24,13 +25,30 @@ export default function EggsAndSalesPage({ params }: { params: { farmId: string 
 
   // Fetch egg collection stats
   useEffect(() => {
+    if (!farmId) return; // Don't fetch if farmId is not available yet
+    
     const fetchStats = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(`/api/farms/${farmId}/eggs/stats`);
-        if (response.ok) {
-          const data = await response.json();
-          setStats(data);
+        // For now, we'll calculate stats from collections
+        // In the future, you might want to add a dedicated stats endpoint
+        const collectionsResponse = await apiClient.getEggCollections(farmId);
+        if (collectionsResponse.success) {
+          const collections = collectionsResponse.data || [];
+          const today = new Date().toISOString().split('T')[0];
+          const todayCollections = collections.filter((c: any) => c.date === today);
+          
+          const totalEggsCollected = collections.reduce((sum: number, c: any) => sum + c.quantity, 0);
+          const totalEggsSold = 0; // You'll need to implement sales tracking
+          const revenue = 0; // You'll need to implement sales tracking
+          const collectionRate = collections.length > 0 ? totalEggsCollected / collections.length : 0;
+          
+          setStats({
+            totalEggsCollected,
+            totalEggsSold,
+            revenue,
+            collectionRate
+          });
         }
       } catch (error) {
         console.error('Failed to fetch egg stats:', error);

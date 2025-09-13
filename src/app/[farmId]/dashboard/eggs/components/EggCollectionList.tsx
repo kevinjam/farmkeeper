@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
+import { apiClient } from '@/lib/api';
 
 interface EggCollection {
   _id: string;
@@ -26,14 +27,13 @@ export default function EggCollectionList({ farmId }: EggCollectionListProps) {
       setIsLoading(true);
       setError('');
       
-      const response = await fetch(`/api/farms/${farmId}/eggs/collection`);
+      const response = await apiClient.getEggCollections(farmId);
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch egg collections');
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to fetch egg collections');
       }
       
-      const data = await response.json();
-      setCollections(data);
+      setCollections(response.data || []);
     } catch (error: any) {
       setError(error.message);
       console.error('Error fetching egg collections:', error);
@@ -66,12 +66,10 @@ export default function EggCollectionList({ farmId }: EggCollectionListProps) {
     }
     
     try {
-      const response = await fetch(`/api/farms/${farmId}/eggs/collection/${id}`, {
-        method: 'DELETE',
-      });
+      const response = await apiClient.deleteEggCollection(farmId, id);
       
-      if (!response.ok) {
-        throw new Error('Failed to delete record');
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to delete record');
       }
       
       // Refresh the list

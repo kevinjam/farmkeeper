@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { AddLivestockModal } from '@/components/AddLivestockModal';
+import { apiClient } from '@/lib/api';
 
 // Define type for livestock data
 type Livestock = {
@@ -84,21 +85,24 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
   
   // Fetch livestock data
   useEffect(() => {
+    if (!farmId) {
+      console.log('farmId not available yet:', farmId);
+      return; // Don't fetch if farmId is not available yet
+    }
+    
+    console.log('Fetching livestock for farmId:', farmId);
     const fetchLivestock = async () => {
       try {
         setIsLoading(true);
         setError('');
         
-        const response = await fetch(`/api/farms/${farmId}/livestock`, {
-          credentials: 'include',
-        });
+        const response = await apiClient.getLivestock(farmId);
         
-        if (!response.ok) {
-          throw new Error('Failed to fetch livestock data');
+        if (!response.success) {
+          throw new Error(response.error || 'Failed to fetch livestock data');
         }
         
-        const result = await response.json();
-        setLivestock(result.data || []);
+        setLivestock(response.data || []);
       } catch (err) {
         console.error('Error fetching livestock:', err);
         setError('Failed to load livestock data. Please try again.');
@@ -113,13 +117,10 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
   // Delete livestock function
   const handleDeleteLivestock = async (livestockId: string) => {
     try {
-      const response = await fetch(`/api/farms/${farmId}/livestock/${livestockId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
+      const response = await apiClient.deleteLivestock(farmId, livestockId);
 
-      if (!response.ok) {
-        throw new Error('Failed to delete livestock');
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to delete livestock');
       }
 
       // Remove from local state
@@ -530,23 +531,16 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
         isOpen={isAddModalOpen} 
         onClose={() => setIsAddModalOpen(false)}
         farmId={farmId}
-        onSuccess={() => {
+        onSuccess={async () => {
           // Refresh livestock list after successful creation
-          const fetchLivestock = async () => {
-            try {
-              const response = await fetch(`/api/farms/${farmId}/livestock`, {
-                credentials: 'include',
-              });
-              
-              if (response.ok) {
-                const result = await response.json();
-                setLivestock(result.data || []);
-              }
-            } catch (err) {
-              console.error('Error refreshing livestock:', err);
+          try {
+            const response = await apiClient.getLivestock(farmId);
+            if (response.success) {
+              setLivestock(response.data || []);
             }
-          };
-          fetchLivestock();
+          } catch (err) {
+            console.error('Error refreshing livestock:', err);
+          }
         }}
       />
 

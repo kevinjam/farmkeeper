@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { apiClient } from '../lib/api';
 
 interface AddCropModalProps {
   isOpen: boolean;
@@ -62,21 +63,13 @@ export default function AddCropModal({ isOpen, onClose, farmId, onSuccess }: Add
         notes: notes.trim() || undefined
       };
 
-      const response = await fetch(`/api/farms/${farmId}/crops`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(cropData),
-      });
+      const response = await apiClient.createCrop(farmId, cropData);
 
-      if (response.ok) {
+      if (response.success) {
         handleCancel();
         onSuccess();
       } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Failed to create crop. Please try again.');
+        setError(response.error || 'Failed to create crop. Please try again.');
       }
     } catch (err) {
       console.error('Error creating crop:', err);
