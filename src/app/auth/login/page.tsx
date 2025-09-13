@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiClient } from '@/lib/api';
+import { setAuthCookie } from '@/lib/cookies';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -25,9 +26,10 @@ export default function Login() {
   // Pro fix: useEffect for redirect after login
   useEffect(() => {
     if (loginSuccess && dashboardUrl) {
-      window.location.href = dashboardUrl;
+      // Use Next.js router for proper client-side navigation
+      router.push(dashboardUrl);
     }
-  }, [loginSuccess, dashboardUrl]);
+  }, [loginSuccess, dashboardUrl, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,11 +65,14 @@ export default function Login() {
         }
       }
       
-      // Setup redirect URL and update UI
-      const targetUrl = `/${data.farmSlug}/dashboard`;
-      setDashboardUrl(targetUrl);
-      setLoginSuccess(true);
-      setIsLoading(false);
+      // Set authentication cookie for server-side middleware
+      if (data.token) {
+        setAuthCookie(data.token);
+      }
+      
+      // Redirect to login success page with farm info
+      const successUrl = `/auth/login-success?farmSlug=${encodeURIComponent(data.farmSlug)}&farmName=${encodeURIComponent(data.farmName || '')}`;
+      router.push(successUrl);
     } catch (error) {
       console.error('Login error:', error);
       if (error instanceof Error) {
@@ -82,7 +87,7 @@ export default function Login() {
   const navigateToDashboard = () => {
     if (dashboardUrl) {
       console.log('Manual navigation to:', dashboardUrl);
-      window.location.href = dashboardUrl;
+      router.push(dashboardUrl);
     }
   };
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { apiClient } from '@/lib/api';
+import { SmartWeatherIcon } from '@/components/WeatherIcon';
 
 type WeatherData = {
   current: {
@@ -384,8 +385,9 @@ export default function WeatherPage({ params }: { params: { farmId: string } }) 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
           <div className="bg-blue-50 dark:bg-blue-900/30 p-6 rounded-lg flex flex-col items-center">
             <div className="flex items-center mb-4">
-              <img 
-                src={`https:${weatherData.current.condition.icon}`} 
+              <SmartWeatherIcon
+                condition={weatherData.current.condition.text}
+                src={`https:${weatherData.current.condition.icon}`}
                 alt={weatherData.current.condition.text}
                 width={64}
                 height={64}
@@ -462,7 +464,8 @@ export default function WeatherPage({ params }: { params: { farmId: string } }) 
                   <span className="text-sm text-gray-500">{farm.distance.toFixed(1)} km</span>
                 </div>
                 <div className="flex items-center">
-                  <img 
+                  <SmartWeatherIcon
+                    condition={farm.weather.condition.text}
                     src={`https:${farm.weather.condition.icon}`}
                     alt={farm.weather.condition.text}
                     width={32}
@@ -488,12 +491,13 @@ export default function WeatherPage({ params }: { params: { farmId: string } }) 
             {weatherData.historical.forecastday.map((day, index) => (
               <div key={index} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-center">
                 <h4 className="text-xs font-medium mb-1">{formatDate(day.date)}</h4>
-                <img 
+                <SmartWeatherIcon
+                  condition={day.day.condition.text}
                   src={`https:${day.day.condition.icon}`}
                   alt={day.day.condition.text}
-                  className="mx-auto mb-1"
                   width={32}
                   height={32}
+                  className="mx-auto mb-1"
                 />
                 <div className="text-xs">
                   <div className="flex justify-center space-x-1">
@@ -518,12 +522,13 @@ export default function WeatherPage({ params }: { params: { farmId: string } }) 
           {weatherData.forecast.forecastday.map((day, index) => (
             <div key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg text-center">
               <h4 className="font-medium">{formatDate(day.date)}</h4>
-              <img 
+              <SmartWeatherIcon
+                condition={day.day.condition.text}
                 src={`https:${day.day.condition.icon}`}
                 alt={day.day.condition.text}
-                className="mx-auto my-2"
                 width={48}
                 height={48}
+                className="mx-auto my-2"
               />
               <p className="text-sm text-gray-600 dark:text-gray-400">{day.day.condition.text}</p>
               <div className="flex justify-center space-x-2 mt-2">
