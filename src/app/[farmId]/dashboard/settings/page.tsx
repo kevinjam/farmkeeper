@@ -42,23 +42,13 @@ export default function FarmSettingsPage() {
         setIsLoading(true);
         setError('');
         
-        // For now, we'll create a mock settings object
-        // In a real app, you'd have an API endpoint for this
-        const mockSettings: FarmSettings = {
-          name: 'My Farm',
-          slug: farmSlug,
-          location: {
-            country: 'Uganda'
-          },
-          settings: {
-            currency: 'UGX',
-            language: 'en',
-            timezone: 'Africa/Kampala',
-            notificationsEnabled: true
-          }
-        };
+        const response = await apiClient.getFarmSettings(farmSlug);
         
-        setSettings(mockSettings);
+        if (!response.success) {
+          throw new Error(response.error || 'Failed to fetch farm settings');
+        }
+        
+        setSettings(response.data);
       } catch (err) {
         console.error('Error fetching settings:', err);
         setError('Failed to load farm settings');
@@ -90,12 +80,15 @@ export default function FarmSettingsPage() {
       setError('');
       setSuccess('');
       
-      // For now, we'll just show a success message
-      // In a real app, you'd call an API to update the farm settings
-      console.log('Saving settings:', settings);
+      const response = await apiClient.updateFarmSettings(farmSlug, {
+        name: settings.name,
+        location: settings.location,
+        settings: settings.settings
+      });
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to update farm settings');
+      }
       
       setSuccess('Farm settings updated successfully!');
     } catch (err) {

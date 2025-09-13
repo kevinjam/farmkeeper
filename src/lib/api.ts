@@ -428,6 +428,18 @@ class ApiClient {
   async getNearbyFarmsWeather(farmSlug: string): Promise<ApiResponse<any>> {
     return this.request(`/weather/${farmSlug}/nearby`);
   }
+
+  // Farm Settings
+  async getFarmSettings(farmSlug: string): Promise<ApiResponse<any>> {
+    return this.request(`/farms/${farmSlug}/settings`);
+  }
+
+  async updateFarmSettings(farmSlug: string, settings: any): Promise<ApiResponse<any>> {
+    return this.request(`/farms/${farmSlug}/settings`, {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
+  }
 }
 
 // Create and export a singleton instance
