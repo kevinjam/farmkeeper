@@ -115,16 +115,26 @@ export default function DashboardLayout({
         setIsLoading(true);
         console.log('Dashboard: Fetching user authentication status');
         
+        // Check if we have a token in localStorage as fallback
+        const localToken = localStorage.getItem('auth-token');
+        console.log('Dashboard: Local token available:', !!localToken);
+        
         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001'}/api/auth/status`, {
           credentials: 'include',
-          cache: 'no-store' // Don't cache authentication status
+          cache: 'no-store', // Don't cache authentication status
+          headers: {
+            'Content-Type': 'application/json',
+          }
         });
         
         const data = await response.json();
         console.log('Dashboard: Auth status response:', data);
+        console.log('Dashboard: Response status:', response.status);
+        console.log('Dashboard: Response headers:', Object.fromEntries(response.headers.entries()));
 
         if (!response.ok || !data.isAuthenticated) {
           console.log('Dashboard: Auth failed, redirecting to login');
+          console.log('Dashboard: Auth failure reason:', data.message || 'Unknown error');
           setIsAuthenticated(false);
           router.replace('/auth/login');
           return;

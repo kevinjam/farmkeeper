@@ -11,7 +11,8 @@ export const setAuthCookie = (token: string, maxAge: number = 7 * 24 * 60 * 60) 
   const secure = isProduction && !isLocalhost;
   
   // Build cookie string
-  let cookieString = `token=${token}; path=/; max-age=${maxAge}; samesite=strict`;
+  const sameSite = secure ? 'none' : 'lax';
+  let cookieString = `token=${token}; path=/; max-age=${maxAge}; samesite=${sameSite}`;
   
   if (secure) {
     cookieString += '; secure';
@@ -41,7 +42,8 @@ export const removeAuthCookie = () => {
   const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const secure = isProduction && !isLocalhost;
   
-  let cookieString = 'token=; path=/; max-age=0; samesite=strict';
+  const sameSite = secure ? 'none' : 'lax';
+  let cookieString = `token=; path=/; max-age=0; samesite=${sameSite}`;
   
   if (secure) {
     cookieString += '; secure';
