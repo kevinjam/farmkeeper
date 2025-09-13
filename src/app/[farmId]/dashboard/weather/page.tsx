@@ -1,13 +1,33 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import { apiClient } from '@/lib/api';
-import { SmartWeatherIcon } from '@/components/WeatherIcon';
+import { OpenMeteoWeatherIcon } from '@/components/OpenMeteoWeatherIcon';
+import { TemperatureChart } from '@/components/TemperatureChart';
+import { TemperatureToggle } from '@/components/TemperatureToggle';
+import { RefreshCw, MapPin, Droplets, Wind, Eye, Thermometer, Gauge } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 type WeatherData = {
   current: {
     temp_c: number;
+    temp_f: number;
+    condition: {
+      text: string;
+      icon: string;
+    };
+    humidity: number;
+    wind_kph: number;
+    wind_mph: number;
+    precip_mm: number;
+    pressure_mb: number;
+    feels_like_c: number;
+    feels_like_f: number;
+  };
+  hourly: Array<{
+    time: string;
+    temp_c: number;
+    temp_f: number;
     condition: {
       text: string;
       icon: string;
@@ -15,32 +35,21 @@ type WeatherData = {
     humidity: number;
     wind_kph: number;
     precip_mm: number;
-    uv: number;
-  };
+    weather_code: number;
+  }>;
   forecast: {
     forecastday: Array<{
       date: string;
       day: {
         maxtemp_c: number;
         mintemp_c: number;
+        maxtemp_f: number;
+        mintemp_f: number;
         condition: {
           text: string;
           icon: string;
         };
         daily_chance_of_rain: number;
-      };
-    }>;
-  };
-  historical?: {
-    forecastday: Array<{
-      date: string;
-      day: {
-        maxtemp_c: number;
-        mintemp_c: number;
-        condition: {
-          text: string;
-          icon: string;
-        };
         totalprecip_mm: number;
       };
     }>;
@@ -49,41 +58,21 @@ type WeatherData = {
     name: string;
     region: string;
     country: string;
+    lat: number;
+    lon: number;
   };
-  suggestions?: string[];
-  nearbyFarms?: Array<{
-    farmName: string;
-    distance: number;
-    weather: {
-      temp_c: number;
-      condition: {
-        text: string;
-        icon: string;
-      };
-    };
-  }>;
+  suggestions: string[];
+  timezone: string;
+  last_updated: string;
 };
 
-type FarmingTip = {
-  condition: string;
-  tip: string;
-};
-
-const farmingTips: FarmingTip[] = [
-  { condition: 'Sunny', tip: 'Great day for harvesting crops. Ensure animals have shade and plenty of water.' },
-  { condition: 'Partly cloudy', tip: 'Good day for field work and light spraying of crops.' },
-  { condition: 'Cloudy', tip: 'Good conditions for transplanting seedlings.' },
-  { condition: 'Rain', tip: 'Hold off on spraying pesticides. Check drainage systems are working properly.' },
-  { condition: 'Thunderstorm', tip: 'Secure livestock in sheltered areas. Check for flooding in low-lying areas.' },
-  { condition: 'Drizzle', tip: 'Light moisture good for young plants. Monitor humidity in poultry houses.' },
-];
+type TemperatureUnit = 'celsius' | 'fahrenheit';
 
 export default function WeatherPage({ params }: { params: { farmId: string } }) {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
-  const [nearbyFarms, setNearbyFarms] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [currentTip, setCurrentTip] = useState('');
+  const [temperatureUnit, setTemperatureUnit] = useState<TemperatureUnit>('celsius');
   
   // Fetch weather data
   useEffect(() => {
@@ -99,29 +88,6 @@ export default function WeatherPage({ params }: { params: { farmId: string } }) 
         }
         
         setWeatherData(response.data);
-        
-        // Set farming suggestions if available
-        if (response.data.suggestions && response.data.suggestions.length > 0) {
-          setCurrentTip(response.data.suggestions[0]);
-        } else {
-          // Fallback to static tips based on current weather
-          const condition = response.data.current.condition.text.toLowerCase();
-          const tip = farmingTips.find(t => 
-            condition.includes(t.condition.toLowerCase())
-          ) || farmingTips[0];
-          setCurrentTip(tip.tip);
-        }
-        
-        // Fetch nearby farms weather
-        try {
-          const nearbyResponse = await apiClient.getNearbyFarmsWeather(params.farmId);
-          if (nearbyResponse.success) {
-            setNearbyFarms(nearbyResponse.data?.nearbyFarms || []);
-          }
-        } catch (nearbyError) {
-          console.warn('Failed to fetch nearby farms weather:', nearbyError);
-        }
-        
       } catch (err) {
         console.error('Weather fetch error:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch weather data');
@@ -141,7 +107,6 @@ export default function WeatherPage({ params }: { params: { farmId: string } }) 
       setIsLoading(true);
       setError('');
       
-      // Re-fetch weather data
       const fetchData = async () => {
         try {
           const response = await apiClient.getWeather(params.farmId);
@@ -151,19 +116,6 @@ export default function WeatherPage({ params }: { params: { farmId: string } }) 
           }
           
           setWeatherData(response.data);
-          
-          // Set farming suggestions if available
-          if (response.data.suggestions && response.data.suggestions.length > 0) {
-            setCurrentTip(response.data.suggestions[0]);
-          } else {
-            // Fallback to static tips based on current weather
-            const condition = response.data.current.condition.text.toLowerCase();
-            const tip = farmingTips.find(t => 
-              condition.includes(t.condition.toLowerCase())
-            ) || farmingTips[0];
-            setCurrentTip(tip.tip);
-          }
-          
         } catch (err) {
           console.error('Weather refresh error:', err);
           setError(err instanceof Error ? err.message : 'Failed to refresh weather data');
@@ -179,7 +131,21 @@ export default function WeatherPage({ params }: { params: { farmId: string } }) 
   // Format date for display
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-UG', { weekday: 'short', day: 'numeric', month: 'short' });
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'short', 
+      day: 'numeric', 
+      month: 'short' 
+    });
+  };
+
+  // Format time for display
+  const formatTime = (timeString: string) => {
+    const date = new Date(timeString);
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
   };
 
   if (isLoading) {
@@ -193,7 +159,7 @@ export default function WeatherPage({ params }: { params: { farmId: string } }) 
   if (error) {
     return (
       <div className="space-y-6">
-        {/* Weather Placeholder Header */}
+        {/* Error Header */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center">
             <div>
@@ -203,153 +169,33 @@ export default function WeatherPage({ params }: { params: { farmId: string } }) 
               </div>
             </div>
             <div className="mt-4 md:mt-0">
-              <button 
-                className="btn btn-primary"
+              <Button 
                 onClick={refreshWeather}
                 disabled={isLoading}
+                className="flex items-center space-x-2"
               >
-                {isLoading ? 'Refreshing...' : 'Try Again'}
-              </button>
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                <span>{isLoading ? 'Refreshing...' : 'Try Again'}</span>
+              </Button>
             </div>
           </div>
         </div>
 
-        {/* Current Weather Placeholder */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 p-6 rounded-lg flex flex-col items-center">
-              <div className="flex items-center mb-4">
-                <div className="w-16 h-16 bg-blue-200 dark:bg-blue-700 rounded-full flex items-center justify-center">
-                  <svg className="w-8 h-8 text-blue-600 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-                  </svg>
-                </div>
-                <div className="ml-4">
-                  <div className="h-8 w-16 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
-                  <div className="h-4 w-12 bg-gray-200 dark:bg-gray-600 rounded animate-pulse mt-2"></div>
-                </div>
-              </div>
-              <div className="h-4 w-24 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
-            </div>
-            
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
-              <h3 className="text-lg font-medium mb-4">Humidity</h3>
-              <div className="flex items-end">
-                <div className="h-8 w-16 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
-                <div className="ml-4 w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5 mt-2">
-                  <div className="bg-gray-300 dark:bg-gray-500 h-2.5 rounded-full w-3/4 animate-pulse"></div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
-              <h3 className="text-lg font-medium mb-4">Wind Speed</h3>
-              <div className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-                <div className="h-8 w-20 bg-gray-200 dark:bg-gray-600 rounded animate-pulse ml-2"></div>
-              </div>
-            </div>
-            
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
-              <h3 className="text-lg font-medium mb-4">Precipitation</h3>
-              <div className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                </svg>
-                <div className="h-8 w-16 bg-gray-200 dark:bg-gray-600 rounded animate-pulse ml-2"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* AI Farming Suggestions Placeholder */}
-        <div className="bg-primary-50 dark:bg-primary-900/30 rounded-lg shadow p-6">
+        {/* Error Message */}
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-6">
           <div className="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-            </svg>
-            <h3 className="text-xl font-bold ml-2">AI Farming Suggestions</h3>
-          </div>
-          <div className="mt-4">
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border-l-4 border-primary-500">
-              <div className="space-y-2">
-                <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-full"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-4/5"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-3/4"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 7-Day Forecast Placeholder */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h3 className="text-xl font-bold mb-6">7-Day Forecast</h3>
-          <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-            {Array.from({ length: 7 }).map((_, index) => (
-              <div key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg text-center">
-                <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-16 mx-auto mb-2"></div>
-                <div className="w-12 h-12 bg-gray-200 dark:bg-gray-600 rounded-full mx-auto my-2 animate-pulse"></div>
-                <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-20 mx-auto mb-2"></div>
-                <div className="flex justify-center space-x-2 mt-2">
-                  <div className="h-3 w-6 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
-                  <span className="text-gray-400">|</span>
-                  <div className="h-3 w-6 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
-                </div>
-                <div className="mt-2 flex items-center justify-center">
-                  <div className="h-3 w-8 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Weather Alerts Placeholder */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h3 className="text-xl font-bold mb-4">Weather Alerts for Farmers</h3>
-          
-          <div className="bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-500 p-4 mb-4">
-            <div className="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
-              <h4 className="ml-2 font-medium">Weather Service Temporarily Unavailable</h4>
             </div>
-            <p className="mt-2 text-sm">We're having trouble connecting to our weather service. Please try again in a few moments or check back later for the latest weather updates and farming recommendations.</p>
-          </div>
-        </div>
-
-        {/* Seasonal Forecast Placeholder */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h3 className="text-xl font-bold mb-4">Seasonal Outlook</h3>
-          <div className="space-y-2 mb-4">
-            <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-full"></div>
-            <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-4/5"></div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-              <h4 className="font-medium mb-2">Rainfall Outlook</h4>
-              <div className="space-y-2">
-                <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-full"></div>
-                <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-3/4"></div>
-              </div>
-            </div>
-            
-            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-              <h4 className="font-medium mb-2">Temperature Outlook</h4>
-              <div className="space-y-2">
-                <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-full"></div>
-                <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-5/6"></div>
-              </div>
-            </div>
-            
-            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-              <h4 className="font-medium mb-2">Farming Recommendations</h4>
-              <div className="space-y-2">
-                <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-full"></div>
-                <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-4/5"></div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
+                Weather Service Error
+              </h3>
+              <div className="mt-2 text-sm text-red-700 dark:text-red-300">
+                <p>{error}</p>
+                <p className="mt-1">Please check your farm location settings and try again.</p>
               </div>
             </div>
           </div>
@@ -360,240 +206,234 @@ export default function WeatherPage({ params }: { params: { farmId: string } }) 
 
   if (!weatherData) return null;
 
+  const currentTemp = temperatureUnit === 'celsius' ? weatherData.current.temp_c : weatherData.current.temp_f;
+  const feelsLikeTemp = temperatureUnit === 'celsius' ? weatherData.current.feels_like_c : weatherData.current.feels_like_f;
+  const windSpeed = temperatureUnit === 'celsius' ? weatherData.current.wind_kph : weatherData.current.wind_mph;
+  const windUnit = temperatureUnit === 'celsius' ? 'km/h' : 'mph';
+
   return (
     <div className="space-y-6">
-      {/* Current Weather */}
+      {/* Current Weather Header */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center">
           <div>
             <h2 className="text-2xl font-bold mb-2">Current Weather</h2>
-            <div className="flex items-center">
-              <p className="text-lg">{weatherData.location.name}, {weatherData.location.country}</p>
+            <div className="flex items-center text-gray-600 dark:text-gray-400">
+              <MapPin className="h-4 w-4 mr-1" />
+              <span>{weatherData.location.name}, {weatherData.location.country}</span>
+            </div>
+            <div className="text-sm text-gray-500 mt-1">
+              Last updated: {new Date(weatherData.last_updated).toLocaleString()}
             </div>
           </div>
-          <div className="mt-4 md:mt-0">
-            <button 
-              className="btn btn-primary"
+          <div className="mt-4 md:mt-0 flex items-center space-x-4">
+            <TemperatureToggle 
+              unit={temperatureUnit} 
+              onUnitChange={setTemperatureUnit}
+            />
+            <Button 
               onClick={refreshWeather}
               disabled={isLoading}
+              variant="outline"
+              className="flex items-center space-x-2"
             >
-              {isLoading ? 'Refreshing...' : 'Refresh Weather'}
-            </button>
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Current Weather Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Main Temperature Card */}
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 p-6 rounded-lg">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <OpenMeteoWeatherIcon 
+                weatherCode={weatherData.hourly[0]?.weather_code || 0} 
+                size={48}
+              />
+            </div>
+            <div className="text-right">
+              <div className="text-4xl font-bold text-blue-900 dark:text-blue-100">
+                {Math.round(currentTemp)}°
+              </div>
+              <div className="text-sm text-blue-700 dark:text-blue-300">
+                Feels like {Math.round(feelsLikeTemp)}°
+              </div>
+            </div>
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-medium text-blue-800 dark:text-blue-200">
+              {weatherData.current.condition.text}
+            </p>
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-          <div className="bg-blue-50 dark:bg-blue-900/30 p-6 rounded-lg flex flex-col items-center">
-            <div className="flex items-center mb-4">
-              <SmartWeatherIcon
-                condition={weatherData.current.condition.text}
-                src={`https:${weatherData.current.condition.icon}`}
-                alt={weatherData.current.condition.text}
-                width={64}
-                height={64}
-              />
-              <span className="text-4xl font-bold ml-2">{weatherData.current.temp_c}°C</span>
-            </div>
-            <p className="text-lg text-center">{weatherData.current.condition.text}</p>
+        {/* Humidity Card */}
+        <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
+          <div className="flex items-center mb-4">
+            <Droplets className="h-6 w-6 text-blue-500 mr-2" />
+            <h3 className="text-lg font-medium">Humidity</h3>
           </div>
-          
-          <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
-            <h3 className="text-lg font-medium mb-4">Humidity</h3>
-            <div className="flex items-end">
-              <span className="text-3xl font-bold">{weatherData.current.humidity}%</span>
-              <div className="ml-4 w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5 mt-2">
-                <div className="bg-blue-500 h-2.5 rounded-full" style={{ width: `${weatherData.current.humidity}%` }}></div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
-            <h3 className="text-lg font-medium mb-4">Wind Speed</h3>
-            <div className="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
-              <span className="text-3xl font-bold ml-2">{weatherData.current.wind_kph} km/h</span>
-            </div>
-          </div>
-          
-          <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
-            <h3 className="text-lg font-medium mb-4">Precipitation</h3>
-            <div className="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
-              <span className="text-3xl font-bold ml-2">{weatherData.current.precip_mm} mm</span>
+          <div className="flex items-end">
+            <span className="text-3xl font-bold">{weatherData.current.humidity}%</span>
+            <div className="ml-4 w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+              <div 
+                className="bg-blue-500 h-2.5 rounded-full transition-all duration-300" 
+                style={{ width: `${weatherData.current.humidity}%` }}
+              ></div>
             </div>
           </div>
         </div>
+        
+        {/* Wind Speed Card */}
+        <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
+          <div className="flex items-center mb-4">
+            <Wind className="h-6 w-6 text-green-500 mr-2" />
+            <h3 className="text-lg font-medium">Wind Speed</h3>
+          </div>
+          <div className="flex items-center">
+            <span className="text-3xl font-bold">{Math.round(windSpeed)}</span>
+            <span className="text-lg text-gray-600 dark:text-gray-400 ml-2">{windUnit}</span>
+          </div>
+        </div>
+        
+        {/* Pressure Card */}
+        <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
+          <div className="flex items-center mb-4">
+            <Gauge className="h-6 w-6 text-purple-500 mr-2" />
+            <h3 className="text-lg font-medium">Pressure</h3>
+          </div>
+          <div className="flex items-center">
+            <span className="text-3xl font-bold">{weatherData.current.pressure_mb}</span>
+            <span className="text-lg text-gray-600 dark:text-gray-400 ml-2">mb</span>
+          </div>
+        </div>
       </div>
-      
+
+      {/* Hourly Temperature Chart */}
+      <TemperatureChart 
+        hourlyData={weatherData.hourly.map(hour => ({
+          ...hour,
+          weather_code: hour.weather_code || 0
+        }))}
+        unit={temperatureUnit}
+      />
+
       {/* AI Farming Suggestions */}
-      <div className="bg-primary-50 dark:bg-primary-900/30 rounded-lg shadow p-6">
-        <div className="flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-          </svg>
-          <h3 className="text-xl font-bold ml-2">AI Farming Suggestions</h3>
-        </div>
-        <div className="mt-4">
-          {weatherData.suggestions && weatherData.suggestions.length > 0 ? (
-            <div className="space-y-3">
-              {weatherData.suggestions.map((suggestion, index) => (
-                <div key={index} className="bg-white dark:bg-gray-800 p-4 rounded-lg border-l-4 border-primary-500">
-                  <p className="text-sm">{suggestion}</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-lg">{currentTip}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Nearby Farms Weather */}
-      {nearbyFarms.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h3 className="text-xl font-bold mb-4">Nearby Farms Weather</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {nearbyFarms.map((farm, index) => (
-              <div key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                <div className="flex justify-between items-start mb-2">
-                  <h4 className="font-medium">{farm.farmName}</h4>
-                  <span className="text-sm text-gray-500">{farm.distance.toFixed(1)} km</span>
-                </div>
-                <div className="flex items-center">
-                  <SmartWeatherIcon
-                    condition={farm.weather.condition.text}
-                    src={`https:${farm.weather.condition.icon}`}
-                    alt={farm.weather.condition.text}
-                    width={32}
-                    height={32}
-                    className="mr-2"
-                  />
-                  <div>
-                    <span className="text-lg font-bold">{farm.weather.temp_c}°C</span>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{farm.weather.condition.text}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
+      {weatherData.suggestions && weatherData.suggestions.length > 0 && (
+        <div className="bg-primary-50 dark:bg-primary-900/30 rounded-lg shadow p-6">
+          <div className="flex items-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+            <h3 className="text-xl font-bold">AI Farming Suggestions</h3>
           </div>
-        </div>
-      )}
-
-      {/* Historical Weather (Past 10 Days) */}
-      {weatherData.historical && weatherData.historical.forecastday.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h3 className="text-xl font-bold mb-6">Historical Weather (Past 10 Days)</h3>
-          <div className="grid grid-cols-1 md:grid-cols-5 lg:grid-cols-10 gap-2">
-            {weatherData.historical.forecastday.map((day, index) => (
-              <div key={index} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-center">
-                <h4 className="text-xs font-medium mb-1">{formatDate(day.date)}</h4>
-                <SmartWeatherIcon
-                  condition={day.day.condition.text}
-                  src={`https:${day.day.condition.icon}`}
-                  alt={day.day.condition.text}
-                  width={32}
-                  height={32}
-                  className="mx-auto mb-1"
-                />
-                <div className="text-xs">
-                  <div className="flex justify-center space-x-1">
-                    <span className="font-medium">{Math.round(day.day.mintemp_c)}°</span>
-                    <span className="text-gray-400">|</span>
-                    <span className="font-medium">{Math.round(day.day.maxtemp_c)}°</span>
-                  </div>
-                  <div className="mt-1 text-blue-500">
-                    {day.day.totalprecip_mm}mm
-                  </div>
-                </div>
+          <div className="space-y-3">
+            {weatherData.suggestions.map((suggestion, index) => (
+              <div key={index} className="bg-white dark:bg-gray-800 p-4 rounded-lg border-l-4 border-primary-500">
+                <p className="text-sm">{suggestion}</p>
               </div>
             ))}
           </div>
         </div>
       )}
       
-      {/* 7-Day Forecast */}
+      {/* 3-Day Forecast */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h3 className="text-xl font-bold mb-6">7-Day Forecast</h3>
-        <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-          {weatherData.forecast.forecastday.map((day, index) => (
-            <div key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg text-center">
-              <h4 className="font-medium">{formatDate(day.date)}</h4>
-              <SmartWeatherIcon
-                condition={day.day.condition.text}
-                src={`https:${day.day.condition.icon}`}
-                alt={day.day.condition.text}
-                width={48}
-                height={48}
-                className="mx-auto my-2"
-              />
-              <p className="text-sm text-gray-600 dark:text-gray-400">{day.day.condition.text}</p>
-              <div className="flex justify-center space-x-2 mt-2">
-                <span className="text-sm font-medium">{Math.round(day.day.mintemp_c)}°</span>
-                <span className="text-gray-400">|</span>
-                <span className="text-sm font-medium">{Math.round(day.day.maxtemp_c)}°</span>
+        <h3 className="text-xl font-bold mb-6">3-Day Forecast</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {weatherData.forecast.forecastday.map((day, index) => {
+            const maxTemp = temperatureUnit === 'celsius' ? day.day.maxtemp_c : day.day.maxtemp_f;
+            const minTemp = temperatureUnit === 'celsius' ? day.day.mintemp_c : day.day.mintemp_f;
+            
+            return (
+              <div key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg text-center">
+                <h4 className="font-medium mb-2">{formatDate(day.date)}</h4>
+                <div className="flex justify-center mb-2">
+                  <OpenMeteoWeatherIcon 
+                    weatherCode={0} // We'll need to get this from the API
+                    size={48}
+                  />
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  {day.day.condition.text}
+                </p>
+                <div className="flex justify-center space-x-2 mb-2">
+                  <span className="text-lg font-bold">{Math.round(maxTemp)}°</span>
+                  <span className="text-gray-400">|</span>
+                  <span className="text-lg font-bold">{Math.round(minTemp)}°</span>
+                </div>
+                <div className="flex items-center justify-center text-sm text-blue-500">
+                  <Droplets className="h-4 w-4 mr-1" />
+                  <span>{day.day.daily_chance_of_rain}%</span>
+                </div>
+                {day.day.totalprecip_mm > 0 && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    {day.day.totalprecip_mm}mm expected
+                  </div>
+                )}
               </div>
-              <div className="mt-2 flex items-center justify-center text-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-                </svg>
-                <span>{day.day.daily_chance_of_rain}%</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
-      
+
       {/* Weather Alerts */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <h3 className="text-xl font-bold mb-4">Weather Alerts for Farmers</h3>
         
-        {/* Mock alert - in a real app, these would come from the API or be generated based on weather conditions */}
-        <div className="bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-500 p-4 mb-4">
-          <div className="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <h4 className="ml-2 font-medium">Heavy Rain Expected</h4>
+        {/* Generate alerts based on current conditions */}
+        {weatherData.current.precip_mm > 10 && (
+          <div className="bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-500 p-4 mb-4">
+            <div className="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <h4 className="ml-2 font-medium">Heavy Precipitation Expected</h4>
+            </div>
+            <p className="mt-2 text-sm">Heavy rainfall detected. Secure young plants and ensure proper drainage in fields and poultry houses.</p>
           </div>
-          <p className="mt-2 text-sm">Heavy rainfall expected on July 8-9. Secure young plants and ensure proper drainage in fields and poultry houses.</p>
-        </div>
+        )}
         
-        <div className="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4">
-          <div className="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <h4 className="ml-2 font-medium">Potential Flooding in Low-Lying Areas</h4>
+        {weatherData.current.wind_kph > 20 && (
+          <div className="bg-orange-50 dark:bg-orange-900/30 border-l-4 border-orange-500 p-4 mb-4">
+            <div className="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <h4 className="ml-2 font-medium">Strong Winds Detected</h4>
+            </div>
+            <p className="mt-2 text-sm">Wind speeds above 20 km/h. Secure greenhouses and protect young plants from wind damage.</p>
           </div>
-          <p className="mt-2 text-sm">With heavy rainfall forecast for multiple days, low-lying areas may experience flooding. Move livestock to higher ground if necessary.</p>
-        </div>
-      </div>
-      
-      {/* Seasonal Forecast */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h3 className="text-xl font-bold mb-4">Seasonal Outlook</h3>
-        <p className="mb-4">Uganda is currently experiencing the second rainy season (July-November). Overall rainfall is expected to be above average this year.</p>
+        )}
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-          <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-            <h4 className="font-medium mb-2">Rainfall Outlook</h4>
-            <p className="text-sm">Above average rainfall expected in central and eastern regions. Western regions may see normal to slightly below normal rainfall.</p>
+        {weatherData.current.temp_c > 35 && (
+          <div className="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4">
+            <div className="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <h4 className="ml-2 font-medium">High Temperature Alert</h4>
+            </div>
+            <p className="mt-2 text-sm">Temperatures above 35°C. Ensure adequate shade and water for livestock and crops. Consider adjusting work schedules.</p>
           </div>
-          
-          <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-            <h4 className="font-medium mb-2">Temperature Outlook</h4>
-            <p className="text-sm">Temperatures likely to remain near average for the season, with occasional hot spells between rain events.</p>
+        )}
+        
+        {/* Default message if no alerts */}
+        {weatherData.current.precip_mm <= 10 && weatherData.current.wind_kph <= 20 && weatherData.current.temp_c <= 35 && (
+          <div className="bg-green-50 dark:bg-green-900/30 border-l-4 border-green-500 p-4">
+            <div className="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h4 className="ml-2 font-medium">Favorable Weather Conditions</h4>
+            </div>
+            <p className="mt-2 text-sm">Current weather conditions are suitable for most farming activities. No immediate weather alerts.</p>
           </div>
-          
-          <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-            <h4 className="font-medium mb-2">Farming Recommendations</h4>
-            <p className="text-sm">Good conditions for planting maize, beans, and vegetables. Ensure proper drainage systems and consider raised beds for sensitive crops.</p>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
