@@ -74,22 +74,25 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     async redirect({ url, baseUrl }) {
-      // Check if this is a Google sign-in and user needs onboarding
-      if (url.includes('/dashboard') && url.includes('callbackUrl')) {
-        // Extract the callback URL to check if it's dashboard
-        const urlObj = new URL(url, baseUrl);
-        const callbackUrl = urlObj.searchParams.get('callbackUrl');
-        
-        if (callbackUrl && callbackUrl.includes('/dashboard')) {
-          // Redirect to onboarding instead of dashboard
-          return `${baseUrl}/auth/onboarding`;
-        }
+      // For Google sign-in, always redirect to onboarding first
+      // The onboarding page will check if user needs onboarding or redirect to dashboard
+      if (url.includes('/auth/onboarding') || url.includes('callbackUrl=/auth/onboarding')) {
+        return `${baseUrl}/auth/onboarding`;
+      }
+      
+      // If trying to go to dashboard, redirect to onboarding first
+      if (url.includes('/dashboard')) {
+        return `${baseUrl}/auth/onboarding`;
       }
       
       // Allows relative callback URLs
-      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
       // Allows callback URLs on the same origin
-      else if (new URL(url).origin === baseUrl) return url;
+      else if (new URL(url).origin === baseUrl) {
+        return url;
+      }
       return baseUrl;
     },
   },

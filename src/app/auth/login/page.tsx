@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiClient } from '@/lib/api';
-import { GoogleSignInButton } from '@/components/auth/google-signin-button';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -213,26 +212,6 @@ export default function Login() {
                       {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
                     </Button>
                   </form>
-
-                  {/* Divider */}
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t border-gray-300 dark:border-gray-600" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-white dark:bg-gray-900 px-2 text-gray-500 dark:text-gray-400">
-                        Or continue with
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Google Sign-In */}
-                  <GoogleSignInButton 
-                    className="w-full" 
-                    variant="outline" 
-                    size="lg"
-                    showUserMenu={false}
-                  />
                 </>
               )}
 
