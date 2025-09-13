@@ -68,6 +68,14 @@ class ApiClient {
       'Content-Type': 'application/json',
     };
 
+    // Always check localStorage for the latest token
+    if (typeof window !== 'undefined') {
+      const localToken = localStorage.getItem('auth-token');
+      if (localToken) {
+        this.token = localToken;
+      }
+    }
+
     if (this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
@@ -292,6 +300,12 @@ class ApiClient {
     return this.request(`/farms/${farmSlug}/eggs/sales`, {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  async deleteEggSale(farmSlug: string, id: string): Promise<ApiResponse> {
+    return this.request(`/farms/${farmSlug}/eggs/sales/${id}`, {
+      method: 'DELETE',
     });
   }
 

@@ -1,0 +1,50 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#16a34a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#15803d;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="cardGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.95" />
+      <stop offset="100%" style="stop-color:#f8fafc;stop-opacity:0.95" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGradient)"/>
+  
+  <!-- Decorative elements -->
+  <circle cx="100" cy="100" r="60" fill="rgba(255,255,255,0.1)"/>
+  <circle cx="1100" cy="530" r="80" fill="rgba(255,255,255,0.08)"/>
+  <circle cx="200" cy="500" r="40" fill="rgba(255,255,255,0.06)"/>
+  
+  <!-- Main content card -->
+  <rect x="100" y="100" width="1000" height="430" rx="20" fill="url(#cardGradient)" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+  
+  <!-- Logo area -->
+  <circle cx="200" cy="200" r="60" fill="#16a34a"/>
+  <text x="200" y="210" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="40" font-weight="bold">🌱</text>
+  
+  <!-- Main title -->
+  <text x="320" y="180" fill="#1f2937" font-family="Arial, sans-serif" font-size="48" font-weight="bold">FarmKeeper</text>
+  
+  <!-- Subtitle -->
+  <text x="320" y="230" fill="#6b7280" font-family="Arial, sans-serif" font-size="24">Farm Management System for Uganda</text>
+  
+  <!-- Description -->
+  <text x="320" y="280" fill="#374151" font-family="Arial, sans-serif" font-size="18" font-weight="500">Complete farm management solution for Ugandan farmers</text>
+  
+  <!-- Features -->
+  <text x="320" y="320" fill="#4b5563" font-family="Arial, sans-serif" font-size="16">📊 Analytics & Reports</text>
+  <text x="320" y="350" fill="#4b5563" font-family="Arial, sans-serif" font-size="16">🐄 Livestock Management</text>
+  <text x="320" y="380" fill="#4b5563" font-family="Arial, sans-serif" font-size="16">🌾 Crop Tracking</text>
+  <text x="320" y="410" fill="#4b5563" font-family="Arial, sans-serif" font-size="16">💰 Financial Management</text>
+  
+  <!-- Call to action -->
+  <rect x="320" y="440" width="200" height="50" rx="25" fill="#16a34a"/>
+  <text x="420" y="470" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="18" font-weight="bold">Start Managing</text>
+  
+  <!-- URL -->
+  <text x="1000" y="580" text-anchor="end" fill="rgba(255,255,255,0.8)" font-family="Arial, sans-serif" font-size="16">farmkeeper.vercel.app</text>
+</svg>

@@ -1,0 +1,152 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 1200px;
+            height: 630px;
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 60px;
+            max-width: 900px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: #16a34a;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            margin-bottom: 30px;
+        }
+        
+        .title {
+            font-size: 48px;
+            font-weight: bold;
+            color: #1f2937;
+            margin: 0 0 10px 0;
+        }
+        
+        .subtitle {
+            font-size: 24px;
+            color: #6b7280;
+            margin: 0 0 20px 0;
+        }
+        
+        .description {
+            font-size: 18px;
+            color: #374151;
+            margin: 0 0 30px 0;
+            font-weight: 500;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .feature {
+            font-size: 16px;
+            color: #4b5563;
+        }
+        
+        .cta {
+            background: #16a34a;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 18px;
+            font-weight: bold;
+            display: inline-block;
+            text-decoration: none;
+        }
+        
+        .url {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 16px;
+        }
+        
+        .decorative {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+        
+        .decorative-1 {
+            width: 120px;
+            height: 120px;
+            top: 50px;
+            left: 50px;
+        }
+        
+        .decorative-2 {
+            width: 160px;
+            height: 160px;
+            bottom: 50px;
+            right: 50px;
+        }
+        
+        .decorative-3 {
+            width: 80px;
+            height: 80px;
+            top: 200px;
+            left: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="decorative decorative-1"></div>
+        <div class="decorative decorative-2"></div>
+        <div class="decorative decorative-3"></div>
+        
+        <div class="card">
+            <div class="logo">🌱</div>
+            <h1 class="title">FarmKeeper</h1>
+            <p class="subtitle">Farm Management System for Uganda</p>
+            <p class="description">Complete farm management solution for Ugandan farmers</p>
+            
+            <div class="features">
+                <div class="feature">📊 Analytics & Reports</div>
+                <div class="feature">🐄 Livestock Management</div>
+                <div class="feature">🌾 Crop Tracking</div>
+                <div class="feature">💰 Financial Management</div>
+            </div>
+            
+            <a href="#" class="cta">Start Managing</a>
+        </div>
+        
+        <div class="url">farmkeeper.vercel.app</div>
+    </div>
+</body>
+</html>

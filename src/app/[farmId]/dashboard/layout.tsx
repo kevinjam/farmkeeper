@@ -119,12 +119,21 @@ export default function DashboardLayout({
         const localToken = localStorage.getItem('auth-token');
         console.log('Dashboard: Local token available:', !!localToken);
         
+        // Prepare headers
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        
+        // Add Authorization header as fallback if we have a local token
+        if (localToken) {
+          headers['Authorization'] = `Bearer ${localToken}`;
+          console.log('Dashboard: Using Authorization header with local token');
+        }
+        
         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001'}/api/auth/status`, {
           credentials: 'include',
           cache: 'no-store', // Don't cache authentication status
-          headers: {
-            'Content-Type': 'application/json',
-          }
+          headers
         });
         
         const data = await response.json();

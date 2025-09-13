@@ -2,6 +2,7 @@
 
 import { useState, useEffect, FormEvent } from 'react';
 import { format } from 'date-fns';
+import { apiClient } from '@/lib/api';
 
 interface SalesRecord {
   _id: string;
@@ -41,14 +42,13 @@ export default function SalesTracker({ farmId }: SalesTrackerProps) {
       setIsLoading(true);
       setLoadError('');
       
-      const response = await fetch(`/api/farms/${farmId}/eggs/sales`);
+      const response = await apiClient.getEggSales(farmId);
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch sales records');
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to fetch sales records');
       }
       
-      const data = await response.json();
-      setSales(data);
+      setSales(response.data || []);
     } catch (error: any) {
       setLoadError(error.message);
       console.error('Error fetching sales records:', error);
@@ -75,24 +75,17 @@ export default function SalesTracker({ farmId }: SalesTrackerProps) {
       setFormError('');
       setFormSuccess('');
       
-      const response = await fetch(`/api/farms/${farmId}/eggs/sales`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          date,
-          quantity: parseInt(quantity),
-          price: parseFloat(price),
-          customer,
-          paymentMethod,
-          notes
-        }),
+      const response = await apiClient.createEggSale(farmId, {
+        date,
+        quantity: parseInt(quantity),
+        price: parseFloat(price),
+        customer,
+        paymentMethod,
+        notes
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save sales record');
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to save sales record');
       }
       
       // Reset form
@@ -119,12 +112,10 @@ export default function SalesTracker({ farmId }: SalesTrackerProps) {
     }
     
     try {
-      const response = await fetch(`/api/farms/${farmId}/eggs/sales/${id}`, {
-        method: 'DELETE',
-      });
+      const response = await apiClient.deleteEggSale(farmId, id);
       
-      if (!response.ok) {
-        throw new Error('Failed to delete sales record');
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to delete sales record');
       }
       
       // Refresh the sales list
@@ -169,7 +160,7 @@ export default function SalesTracker({ farmId }: SalesTrackerProps) {
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 required
               />
             </div>
@@ -183,7 +174,7 @@ export default function SalesTracker({ farmId }: SalesTrackerProps) {
                 min="1"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 placeholder="Number of eggs sold"
                 required
               />
@@ -203,7 +194,7 @@ export default function SalesTracker({ farmId }: SalesTrackerProps) {
                   step="0.01"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
-                  className="block w-full pl-7 pr-12 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full pl-7 pr-12 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   placeholder="0.00"
                   required
                 />
@@ -220,7 +211,7 @@ export default function SalesTracker({ farmId }: SalesTrackerProps) {
                 type="text"
                 value={customer}
                 onChange={(e) => setCustomer(e.target.value)}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 placeholder="Customer name or 'Market'"
                 required
               />
@@ -233,7 +224,7 @@ export default function SalesTracker({ farmId }: SalesTrackerProps) {
               <select
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value)}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 required
               >
                 <option value="cash">Cash</option>
@@ -253,7 +244,7 @@ export default function SalesTracker({ farmId }: SalesTrackerProps) {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               placeholder="Optional notes about the sale"
             />
           </div>

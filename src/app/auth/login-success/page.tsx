@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { CheckCircle, ArrowRight, Loader2 } from 'lucide-react';
@@ -16,6 +16,17 @@ function LoginSuccessContent() {
   const farmSlug = searchParams.get('farmSlug') || localStorage.getItem('farmSlug');
   const farmName = searchParams.get('farmName') || localStorage.getItem('farmName');
 
+  const redirectToDashboard = useCallback(() => {
+    if (farmSlug && !isRedirecting) {
+      setIsRedirecting(true);
+      const dashboardUrl = `/${farmSlug}/dashboard`;
+      console.log('Redirecting to dashboard:', dashboardUrl);
+      
+      // Use router.push for client-side navigation
+      router.push(dashboardUrl);
+    }
+  }, [farmSlug, isRedirecting, router]);
+
   useEffect(() => {
     if (!farmSlug) {
       console.log('No farm slug found, redirecting to login');
@@ -28,7 +39,6 @@ function LoginSuccessContent() {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          redirectToDashboard();
           return 0;
         }
         return prev - 1;
@@ -38,16 +48,12 @@ function LoginSuccessContent() {
     return () => clearInterval(timer);
   }, [farmSlug, router]);
 
-  const redirectToDashboard = () => {
-    if (farmSlug && !isRedirecting) {
-      setIsRedirecting(true);
-      const dashboardUrl = `/${farmSlug}/dashboard`;
-      console.log('Redirecting to dashboard:', dashboardUrl);
-      
-      // Use router.push for client-side navigation
-      router.push(dashboardUrl);
+  // Separate useEffect to handle redirect when countdown reaches 0
+  useEffect(() => {
+    if (countdown === 0 && farmSlug && !isRedirecting) {
+      redirectToDashboard();
     }
-  };
+  }, [countdown, farmSlug, isRedirecting, redirectToDashboard]);
 
   const handleManualRedirect = () => {
     redirectToDashboard();
