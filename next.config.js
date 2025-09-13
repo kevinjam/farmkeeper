@@ -44,7 +44,7 @@ const nextConfig = {
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://www.gstatic.com",
               "style-src 'self' 'unsafe-inline' https://accounts.google.com https://www.gstatic.com",
               "img-src 'self' data: https: blob:",
-              "connect-src 'self' https://accounts.google.com https://www.googleapis.com http://localhost:5001",
+              "connect-src 'self' https://accounts.google.com https://www.googleapis.com http://localhost:5001 https://farmkeep-backend.onrender.com",
               "frame-src 'self' https://accounts.google.com",
               "font-src 'self' https://fonts.gstatic.com",
             ].join('; '),
