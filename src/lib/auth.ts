@@ -14,7 +14,7 @@ export const authOptions: NextAuthOptions = {
       if (account?.provider === "google") {
         try {
           // Check if user exists in our backend
-          const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:5001'}/api/auth/google-signin`, {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://farmkeep-backend.onrender.com'}/api/auth/google-signin`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
