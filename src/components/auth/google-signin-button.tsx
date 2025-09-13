@@ -95,7 +95,7 @@ export function GoogleSignInButton({
 
   return (
     <Button
-      onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
+      onClick={() => signIn('google', { callbackUrl: '/auth/onboarding' })}
       className={`flex items-center space-x-2 ${className}`}
       variant={variant}
       size={size}

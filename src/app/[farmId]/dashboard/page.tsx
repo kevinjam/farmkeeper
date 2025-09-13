@@ -4,6 +4,7 @@ import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api';
+import { DashboardGuard } from '@/components/auth/dashboard-guard';
 
 // Dashboard Statistics Card Component
 const StatCard = ({ 
@@ -278,7 +279,7 @@ const QuickLinkCard = ({
 );
 
 
-export default function Dashboard({ params }: { params: { farmId: string } }) {
+function DashboardContent({ params }: { params: { farmId: string } }) {
   const { farmId: farmSlug } = params;
 
   if (!farmSlug) {
@@ -804,5 +805,13 @@ const fetchFinancialAnalytics = async () => {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Dashboard({ params }: { params: { farmId: string } }) {
+  return (
+    <DashboardGuard>
+      <DashboardContent params={params} />
+    </DashboardGuard>
   );
 }
