@@ -57,3 +57,5 @@ logs/
 .next
 *.md
 node_modules/.env.local
+.env
+.env.local
