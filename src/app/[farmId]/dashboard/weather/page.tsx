@@ -191,8 +191,168 @@ export default function WeatherPage({ params }: { params: { farmId: string } }) 
 
   if (error) {
     return (
-      <div className="bg-red-50 dark:bg-red-900 p-4 rounded-md">
-        <p className="text-red-600 dark:text-red-200">{error}</p>
+      <div className="space-y-6">
+        {/* Weather Placeholder Header */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center">
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Weather Information</h2>
+              <div className="flex items-center">
+                <p className="text-lg text-gray-600 dark:text-gray-400">Weather data temporarily unavailable</p>
+              </div>
+            </div>
+            <div className="mt-4 md:mt-0">
+              <button 
+                className="btn btn-primary"
+                onClick={refreshWeather}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Refreshing...' : 'Try Again'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Current Weather Placeholder */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 p-6 rounded-lg flex flex-col items-center">
+              <div className="flex items-center mb-4">
+                <div className="w-16 h-16 bg-blue-200 dark:bg-blue-700 rounded-full flex items-center justify-center">
+                  <svg className="w-8 h-8 text-blue-600 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                  </svg>
+                </div>
+                <div className="ml-4">
+                  <div className="h-8 w-16 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
+                  <div className="h-4 w-12 bg-gray-200 dark:bg-gray-600 rounded animate-pulse mt-2"></div>
+                </div>
+              </div>
+              <div className="h-4 w-24 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
+            </div>
+            
+            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
+              <h3 className="text-lg font-medium mb-4">Humidity</h3>
+              <div className="flex items-end">
+                <div className="h-8 w-16 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
+                <div className="ml-4 w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5 mt-2">
+                  <div className="bg-gray-300 dark:bg-gray-500 h-2.5 rounded-full w-3/4 animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
+              <h3 className="text-lg font-medium mb-4">Wind Speed</h3>
+              <div className="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+                <div className="h-8 w-20 bg-gray-200 dark:bg-gray-600 rounded animate-pulse ml-2"></div>
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
+              <h3 className="text-lg font-medium mb-4">Precipitation</h3>
+              <div className="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
+                <div className="h-8 w-16 bg-gray-200 dark:bg-gray-600 rounded animate-pulse ml-2"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* AI Farming Suggestions Placeholder */}
+        <div className="bg-primary-50 dark:bg-primary-900/30 rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+            <h3 className="text-xl font-bold ml-2">AI Farming Suggestions</h3>
+          </div>
+          <div className="mt-4">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border-l-4 border-primary-500">
+              <div className="space-y-2">
+                <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-full"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-4/5"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-3/4"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 7-Day Forecast Placeholder */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h3 className="text-xl font-bold mb-6">7-Day Forecast</h3>
+          <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+            {Array.from({ length: 7 }).map((_, index) => (
+              <div key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg text-center">
+                <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-16 mx-auto mb-2"></div>
+                <div className="w-12 h-12 bg-gray-200 dark:bg-gray-600 rounded-full mx-auto my-2 animate-pulse"></div>
+                <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-20 mx-auto mb-2"></div>
+                <div className="flex justify-center space-x-2 mt-2">
+                  <div className="h-3 w-6 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
+                  <span className="text-gray-400">|</span>
+                  <div className="h-3 w-6 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
+                </div>
+                <div className="mt-2 flex items-center justify-center">
+                  <div className="h-3 w-8 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Weather Alerts Placeholder */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h3 className="text-xl font-bold mb-4">Weather Alerts for Farmers</h3>
+          
+          <div className="bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-500 p-4 mb-4">
+            <div className="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <h4 className="ml-2 font-medium">Weather Service Temporarily Unavailable</h4>
+            </div>
+            <p className="mt-2 text-sm">We're having trouble connecting to our weather service. Please try again in a few moments or check back later for the latest weather updates and farming recommendations.</p>
+          </div>
+        </div>
+
+        {/* Seasonal Forecast Placeholder */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h3 className="text-xl font-bold mb-4">Seasonal Outlook</h3>
+          <div className="space-y-2 mb-4">
+            <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-full"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-4/5"></div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+              <h4 className="font-medium mb-2">Rainfall Outlook</h4>
+              <div className="space-y-2">
+                <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-full"></div>
+                <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-3/4"></div>
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+              <h4 className="font-medium mb-2">Temperature Outlook</h4>
+              <div className="space-y-2">
+                <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-full"></div>
+                <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-5/6"></div>
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+              <h4 className="font-medium mb-2">Farming Recommendations</h4>
+              <div className="space-y-2">
+                <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-full"></div>
+                <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-4/5"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

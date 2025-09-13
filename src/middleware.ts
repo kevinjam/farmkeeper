@@ -8,7 +8,7 @@ export const runtime = 'nodejs';
 export const preferredRegion = 'auto';
 
 // API base URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://farmkeep-backend.onrender.com';
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
 
 async function verifyTokenWithBackend(token: string) {
   try {

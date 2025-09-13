@@ -107,7 +107,7 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
     setError('');
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://farmkeep-backend.onrender.com'}/api/auth/complete-google-signup`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001'}/api/auth/complete-google-signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
