@@ -1,6 +1,6 @@
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: process.env.BACKEND_BASE_URL || 'http://localhost:5001/api',
+  BASE_URL: process.env.BACKEND_BASE_URL || 'https://farmkeep-backend.onrender.com/api',
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
   // FRONTEND_URL: 'http://localhost:5001',
   TIMEOUT: 10000, // 10 seconds
