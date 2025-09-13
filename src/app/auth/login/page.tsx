@@ -37,6 +37,19 @@ export default function Login() {
     setError('');
     setLoginSuccess(false);
 
+    // Clear any existing tokens before login
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('farmSlug');
+      localStorage.removeItem('farmName');
+      localStorage.removeItem('auth-token');
+      localStorage.removeItem('token');
+      
+      // Clear all cookies
+      document.cookie.split(";").forEach(function(c) { 
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+      });
+    }
+
     try {
       console.log('Attempting login with email:', email);
       

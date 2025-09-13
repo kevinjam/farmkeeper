@@ -54,7 +54,8 @@ export async function middleware(request: NextRequest) {
 
       if (isPublicPath && decodedToken) {
         const farmSlug = decodedToken.farmSlug;
-        if (farmSlug) {
+        if (farmSlug && path !== '/auth/login') {
+          // Only redirect to dashboard if not explicitly trying to login
           const dashboardUrl = `/${farmSlug}/dashboard`;
           console.log('[Middleware] Public path, valid token. Redirecting to dashboard:', dashboardUrl);
           return NextResponse.redirect(new URL(dashboardUrl, request.url));

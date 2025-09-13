@@ -104,8 +104,99 @@ export default function AnalyticsPage() {
     if (loading) {
         return (
             <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-center h-64">
-                    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
+                <div className="space-y-8">
+                    {/* Header Skeleton */}
+                    <div className="text-center">
+                        <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-64 mx-auto mb-4 animate-pulse"></div>
+                        <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-96 mx-auto animate-pulse"></div>
+                    </div>
+
+                    {/* KPI Cards Skeleton */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {[...Array(4)].map((_, i) => (
+                            <div key={i} className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mb-2 animate-pulse"></div>
+                                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-20 mb-2 animate-pulse"></div>
+                                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-16 animate-pulse"></div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Charts Grid Skeleton */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Income vs Expenses Chart Skeleton */}
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-4 animate-pulse"></div>
+                            <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                        </div>
+
+                        {/* Egg Trends Chart Skeleton */}
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-40 mb-4 animate-pulse"></div>
+                            <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                        </div>
+                    </div>
+
+                    {/* Top Flocks Table Skeleton */}
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32 animate-pulse"></div>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead className="bg-gray-50 dark:bg-gray-900">
+                                    <tr>
+                                        {[...Array(6)].map((_, i) => (
+                                            <th key={i} className="px-6 py-3">
+                                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20 animate-pulse"></div>
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    {[...Array(3)].map((_, i) => (
+                                        <tr key={i}>
+                                            {[...Array(6)].map((_, j) => (
+                                                <td key={j} className="px-6 py-4">
+                                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 animate-pulse"></div>
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Performance Insights Skeleton */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-40 mb-4 animate-pulse"></div>
+                            <div className="space-y-3">
+                                {[...Array(3)].map((_, i) => (
+                                    <div key={i} className="flex items-center space-x-3">
+                                        <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+                                        <div className="flex-1">
+                                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-1 animate-pulse"></div>
+                                            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse"></div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-36 mb-4 animate-pulse"></div>
+                            <div className="space-y-3">
+                                {[...Array(4)].map((_, i) => (
+                                    <div key={i} className="flex justify-between items-center">
+                                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse"></div>
+                                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 animate-pulse"></div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         );

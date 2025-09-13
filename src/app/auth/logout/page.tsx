@@ -29,6 +29,15 @@ export default function Logout() {
         if (typeof window !== 'undefined') {
           sessionStorage.removeItem('farmRedirect');
           localStorage.removeItem('user');
+          localStorage.removeItem('farmSlug');
+          localStorage.removeItem('farmName');
+          localStorage.removeItem('auth-token');
+          localStorage.removeItem('token');
+          
+          // Clear all cookies
+          document.cookie.split(";").forEach(function(c) { 
+            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+          });
         }
         
         // Redirect to login page after successful logout
