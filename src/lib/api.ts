@@ -454,6 +454,42 @@ class ApiClient {
       body: JSON.stringify(settings),
     });
   }
+
+  // Billing endpoints
+  async getPlans(): Promise<ApiResponse<any>> {
+    return this.request('/billing/plans');
+  }
+
+  async getTrialStatus(): Promise<ApiResponse<any>> {
+    return this.request('/billing/trial-status');
+  }
+
+  async initiateSubscription(data: {
+    plan: 'basic' | 'pro';
+    paymentMethod?: string;
+    phoneNumber?: string;
+  }): Promise<ApiResponse<any>> {
+    return this.request('/billing/subscribe', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getSubscriptionHistory(): Promise<ApiResponse<any[]>> {
+    return this.request('/billing/history');
+  }
+
+  // Generic request method for custom endpoints
+  async get(endpoint: string): Promise<ApiResponse<any>> {
+    return this.request(endpoint);
+  }
+
+  async post(endpoint: string, data?: any): Promise<ApiResponse<any>> {
+    return this.request(endpoint, {
+      method: 'POST',
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
 }
 
 // Create and export a singleton instance

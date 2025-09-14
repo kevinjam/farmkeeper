@@ -306,9 +306,9 @@ function RegisterForm() {
                       onChange={handleChange}
                       disabled={isLoading}
                     >
-                      <option value="trial">Free Trial - 14 days</option>
-                      <option value="pro">Pro Plan - UGX 75,000/month</option>
-                      <option value="enterprise">Enterprise Plan - UGX 150,000/month</option>
+                      <option value="trial">Free Trial - 30 days with Pro features</option>
+                      <option value="basic">Basic Plan - UGX 1,500/month</option>
+                      <option value="pro">Pro Plan - UGX 4,000/month</option>
                     </select>
                   </div>
 
