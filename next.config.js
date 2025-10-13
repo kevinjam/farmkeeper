@@ -5,6 +5,8 @@ const withPWA = require('next-pwa')({
   register: true,
 });
 
+const withNextIntl = require('next-intl/plugin')('./src/i18n.ts');
+
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
@@ -63,4 +65,4 @@ const nextConfig = {
   },
 };
 
-module.exports = withPWA(nextConfig);
+module.exports = withNextIntl(withPWA(nextConfig));

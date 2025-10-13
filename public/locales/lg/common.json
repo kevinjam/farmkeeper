@@ -1,0 +1,85 @@
+{
+  "navigation": {
+    "dashboard": "Okuyimirira",
+    "livestock": "Ebisolo",
+    "crops": "Ebimera",
+    "finances": "Ssente",
+    "feedManagement": "Okukola Ebirya",
+    "eggsSales": "Amagi n'Okutunda",
+    "weather": "Embeera y'Obudde",
+    "analytics": "Okulaba Ebikwata ku Farm",
+    "subscription": "Okusaba Omukwano",
+    "billing": "Okusasula",
+    "settings": "Eby'okukola"
+  },
+  "settings": {
+    "title": "Eby'okukola ku Farm",
+    "subtitle": "Kola ebikwata ku farm yo n'ebyo oyagala",
+    "farmInformation": "Amawulire ga Farm",
+    "farmName": "Elinnya lya Farm",
+    "farmNamePlaceholder": "Wandiika elinnya lya farm yo",
+    "farmUrl": "Ekifo Farm yo ku Internet",
+    "locationSettings": "Eby'okukola ku Kifo",
+    "locationDescription": "Leka kifo kya farm yo okusobola okulaba embeera y'obudde n'ebikugamba ku kulima.",
+    "locationTroubleshooting": "Okukola ku Kifo",
+    "locationTroubleshootingTitle": "Bwe kiba nga \"Kozesa Kifo Kino\" tekikola:",
+    "locationTroubleshootingTips": [
+      "Laba nga oyagadde okukozesa kifo mu computer yo",
+      "Kakasa nga okozeseza HTTPS (kyetaagisa okulaba kifo)",
+      "Ddamu okulaba olupapula n'okukkiriza okulaba kifo",
+      "Kozesa emu ku bifo bya Uganda by'omanyi",
+      "Wandiika kifo kyo bwe kimanyi"
+    ],
+    "commonUgandaCoordinates": "Bifo bya Uganda by'omanyi:",
+    "ugandaCoordinates": [
+      "Kampala: 0.3476°N, 32.5825°E",
+      "Entebbe: 0.0644°N, 32.4465°E",
+      "Jinja: 0.4244°N, 33.2042°E"
+    ],
+    "generalSettings": "Eby'okukola Byonna",
+    "currency": "Ssente",
+    "language": "Olulimi",
+    "timezone": "Ekiseera",
+    "notificationsEnabled": "Kkiriza amawulire",
+    "saveSettings": "Tereka Eby'okukola",
+    "saving": "Ntereka...",
+    "loadingSettings": "Nlaba eby'okukola...",
+    "settingsUpdated": "Eby'okukola bya farm byongedde!",
+    "settingsError": "Tewali kusobola okutereka eby'okukola bya farm",
+    "settingsLoadError": "Tewali kusobola okulaba eby'okukola bya farm"
+  },
+  "languages": {
+    "en": "Lungereza",
+    "lg": "Luganda",
+    "sw": "Kiswahili"
+  },
+  "currencies": {
+    "UGX": "Silingi ya Uganda (UGX)",
+    "USD": "Dola ya Amerika (USD)",
+    "EUR": "Yuro (EUR)"
+  },
+  "timezones": {
+    "Africa/Kampala": "Africa/Kampala (EAT)",
+    "Africa/Nairobi": "Africa/Nairobi (EAT)",
+    "Africa/Dar_es_Salaam": "Africa/Dar_es_Salaam (EAT)"
+  },
+  "common": {
+    "loading": "Nlaba...",
+    "error": "Kizibu",
+    "success": "Kikoleddwa",
+    "save": "Tereka",
+    "cancel": "Sazaamu",
+    "edit": "Kyuusa",
+    "delete": "Sazaamu",
+    "add": "Gattako",
+    "close": "Ggalawo",
+    "back": "Dda",
+    "next": "Ddala",
+    "previous": "Eby'edda",
+    "search": "Noonya",
+    "filter": "Londa",
+    "sort": "Londa",
+    "refresh": "Ddamu",
+    "retry": "Ddamu Okuddamu"
+  }
+}

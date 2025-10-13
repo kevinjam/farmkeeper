@@ -1,6 +1,8 @@
 // src/middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+// Lightweight locale handling without relying on next-intl middleware redirects
+const SUPPORTED_LOCALES = ['en', 'lg', 'sw'] as const;
 
 // Force Node.js runtime for middleware
 export const runtime = 'nodejs';
@@ -28,54 +30,80 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const origin = request.nextUrl.origin;
 
-  const isProtectedPath = path.includes('/dashboard') || path.startsWith('/api/private');
-  const isPublicPath = path === '/auth/login' || path === '/auth/register' || path === '/auth/forgot-password';
-  const token = request.cookies.get('token')?.value;
-
-  console.log('[Middleware] Path:', path);
-  console.log('[Middleware] Origin:', origin);
-  console.log('[Middleware] Token present:', !!token);
-  console.log('[Middleware] API Base URL:', API_BASE_URL);
-
-  if (isProtectedPath && !token) {
-    console.log('[Middleware] Protected path, no token. Redirecting to /auth/login');
-    return NextResponse.redirect(new URL('/auth/login', request.url));
+  // Skip for API routes and static files
+  if (path.startsWith('/api/') || path.startsWith('/_next/') || path.includes('.')) {
+    return NextResponse.next();
   }
 
-  if (token) {
-    try {
-      const decodedToken = await verifyTokenWithBackend(token);
-      console.log('[Middleware] Decoded token:', decodedToken);
+  // Locale handling: support optional leading locale segment (/en, /lg, /sw)
+  const segments = path.split('/'); // ['', 'en', 'auth', 'login']
+  const first = segments[1];
+  const hasLocalePrefix = (SUPPORTED_LOCALES as readonly string[]).includes(first);
 
-      if (isProtectedPath && !decodedToken) {
-        console.log('[Middleware] Protected path, invalid token. Redirecting to /auth/login');
-        return NextResponse.redirect(new URL('/auth/login', request.url));
-      }
+  if (hasLocalePrefix) {
+    // Persist locale and rewrite to filesystem path without locale so existing routes work
+    const locale = first;
+    const strippedPath = '/' + segments.slice(2).join('/');
+    const url = new URL(strippedPath || '/', request.url);
+    const response = NextResponse.rewrite(url);
+    response.cookies.set('NEXT_LOCALE', locale, { path: '/' });
+    return response;
+  }
 
-      if (isPublicPath && decodedToken) {
-        const farmSlug = decodedToken.farmSlug;
-        if (farmSlug && path !== '/auth/login') {
-          // Only redirect to dashboard if not explicitly trying to login
-          const dashboardUrl = `/${farmSlug}/dashboard`;
-          console.log('[Middleware] Public path, valid token. Redirecting to dashboard:', dashboardUrl);
-          return NextResponse.redirect(new URL(dashboardUrl, request.url));
+  // Check if this is a farm route: /[farmId]/dashboard/... or /[farmId]/billing
+  const isFarmRoute = segments.length >= 2 && 
+    (segments[2] === 'dashboard' || segments[2] === 'billing' || segments.length === 2);
+  
+  if (isFarmRoute) {
+    // This is a farm route, handle authentication
+    const isProtectedPath = path.includes('/dashboard') || path.includes('/billing');
+    const token = request.cookies.get('token')?.value;
+
+    console.log('[Middleware] Farm route:', path);
+    console.log('[Middleware] Is protected:', isProtectedPath);
+    console.log('[Middleware] Token present:', !!token);
+
+    if (isProtectedPath && !token) {
+      console.log('[Middleware] Protected farm path, no token. Redirecting to login');
+      return NextResponse.redirect(new URL('/en/auth/login', request.url));
+    }
+
+    if (token) {
+      try {
+        const decodedToken = await verifyTokenWithBackend(token);
+        console.log('[Middleware] Decoded token:', decodedToken);
+
+        if (isProtectedPath && !decodedToken) {
+          console.log('[Middleware] Protected farm path, invalid token. Redirecting to login');
+          return NextResponse.redirect(new URL('/en/auth/login', request.url));
+        }
+      } catch (error) {
+        console.error('[Middleware] Token verification error:', error);
+        if (isProtectedPath) {
+          console.log('[Middleware] Token verification failed, redirecting to login');
+          return NextResponse.redirect(new URL('/en/auth/login', request.url));
         }
       }
-    } catch (error) {
-      console.error('[Middleware] Token verification error:', error);
-      if (isProtectedPath) {
-        console.log('[Middleware] Token verification failed, redirecting to login');
-        return NextResponse.redirect(new URL('/auth/login', request.url));
-      }
     }
+
+    return NextResponse.next();
   }
 
-  console.log('[Middleware] No redirect, proceeding.');
-  return NextResponse.next();
+  // If no locale prefix and not a farm route, redirect to default locale
+  if (segments.length > 1) {
+    // This is likely a route that should have a locale prefix
+    const newUrl = new URL(`/en${path}`, request.url);
+    return NextResponse.redirect(newUrl);
+  }
+
+  // If no locale prefix, redirect to default locale (/en + current path)
+  const redirectUrl = new URL(`/en${path === '/' ? '' : path}`, request.url);
+  return NextResponse.redirect(redirectUrl);
 }
 
 export const config = {
   matcher: [
-    '/((?!api/(?!private)|_next/static|_next/image|favicon.ico).*)',
+    // avoid intercepting api, next internals, and common static files
+    '/((?!api|_next|favicon.ico|robots.txt|manifest.json|icons|public).*)',
   ],
 };

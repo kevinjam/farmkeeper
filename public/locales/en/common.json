@@ -1,0 +1,85 @@
+{
+  "navigation": {
+    "dashboard": "Dashboard",
+    "livestock": "Livestock",
+    "crops": "Crops",
+    "finances": "Finances",
+    "feedManagement": "Feed Management",
+    "eggsSales": "Eggs & Sales",
+    "weather": "Weather",
+    "analytics": "Analytics",
+    "subscription": "Subscription",
+    "billing": "Billing",
+    "settings": "Settings"
+  },
+  "settings": {
+    "title": "Farm Settings",
+    "subtitle": "Manage your farm information and preferences",
+    "farmInformation": "Farm Information",
+    "farmName": "Farm Name",
+    "farmNamePlaceholder": "Enter your farm name",
+    "farmUrl": "Farm URL",
+    "locationSettings": "Location Settings",
+    "locationDescription": "Set your farm's location to enable weather forecasts and local farming recommendations.",
+    "locationTroubleshooting": "Location Troubleshooting",
+    "locationTroubleshootingTitle": "If \"Use Current Location\" fails:",
+    "locationTroubleshootingTips": [
+      "Check that location permissions are enabled in your browser",
+      "Make sure you're using HTTPS (required for geolocation)",
+      "Try refreshing the page and allowing location access",
+      "Use one of the preset Uganda locations as a fallback",
+      "Manually enter your coordinates if you know them"
+    ],
+    "commonUgandaCoordinates": "Common Uganda coordinates:",
+    "ugandaCoordinates": [
+      "Kampala: 0.3476°N, 32.5825°E",
+      "Entebbe: 0.0644°N, 32.4465°E",
+      "Jinja: 0.4244°N, 33.2042°E"
+    ],
+    "generalSettings": "General Settings",
+    "currency": "Currency",
+    "language": "Language",
+    "timezone": "Timezone",
+    "notificationsEnabled": "Enable notifications",
+    "saveSettings": "Save Settings",
+    "saving": "Saving...",
+    "loadingSettings": "Loading settings...",
+    "settingsUpdated": "Farm settings updated successfully!",
+    "settingsError": "Failed to save farm settings",
+    "settingsLoadError": "Failed to load farm settings"
+  },
+  "languages": {
+    "en": "English",
+    "lg": "Luganda",
+    "sw": "Swahili"
+  },
+  "currencies": {
+    "UGX": "Ugandan Shilling (UGX)",
+    "USD": "US Dollar (USD)",
+    "EUR": "Euro (EUR)"
+  },
+  "timezones": {
+    "Africa/Kampala": "Africa/Kampala (EAT)",
+    "Africa/Nairobi": "Africa/Nairobi (EAT)",
+    "Africa/Dar_es_Salaam": "Africa/Dar_es_Salaam (EAT)"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "refresh": "Refresh",
+    "retry": "Try Again"
+  }
+}

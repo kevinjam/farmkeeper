@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Poppins } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/components/providers/session-provider';
+import { LanguageProvider } from '@/contexts/LanguageContext';
 import '@/lib/suppress-warnings';
 
 // Initialize fonts
@@ -211,14 +212,16 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <AuthProvider>
-          <ThemeProvider
-            defaultTheme="system"
-            storageKey="farmkeeper-ui-theme"
-          >
-            {children}
-          </ThemeProvider>
-        </AuthProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <ThemeProvider
+              defaultTheme="system"
+              storageKey="farmkeeper-ui-theme"
+            >
+              {children}
+            </ThemeProvider>
+          </AuthProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

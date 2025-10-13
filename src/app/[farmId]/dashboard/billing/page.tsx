@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { 
   CreditCard, 
@@ -19,7 +20,8 @@ import {
   X,
   Loader2,
   Phone,
-  DollarSign
+  DollarSign,
+  LogIn
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,6 +37,8 @@ interface Plan {
   livestockLimit: number | null;
   features: string[];
   description: string;
+  popular?: boolean;
+  limitations?: string[];
 }
 
 interface TrialStatus {
@@ -49,17 +53,22 @@ interface TrialStatus {
 }
 
 interface Plans {
-  basic: Plan;
-  pro: Plan;
+  free: Plan;
+  trial: Plan;
+  premium: Plan;
 }
 
-export default function BillingPage() {
+export default function BillingPage({ params }: { params: { farmId: string } }) {
+  const { farmId } = params;
+  const router = useRouter();
   const [trialStatus, setTrialStatus] = useState<TrialStatus | null>(null);
   const [plans, setPlans] = useState<Plans | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedPlan, setSelectedPlan] = useState<'basic' | 'pro' | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<'premium' | null>(null);
   const [isSubscribing, setIsSubscribing] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   
   // Payment modal state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -69,54 +78,54 @@ export default function BillingPage() {
   const [paymentStep, setPaymentStep] = useState<'method' | 'details' | 'processing' | 'success' | 'error'>('method');
 
   useEffect(() => {
-    // For now, let's use mock data to test the UI
-    // TODO: Replace with actual API calls once backend is running
-    setTrialStatus({
-      plan: 'trial',
-      subscriptionStatus: 'active',
-      livestockLimit: null,
-      features: ['weather', 'marketPrices'],
-      trialStartDate: new Date().toISOString(),
-      daysLeft: 25,
-      isTrialExpired: false,
-      trialEndDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString()
-    });
-
-    setPlans({
-      basic: {
-        name: 'Basic Plan',
-        price: 'UGX 1,500',
-        period: 'month',
-        livestockLimit: 10,
-        features: ['weather', 'basic_analytics'],
-        description: 'Perfect for small farms getting started'
-      },
-      pro: {
-        name: 'Pro Plan',
-        price: 'UGX 4,000',
-        period: 'month',
-        livestockLimit: null,
-        features: ['weather', 'marketPrices', 'advanced_analytics', 'priority_support'],
-        description: 'For progressive farmers and cooperatives'
-      }
-    });
-
-    setIsLoading(false);
-
-    // Uncomment these when backend is ready:
-    // fetchTrialStatus();
-    // fetchPlans();
+    checkAuthentication();
   }, []);
+
+  const checkAuthentication = async () => {
+    try {
+      // Check if user has a valid token
+      const token = localStorage.getItem('auth-token');
+      if (!token) {
+        setIsAuthenticated(false);
+        setAuthChecked(true);
+        return;
+      }
+
+      // Test the token by making a simple API call
+      const response = await apiClient.getSubscriptionStatus();
+      if (response.success) {
+        setIsAuthenticated(true);
+        setTrialStatus(response.data);
+        // Fetch plans after successful auth
+        await fetchPlans();
+      } else {
+        setIsAuthenticated(false);
+        // Clear invalid token
+        localStorage.removeItem('auth-token');
+      }
+    } catch (error) {
+      console.error('Authentication check failed:', error);
+      setIsAuthenticated(false);
+      localStorage.removeItem('auth-token');
+    } finally {
+      setAuthChecked(true);
+      setIsLoading(false);
+    }
+  };
 
   const fetchTrialStatus = async () => {
     try {
-      const response = await apiClient.getTrialStatus();
+      const response = await apiClient.getSubscriptionStatus();
       if (response.success) {
         setTrialStatus(response.data);
       }
-    } catch (error) {
-      console.error('Error fetching trial status:', error);
-      setError('Failed to load trial status');
+    } catch (error: any) {
+      console.error('Error fetching subscription status:', error);
+      if (error.message?.includes('Token is not valid') || error.message?.includes('Authentication')) {
+        setError('Please log in to view your subscription status');
+      } else {
+        setError('Failed to load subscription status');
+      }
     }
   };
 
@@ -126,20 +135,25 @@ export default function BillingPage() {
       if (response.success) {
         setPlans(response.data);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching plans:', error);
-      setError('Failed to load subscription plans');
-    } finally {
-      setIsLoading(false);
+      if (error.message?.includes('Token is not valid') || error.message?.includes('Authentication')) {
+        setIsAuthenticated(false);
+        localStorage.removeItem('auth-token');
+      } else {
+        setError('Failed to load subscription plans');
+      }
     }
   };
 
-  const handleSubscribe = async (plan: 'basic' | 'pro') => {
+  const handleSubscribe = async (plan: 'premium') => {
+    console.log('[Billing] Starting subscription for plan:', plan);
     setSelectedPlan(plan);
     setShowPaymentModal(true);
     setPaymentStep('method');
     setPhoneNumber('');
     setPaymentMethod('mobile_money');
+    console.log('[Billing] Payment modal opened');
   };
 
   const handlePaymentMethodSelect = (method: 'mobile_money' | 'ussd' | 'card') => {
@@ -154,24 +168,7 @@ export default function BillingPage() {
     setPaymentStep('processing');
     
     try {
-      // For demo purposes, simulate a successful payment
-      // In production, this would call the actual API
-      setTimeout(() => {
-        if (paymentMethod === 'mobile_money') {
-          // Simulate mobile money payment
-          setPaymentStep('success');
-        } else if (paymentMethod === 'ussd') {
-          // Simulate USSD payment
-          setPaymentStep('success');
-        } else if (paymentMethod === 'card') {
-          // Simulate card payment redirect
-          setPaymentStep('success');
-        }
-        setIsProcessingPayment(false);
-      }, 2000);
-
-      // Uncomment this when backend is ready:
-      /*
+      // Call the actual API to initiate Flutterwave payment
       const response = await apiClient.initiateSubscription({
         plan: selectedPlan,
         paymentMethod,
@@ -181,20 +178,50 @@ export default function BillingPage() {
       if (response.success) {
         // Handle successful payment initiation
         if (response.data.paymentUrl) {
-          // Redirect to Flutterwave payment page
-          window.open(response.data.paymentUrl, '_blank');
-          setPaymentStep('success');
+          // Redirect to Flutterwave payment page in new tab
+          const paymentWindow = window.open(response.data.paymentUrl, '_blank', 'width=800,height=600');
+          
+          // Monitor the payment window
+          const checkClosed = setInterval(async () => {
+            if (paymentWindow?.closed) {
+              clearInterval(checkClosed);
+              // Check actual payment status after window closes
+              setTimeout(async () => {
+                const isPaymentCompleted = await checkPaymentStatus(response.data.reference);
+                if (isPaymentCompleted) {
+                  setPaymentStep('success');
+                } else {
+                  setPaymentStep('error');
+                }
+                setIsProcessingPayment(false);
+              }, 2000); // Wait 2 seconds for webhook to process
+            }
+          }, 1000);
+          
         } else if (response.data.ussdCode) {
           // Show USSD code for manual payment
           setPaymentStep('success');
+          setIsProcessingPayment(false);
+        } else {
+          // Direct success for other payment methods
+          setPaymentStep('success');
+          setIsProcessingPayment(false);
         }
       } else {
         setPaymentStep('error');
+        setIsProcessingPayment(false);
       }
-      */
-    } catch (error) {
+    } catch (error: any) {
       console.error('Payment error:', error);
-      setPaymentStep('error');
+      if (error.message?.includes('Token is not valid') || error.message?.includes('Authentication')) {
+        setIsAuthenticated(false);
+        localStorage.removeItem('auth-token');
+        setError('Your session has expired. Please log in again.');
+        setPaymentStep('error');
+      } else {
+        setError('Payment failed. Please try again.');
+        setPaymentStep('error');
+      }
       setIsProcessingPayment(false);
     }
   };
@@ -206,6 +233,32 @@ export default function BillingPage() {
     setPhoneNumber('');
     setPaymentMethod('mobile_money');
     setIsProcessingPayment(false);
+  };
+
+  const checkPaymentStatus = async (reference: string) => {
+    try {
+      // Check payment status with backend
+      const response = await apiClient.get(`/billing/payment-status/${reference}`);
+      if (response.success && response.data.status === 'completed') {
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error checking payment status:', error);
+      return false;
+    }
+  };
+
+  const handleContinueToDashboard = async () => {
+    // Refresh subscription status before closing modal
+    await fetchTrialStatus();
+    closePaymentModal();
+    
+    // Set a flag to refresh subscription status in dashboard
+    localStorage.setItem('refreshSubscription', 'true');
+    
+    // Redirect to dashboard to show updated features
+    window.location.href = `/${farmId}/dashboard`;
   };
 
   const getFeatureIcon = (feature: string) => {
@@ -237,6 +290,56 @@ export default function BillingPage() {
         return feature;
     }
   };
+
+  // Authentication guard
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-900 dark:to-green-900/20">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="w-16 h-16 border-t-4 border-b-4 border-primary-600 rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-400">Checking authentication...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-900 dark:to-green-900/20">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="text-center max-w-md mx-auto"
+            >
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+                <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <LogIn className="h-8 w-8 text-red-600 dark:text-red-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  Authentication Required
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  You need to be logged in to access the billing and subscription features.
+                </p>
+                <Button 
+                  onClick={() => router.push('/auth/login')}
+                  className="w-full"
+                >
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Go to Login
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -350,60 +453,7 @@ export default function BillingPage() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"
           >
-            {/* Basic Plan */}
-            <Card className="relative">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>{plans.basic.name}</span>
-                  <Badge variant="secondary">Popular</Badge>
-                </CardTitle>
-                <CardDescription>{plans.basic.description}</CardDescription>
-                <div className="text-3xl font-bold text-primary-600">
-                  {plans.basic.price}
-                  <span className="text-lg font-normal text-gray-600 dark:text-gray-400">
-                    /{plans.basic.period}
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                      <Users className="h-4 w-4" />
-                      <span>
-                        {plans.basic.livestockLimit === null 
-                          ? 'Unlimited livestock records' 
-                          : `${plans.basic.livestockLimit} livestock records`
-                        }
-                      </span>
-                    </div>
-                    {plans.basic.features.map((feature, index) => (
-                      <div key={index} className="flex items-center gap-2 text-sm">
-                        {getFeatureIcon(feature)}
-                        <span>{getFeatureName(feature)}</span>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <Button 
-                    className="w-full" 
-                    onClick={() => handleSubscribe('basic')}
-                    disabled={isSubscribing && selectedPlan === 'basic'}
-                  >
-                    {isSubscribing && selectedPlan === 'basic' ? (
-                      'Processing...'
-                    ) : (
-                      <>
-                        Subscribe to Basic
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Pro Plan */}
+            {/* Premium Plan */}
             <Card className="relative border-2 border-primary-200 dark:border-primary-800">
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                 <Badge className="bg-primary-600 text-white">
@@ -412,12 +462,12 @@ export default function BillingPage() {
                 </Badge>
               </div>
               <CardHeader>
-                <CardTitle>{plans.pro.name}</CardTitle>
-                <CardDescription>{plans.pro.description}</CardDescription>
+                <CardTitle>{plans.premium.name}</CardTitle>
+                <CardDescription>{plans.premium.description}</CardDescription>
                 <div className="text-3xl font-bold text-primary-600">
-                  {plans.pro.price}
+                  {plans.premium.price}
                   <span className="text-lg font-normal text-gray-600 dark:text-gray-400">
-                    /{plans.pro.period}
+                    /{plans.premium.period}
                   </span>
                 </div>
               </CardHeader>
@@ -428,7 +478,7 @@ export default function BillingPage() {
                       <Users className="h-4 w-4" />
                       <span>Unlimited livestock records</span>
                     </div>
-                    {plans.pro.features.map((feature, index) => (
+                    {plans.premium.features.map((feature: string, index: number) => (
                       <div key={index} className="flex items-center gap-2 text-sm">
                         {getFeatureIcon(feature)}
                         <span>{getFeatureName(feature)}</span>
@@ -439,14 +489,14 @@ export default function BillingPage() {
                   <Button 
                     className="w-full" 
                     variant="default"
-                    onClick={() => handleSubscribe('pro')}
-                    disabled={isSubscribing && selectedPlan === 'pro'}
+                    onClick={() => handleSubscribe('premium')}
+                    disabled={isSubscribing && selectedPlan === 'premium'}
                   >
-                    {isSubscribing && selectedPlan === 'pro' ? (
+                    {isSubscribing && selectedPlan === 'premium' ? (
                       'Processing...'
                     ) : (
                       <>
-                        Subscribe to Pro
+                        Subscribe to Premium
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </>
                     )}
@@ -493,13 +543,13 @@ export default function BillingPage() {
                     <div className="font-medium">Airtel Money</div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">*185*99#</div>
                   </div>
-                </div>
+  </div>
                 
                 <div className="flex items-center gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                   <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
                     <CreditCard className="h-4 w-4 text-blue-600" />
                   </div>
-                  <div>
+                <div>
                     <div className="font-medium">Card Payment</div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">Visa, Mastercard</div>
                   </div>
@@ -534,7 +584,7 @@ export default function BillingPage() {
               {selectedPlan && plans && (
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
                   <div className="flex items-center justify-between">
-                    <div>
+                     <div>
                       <h3 className="font-semibold text-gray-900 dark:text-white">
                         {plans[selectedPlan].name}
                       </h3>
@@ -550,7 +600,7 @@ export default function BillingPage() {
                         /{plans[selectedPlan].period}
                       </div>
                     </div>
-                  </div>
+                    </div>
                 </div>
               )}
 
@@ -573,12 +623,12 @@ export default function BillingPage() {
                         <div className="text-left">
                           <div className="font-medium text-gray-900 dark:text-white">
                             Mobile Money
-                          </div>
+            </div>
                           <div className="text-sm text-gray-600 dark:text-gray-400">
                             MTN Mobile Money, Airtel Money
-                          </div>
-                        </div>
-                      </div>
+            </div>
+        </div>
+    </div>
                     </button>
 
                     <button
@@ -602,7 +652,7 @@ export default function BillingPage() {
 
                     <button
                       onClick={() => handlePaymentMethodSelect('card')}
-                      className="w-full p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                      className="w-full p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors relative"
                     >
                       <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/20 rounded-full flex items-center justify-center">
@@ -616,6 +666,11 @@ export default function BillingPage() {
                             Visa, Mastercard
                           </div>
                         </div>
+                      </div>
+                      <div className="absolute top-2 right-2">
+                        <Badge variant="secondary" className="text-xs">
+                          Coming Soon
+                        </Badge>
                       </div>
                     </button>
                   </div>
@@ -642,8 +697,8 @@ export default function BillingPage() {
                         />
                         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                           Enter your MTN or Airtel phone number
-                        </p>
-                      </div>
+        </p>
+      </div>
                     </div>
                   )}
 
@@ -668,11 +723,11 @@ export default function BillingPage() {
                       <div className="flex items-center space-x-2 mb-2">
                         <CreditCard className="h-5 w-5 text-purple-600" />
                         <span className="font-medium text-purple-900 dark:text-purple-200">
-                          Secure Card Payment
+                          Card Payment Coming Soon
                         </span>
                       </div>
                       <div className="text-sm text-purple-800 dark:text-purple-300">
-                        <p>You will be redirected to a secure payment page to enter your card details.</p>
+                        <p>Card payments will be available soon. Please use Mobile Money or USSD for now.</p>
                       </div>
                     </div>
                   )}
@@ -688,9 +743,12 @@ export default function BillingPage() {
                     <Button
                       onClick={handlePaymentSubmit}
                       className="flex-1"
-                      disabled={paymentMethod === 'mobile_money' && !phoneNumber}
+                      disabled={
+                        (paymentMethod === 'mobile_money' && !phoneNumber) ||
+                        paymentMethod === 'card'
+                      }
                     >
-                      Continue Payment
+                      {paymentMethod === 'card' ? 'Coming Soon' : 'Continue Payment'}
                     </Button>
                   </div>
                 </div>
@@ -705,7 +763,7 @@ export default function BillingPage() {
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     Please wait while we process your payment...
                   </p>
-                </div>
+      </div>
               )}
 
               {paymentStep === 'success' && (
@@ -717,10 +775,10 @@ export default function BillingPage() {
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
                     Your subscription has been activated. You can now access all features.
                   </p>
-                  <Button onClick={closePaymentModal} className="w-full">
+                  <Button onClick={handleContinueToDashboard} className="w-full">
                     Continue to Dashboard
                   </Button>
-                </div>
+            </div>
               )}
 
               {paymentStep === 'error' && (
@@ -743,8 +801,8 @@ export default function BillingPage() {
                     <Button onClick={closePaymentModal} className="flex-1">
                       Cancel
                     </Button>
-                  </div>
-                </div>
+            </div>
+        </div>
               )}
             </motion.div>
           </div>

@@ -460,12 +460,12 @@ class ApiClient {
     return this.request('/billing/plans');
   }
 
-  async getTrialStatus(): Promise<ApiResponse<any>> {
+  async getSubscriptionStatus(): Promise<ApiResponse<any>> {
     return this.request('/billing/trial-status');
   }
 
   async initiateSubscription(data: {
-    plan: 'basic' | 'pro';
+    plan: 'premium';
     paymentMethod?: string;
     phoneNumber?: string;
   }): Promise<ApiResponse<any>> {
@@ -475,8 +475,26 @@ class ApiClient {
     });
   }
 
+  async cancelSubscription(): Promise<ApiResponse<any>> {
+    return this.request('/billing/cancel', {
+      method: 'POST',
+    });
+  }
+
   async getSubscriptionHistory(): Promise<ApiResponse<any[]>> {
     return this.request('/billing/history');
+  }
+
+  // User Language endpoints
+  async getUserLanguage(): Promise<ApiResponse<{ language: string }>> {
+    return this.request('/auth/language');
+  }
+
+  async updateUserLanguage(language: 'en' | 'lg' | 'sw'): Promise<ApiResponse<{ language: string }>> {
+    return this.request('/auth/language', {
+      method: 'PUT',
+      body: JSON.stringify({ language }),
+    });
   }
 
   // Generic request method for custom endpoints

@@ -4,99 +4,125 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from '@/hooks/useTranslations';
 
-// Navigation items for sidebar
-const navigationItems = [
+// Navigation items for sidebar with subscription requirements
+const getNavigationItems = (t: (key: string) => string) => [
   {
-    name: 'Dashboard',
-    href: '/dashboard', // Base path will be combined with farmId
+    name: t('navigation.dashboard'),
+    href: '/dashboard',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
       </svg>
     ),
+    requiredFeatures: [], // Available to all
   },
   {
-    name: 'Livestock',
-    href: '/dashboard/livestock', // Base path will be combined with farmId
+    name: t('navigation.livestock'),
+    href: '/dashboard/livestock',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
       </svg>
     ),
+    requiredFeatures: ['livestock'], // Available to all plans
   },
   {
-    name: 'Crops',
-    href: '/dashboard/crops', // Base path will be combined with farmId
+    name: t('navigation.crops'),
+    href: '/dashboard/crops',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4M8 16H4M8 8H4M12.5 4.2c.4.2.8.4 1.2.8L16 7.5l3-2.9c.7-.7 1.7-1.1 2.7-.7 1 .4 1.6 1.1 1.8 2.1.2 1-.1 2-.8 2.6L19.5 12l3.2 3.4c.7.7 1 1.7.8 2.6-.2 1-.8 1.8-1.8 2.1-1 .4-2 0-2.7-.7L16 16.5l-2.3 2.5c-.4.4-.8.6-1.2.8" />
       </svg>
     ),
+    requiredFeatures: ['crops'], // Available to all plans
   },
   {
-    name: 'Finances',
-    href: '/dashboard/finances', // Base path will be combined with farmId
+    name: t('navigation.finances'),
+    href: '/dashboard/finances',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
+    requiredFeatures: ['finances'], // Premium only
+    isPremium: true,
   },
   {
-    name: 'Feed Management',
-    href: '/dashboard/feed', // Base path will be combined with farmId
+    name: t('navigation.feedManagement'),
+    href: '/dashboard/feed',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h18v18H3zM8 8h.01M12 8h.01M16 8h.01M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01" />
       </svg>
     ),
+    requiredFeatures: ['feed_management'], // Premium only
+    isPremium: true,
   },
   {
-    name: 'Eggs & Sales',
-    href: '/dashboard/eggs', // Base path will be combined with farmId
+    name: t('navigation.eggsSales'),
+    href: '/dashboard/eggs',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
       </svg>
     ),
+    requiredFeatures: ['eggs_sales'], // Premium only
+    isPremium: true,
   },
   {
-    name: 'Weather',
-    href: '/dashboard/weather', // Base path will be combined with farmId
+    name: t('navigation.weather'),
+    href: '/dashboard/weather',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
       </svg>
     ),
+    requiredFeatures: ['weather'], // Available to all plans
   },
   {
-    name: 'Analytics',
-    href: '/dashboard/analytics', // Base path will be combined with farmId
+    name: t('navigation.analytics'),
+    href: '/dashboard/analytics',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
       </svg>
     ),
+    requiredFeatures: ['analytics'], // Premium only
+    isPremium: true,
   },
   {
-    name: 'Billing',
-    href: '/dashboard/billing', // Base path will be combined with farmId
+    name: t('navigation.subscription'),
+    href: '/dashboard/subscription',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    requiredFeatures: [], // Available to all
+  },
+  {
+    name: t('navigation.billing'),
+    href: '/dashboard/billing',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
       </svg>
     ),
+    requiredFeatures: ['billing'], // Premium only
+    isPremium: true,
   },
   {
-    name: 'Settings',
-    href: '/dashboard/settings', // Base path will be combined with farmId
+    name: t('navigation.settings'),
+    href: '/dashboard/settings',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
       </svg>
     ),
+    requiredFeatures: ['settings'], // Available to all plans
   },
 ];
 
@@ -114,9 +140,35 @@ export default function DashboardLayout({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(true); // Assume authenticated until proven otherwise
+  const [subscriptionStatus, setSubscriptionStatus] = useState<{
+    plan: 'free' | 'trial' | 'premium';
+    features: string[];
+  } | null>(null);
   
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useTranslations('common');
+
+  const fetchSubscriptionStatus = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001'}/api/billing/trial-status`, {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setSubscriptionStatus({
+            plan: data.data.plan,
+            features: data.data.features || []
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching subscription status:', error);
+    }
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -168,6 +220,9 @@ export default function DashboardLayout({
         setFarmName(data.farm?.name || farmId.charAt(0).toUpperCase() + farmId.slice(1) + ' Farm');
         setUserName(data.user?.name || 'Farm Owner');
         setIsAuthenticated(true);
+        
+        // Fetch subscription status after authentication
+        await fetchSubscriptionStatus();
       } catch (err) {
         console.error('Dashboard: Error fetching user data:', err);
         setError('Failed to load user data. Please try refreshing the page.');
@@ -178,6 +233,22 @@ export default function DashboardLayout({
 
     fetchUserData();
   }, [farmId, router]);
+
+  // Check for subscription refresh flag
+  useEffect(() => {
+    const shouldRefresh = localStorage.getItem('refreshSubscription');
+    if (shouldRefresh === 'true') {
+      localStorage.removeItem('refreshSubscription');
+      fetchSubscriptionStatus();
+    }
+  }, []);
+
+  // Helper function to check if user has access to a feature
+  const hasFeatureAccess = (requiredFeatures: string[]) => {
+    if (!subscriptionStatus) return false;
+    if (requiredFeatures.length === 0) return true; // No requirements = available to all
+    return requiredFeatures.every(feature => subscriptionStatus.features.includes(feature));
+  };
 
   if (isLoading) {
     return (
@@ -229,24 +300,66 @@ export default function DashboardLayout({
         </div>
         
         <nav className="px-4 py-2 space-y-1">
-          {navigationItems.map((item) => {
-            const isActive = pathname.includes(item.href);
+          {getNavigationItems(t).map((item) => {
+            const fullHref = `/${farmId}${item.href}`;
+            const isDashboardRoot = item.href === '/dashboard';
+            const isActive = isDashboardRoot
+              ? pathname === fullHref
+              : (pathname === fullHref || pathname.startsWith(`${fullHref}/`));
+            const hasAccess = hasFeatureAccess(item.requiredFeatures);
+            const isLocked = !hasAccess && item.requiredFeatures.length > 0;
+            
             return (
-              <Link
-                key={item.name}
-                href={`/${farmId}${item.href}`}
-                className={`flex items-center px-2 py-2 rounded-md text-sm font-medium ${
-                  isActive
-                    ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300'
-                    : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-                aria-current={isActive ? 'page' : undefined}
-              >
-                <div className={`mr-3 ${isActive ? 'text-primary-600 dark:text-primary-400' : ''}`}>
-                  {item.icon}
-                </div>
-                {item.name}
-              </Link>
+              <div key={item.name} className="relative">
+                {isLocked ? (
+                  <div className="flex items-center px-2 py-2 rounded-md text-sm font-medium text-gray-400 dark:text-gray-500 cursor-not-allowed">
+                    <div className="mr-3">
+                      {item.icon}
+                    </div>
+                    <span className="flex-1">{item.name}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                ) : (
+                  <Link
+                    href={`/${farmId}${item.href}`}
+                    className={`flex items-center px-2 py-2 rounded-md text-sm font-medium ${
+                      isActive
+                        ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300'
+                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                    aria-current={isActive ? 'page' : undefined}
+                    onClick={() => setIsSidebarOpen(false)}
+                  >
+                    <div className={`mr-3 ${isActive ? 'text-primary-600 dark:text-primary-400' : ''}`}>
+                      {item.icon}
+                    </div>
+                    {item.name}
+                  </Link>
+                )}
+                
+                {/* Upgrade prompt for locked items */}
+                {isLocked && (
+                  <div className="absolute left-full top-0 ml-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 z-50 opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
+                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                      {item.isPremium ? 'Premium Feature' : 'Upgrade Required'}
+                    </div>
+                    <div className="text-sm text-gray-800 dark:text-white mb-2">
+                      Upgrade to Premium to access {item.name}
+                    </div>
+                    <Link
+                      href={`/${farmId}/dashboard/subscription`}
+                      className="inline-flex items-center text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                    >
+                      Upgrade Now
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Link>
+                  </div>
+                )}
+              </div>
             );
           })}
         </nav>
@@ -282,7 +395,15 @@ export default function DashboardLayout({
             </button>
             
             <h1 className="text-xl font-semibold text-gray-800 dark:text-white">
-              {navigationItems.find(item => pathname.includes(item.href))?.name || 'Dashboard'}
+              {(
+                getNavigationItems(t).find((item) => {
+                  const fullHref = `/${farmId}${item.href}`;
+                  const isDashboardRoot = item.href === '/dashboard';
+                  return isDashboardRoot
+                    ? pathname === fullHref
+                    : (pathname === fullHref || pathname.startsWith(`${fullHref}/`));
+                })?.name
+              ) || 'Dashboard'}
             </h1>
             
             <div className="flex items-center space-x-4">
