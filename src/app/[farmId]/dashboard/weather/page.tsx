@@ -150,8 +150,113 @@ export default function WeatherPage({ params }: { params: { farmId: string } }) 
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary-600"></div>
+      <div className="space-y-6">
+        {/* Loading Header */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center">
+            <div>
+              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-2 animate-pulse"></div>
+              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-64 mb-1 animate-pulse"></div>
+              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-32 animate-pulse"></div>
+            </div>
+            <div className="mt-4 md:mt-0 flex items-center space-x-4">
+              <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse"></div>
+              <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-20 animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Loading Weather Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Main Temperature Card */}
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 p-6 rounded-lg">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-12 w-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+              <div className="text-right">
+                <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded w-20 mb-2 animate-pulse"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse"></div>
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32 mx-auto animate-pulse"></div>
+            </div>
+          </div>
+          
+          {/* Other Cards */}
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
+              <div className="flex items-center mb-4">
+                <div className="h-6 w-6 bg-gray-200 dark:bg-gray-600 rounded mr-2 animate-pulse"></div>
+                <div className="h-5 bg-gray-200 dark:bg-gray-600 rounded w-20 animate-pulse"></div>
+              </div>
+              <div className="flex items-center">
+                <div className="h-8 bg-gray-200 dark:bg-gray-600 rounded w-16 animate-pulse"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-8 ml-2 animate-pulse"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Loading Chart */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-6 animate-pulse"></div>
+          <div className="h-64 bg-gray-100 dark:bg-gray-700 rounded animate-pulse"></div>
+        </div>
+
+        {/* Loading Suggestions */}
+        <div className="bg-primary-50 dark:bg-primary-900/30 rounded-lg shadow p-6">
+          <div className="flex items-center mb-4">
+            <div className="h-6 w-6 bg-gray-200 dark:bg-gray-700 rounded mr-2 animate-pulse"></div>
+            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48 animate-pulse"></div>
+          </div>
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white dark:bg-gray-800 p-4 rounded-lg border-l-4 border-gray-200 dark:border-gray-700">
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2 animate-pulse"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 animate-pulse"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Loading Forecast */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-6 animate-pulse"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg text-center">
+                <div className="h-5 bg-gray-200 dark:bg-gray-600 rounded w-20 mx-auto mb-2 animate-pulse"></div>
+                <div className="h-12 w-12 bg-gray-200 dark:bg-gray-600 rounded-full mx-auto mb-2 animate-pulse"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-24 mx-auto mb-2 animate-pulse"></div>
+                <div className="h-5 bg-gray-200 dark:bg-gray-600 rounded w-16 mx-auto mb-2 animate-pulse"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-12 mx-auto animate-pulse"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Loading Alerts */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-4 animate-pulse"></div>
+          <div className="bg-gray-50 dark:bg-gray-700 border-l-4 border-gray-200 dark:border-gray-600 p-4">
+            <div className="flex items-center">
+              <div className="h-6 w-6 bg-gray-200 dark:bg-gray-600 rounded mr-2 animate-pulse"></div>
+              <div className="h-5 bg-gray-200 dark:bg-gray-600 rounded w-40 animate-pulse"></div>
+            </div>
+            <div className="mt-2">
+              <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-full mb-1 animate-pulse"></div>
+              <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-3/4 animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Loading Indicator */}
+        <div className="flex justify-center items-center py-8">
+          <div className="flex items-center space-x-3">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+            <span className="text-gray-600 dark:text-gray-400 font-medium">Loading weather data...</span>
+          </div>
+        </div>
       </div>
     );
   }

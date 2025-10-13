@@ -360,7 +360,7 @@ export function LocationSelector({
             <strong>Location Set:</strong> {location.address && `${location.address}, `}
             {location.district && `${location.district}, `}
             {location.country}
-            {location.coordinates && (
+            {location.coordinates && location.coordinates.latitude && location.coordinates.longitude && (
               <span className="block text-xs mt-1">
                 Coordinates: {location.coordinates.latitude.toFixed(4)}, {location.coordinates.longitude.toFixed(4)}
               </span>

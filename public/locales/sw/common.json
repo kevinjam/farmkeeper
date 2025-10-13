@@ -1,0 +1,85 @@
+{
+  "navigation": {
+    "dashboard": "Dashibodi",
+    "livestock": "Mifugo",
+    "crops": "Mazao",
+    "finances": "Fedha",
+    "feedManagement": "Usimamizi wa Chakula",
+    "eggsSales": "Mayai na Uuzaji",
+    "weather": "Hali ya Hewa",
+    "analytics": "Uchambuzi",
+    "subscription": "Usajili",
+    "billing": "Malipo",
+    "settings": "Mipangilio"
+  },
+  "settings": {
+    "title": "Mipangilio ya Shamba",
+    "subtitle": "Simamia taarifa za shamba lako na mapendeleo",
+    "farmInformation": "Taarifa za Shamba",
+    "farmName": "Jina la Shamba",
+    "farmNamePlaceholder": "Ingiza jina la shamba lako",
+    "farmUrl": "Anwani ya Shamba",
+    "locationSettings": "Mipangilio ya Eneo",
+    "locationDescription": "Weka eneo la shamba lako ili kuweza kupata utabiri wa hali ya hewa na mapendekezo ya kilimo.",
+    "locationTroubleshooting": "Kutatua Matatizo ya Eneo",
+    "locationTroubleshootingTitle": "Ikiwa \"Tumia Eneo la Sasa\" haifanyi kazi:",
+    "locationTroubleshootingTips": [
+      "Hakikisha ruhusa za eneo zimewezeshwa kwenye kivinjari chako",
+      "Hakikisha unatumia HTTPS (inahitajika kwa eneo)",
+      "Jaribu kufungua upya ukurasa na kuruhusu upatikanaji wa eneo",
+      "Tumia moja ya maeneo ya Uganda yaliyowekwa awali",
+      "Ingiza kuratibu zako mwenyewe ikiwa unazijua"
+    ],
+    "commonUgandaCoordinates": "Kuratibu za kawaida za Uganda:",
+    "ugandaCoordinates": [
+      "Kampala: 0.3476°N, 32.5825°E",
+      "Entebbe: 0.0644°N, 32.4465°E",
+      "Jinja: 0.4244°N, 33.2042°E"
+    ],
+    "generalSettings": "Mipangilio ya Jumla",
+    "currency": "Sarafu",
+    "language": "Lugha",
+    "timezone": "Eneo la Wakati",
+    "notificationsEnabled": "Washa arifa",
+    "saveSettings": "Hifadhi Mipangilio",
+    "saving": "Inahifadhi...",
+    "loadingSettings": "Inapakia mipangilio...",
+    "settingsUpdated": "Mipangilio ya shamba imesasishwa!",
+    "settingsError": "Imeshindwa kuhifadhi mipangilio ya shamba",
+    "settingsLoadError": "Imeshindwa kupakia mipangilio ya shamba"
+  },
+  "languages": {
+    "en": "Kiingereza",
+    "lg": "Luganda",
+    "sw": "Kiswahili"
+  },
+  "currencies": {
+    "UGX": "Shilingi ya Uganda (UGX)",
+    "USD": "Dola ya Marekani (USD)",
+    "EUR": "Yuro (EUR)"
+  },
+  "timezones": {
+    "Africa/Kampala": "Africa/Kampala (EAT)",
+    "Africa/Nairobi": "Africa/Nairobi (EAT)",
+    "Africa/Dar_es_Salaam": "Africa/Dar_es_Salaam (EAT)"
+  },
+  "common": {
+    "loading": "Inapakia...",
+    "error": "Hitilafu",
+    "success": "Imefanikiwa",
+    "save": "Hifadhi",
+    "cancel": "Ghairi",
+    "edit": "Hariri",
+    "delete": "Futa",
+    "add": "Ongeza",
+    "close": "Funga",
+    "back": "Rudi",
+    "next": "Ifuatayo",
+    "previous": "Iliyotangulia",
+    "search": "Tafuta",
+    "filter": "Chuja",
+    "sort": "Panga",
+    "refresh": "Sasisha",
+    "retry": "Jaribu Tena"
+  }
+}
