@@ -1,28 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sprout, ArrowRight, ArrowLeft, CheckCircle, MapPin, CreditCard, Building } from 'lucide-react';
+import { Sprout, ArrowRight, ArrowLeft, CheckCircle, CreditCard, Building, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LocationSelector } from '@/components/LocationSelector';
-import { useSession } from 'next-auth/react';
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
 
 interface OnboardingData {
   farmName: string;
+  name: string;
   plan: string;
-  location: {
-    address?: string;
-    district?: string;
-    country: string;
-    coordinates?: {
-      latitude: number;
-      longitude: number;
-    };
-  };
 }
 
 interface GoogleOnboardingProps {
@@ -31,74 +23,96 @@ interface GoogleOnboardingProps {
   userImage?: string;
 }
 
+const STEPS = [
+  {
+    id: 1,
+    title: 'Complete your profile',
+    description: 'We need a few details to set up your farm',
+    icon: Sprout,
+    color: 'text-green-600',
+  },
+  {
+    id: 2,
+    title: 'Farm & your name',
+    description: 'Tell us your farm name and display name',
+    icon: Building,
+    color: 'text-blue-600',
+  },
+  {
+    id: 3,
+    title: 'Subscription plan',
+    description: 'Choose the plan that fits your needs',
+    icon: CreditCard,
+    color: 'text-purple-600',
+  },
+];
+
+const PLANS = [
+  {
+    id: 'trial',
+    name: 'Free Trial',
+    price: '$0',
+    pricePeriod: '/month',
+    description: 'Perfect for side projects and learning the platform basics.',
+    buttonLabel: 'Choose Free Plan',
+    featuresHeading: 'INCLUDES:',
+    features: ['3 active projects', 'Basic analytics dashboard', 'Community support forum', '1GB cloud storage'],
+    mostPopular: false,
+  },
+  {
+    id: 'pro',
+    name: 'Pro Plan',
+    price: '$49',
+    pricePeriod: '/month',
+    description: 'Everything you need to grow your small business or agency.',
+    buttonLabel: 'Choose Pro Plan',
+    featuresHeading: 'EVERYTHING IN FREE, PLUS:',
+    features: ['Unlimited active projects', 'Advanced real-time analytics', 'Priority email support (24h)', '20GB cloud storage', 'Custom domain mapping'],
+    mostPopular: true,
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    price: '$99',
+    pricePeriod: '/month',
+    description: 'Bespoke solutions for high-volume organizations and teams.',
+    buttonLabel: 'Contact Sales',
+    featuresHeading: 'EVERYTHING IN PRO, PLUS:',
+    features: ['Unlimited storage & members', 'Dedicated account manager', '24/7 priority phone support', 'SSO & Enterprise security', 'Custom legal contracts'],
+    mostPopular: false,
+  },
+];
+
 export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboardingProps) {
   const router = useRouter();
-  const { data: session, update } = useSession();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     farmName: '',
+    name: userName || '',
     plan: 'trial',
-    location: {
-      country: 'Uganda'
-    }
   });
 
-  const steps = [
-    {
-      id: 1,
-      title: 'Welcome to FarmKeeper!',
-      description: 'Let\'s set up your farm profile',
-      icon: <Sprout className="h-8 w-8" />,
-      color: 'text-green-600'
-    },
-    {
-      id: 2,
-      title: 'Farm Information',
-      description: 'Tell us about your farm',
-      icon: <Building className="h-8 w-8" />,
-      color: 'text-blue-600'
-    },
-    {
-      id: 3,
-      title: 'Choose Your Plan',
-      description: 'Select the plan that fits your needs',
-      icon: <CreditCard className="h-8 w-8" />,
-      color: 'text-purple-600'
-    },
-    {
-      id: 4,
-      title: 'Farm Location',
-      description: 'Help us provide local weather and recommendations',
-      icon: <MapPin className="h-8 w-8" />,
-      color: 'text-orange-600'
-    }
-  ];
-
-  const handleLocationChange = (location: any) => {
-    setOnboardingData(prev => ({
-      ...prev,
-      location: {
-        address: location.address || '',
-        district: location.district || '',
-        country: location.country || 'Uganda',
-        coordinates: location.coordinates
-      }
-    }));
-  };
-
   const handleNext = () => {
-    if (currentStep < steps.length) {
-      setCurrentStep(currentStep + 1);
-    }
+    if (currentStep < STEPS.length) setCurrentStep(currentStep + 1);
   };
 
   const handlePrevious = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+    if (currentStep > 1) setCurrentStep(currentStep - 1);
+  };
+
+  const isStepValid = () => {
+    switch (currentStep) {
+      case 1:
+        return true;
+      case 2:
+        return onboardingData.farmName.trim().length > 0 && onboardingData.name.trim().length > 0;
+      case 3:
+        return onboardingData.plan.length > 0;
+      default:
+        return false;
     }
   };
 
@@ -107,18 +121,20 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
     setError('');
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001'}/api/auth/complete-google-signup`, {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null;
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const response = await fetch(`${BACKEND_URL}/api/auth/complete-google-signup`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           email: userEmail,
-          name: userName,
+          name: onboardingData.name.trim(),
           image: userImage,
-          farmName: onboardingData.farmName,
+          farmName: onboardingData.farmName.trim(),
           plan: onboardingData.plan,
-          location: onboardingData.location
+          location: { country: 'Uganda' },
         }),
       });
 
@@ -128,36 +144,19 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
         throw new Error(data.message || 'Failed to complete registration');
       }
 
-      setSuccess(true);
-      
-      // Update the session to mark onboarding as complete
-      await update();
-      
-      // Redirect to dashboard after showing success
-      setTimeout(() => {
-        const farmSlug = data.farm?.slug || data.farmId;
-        router.push(`/${farmSlug}/dashboard`);
-      }, 2000);
+      if (data.token) {
+        localStorage.setItem('auth-token', data.token);
+      }
 
-    } catch (error: any) {
-      setError(error.message || 'Something went wrong. Please try again.');
+      setSuccess(true);
+
+      const farmSlug = data.farm?.slug;
+      const redirectUrl = farmSlug ? `/en/${farmSlug}/dashboard` : '/en/auth/login';
+      setTimeout(() => router.push(redirectUrl), 1500);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const isStepValid = () => {
-    switch (currentStep) {
-      case 1:
-        return true; // Welcome step
-      case 2:
-        return onboardingData.farmName.trim().length > 0;
-      case 3:
-        return onboardingData.plan.length > 0;
-      case 4:
-        return onboardingData.location.country.length > 0;
-      default:
-        return false;
     }
   };
 
@@ -167,27 +166,13 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
           className="text-center space-y-6 max-w-md mx-auto p-8"
         >
-          <div className="flex justify-center">
-            <CheckCircle className="h-16 w-16 text-green-500" />
-          </div>
-          
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Welcome to FarmKeeper! 🌱
-            </h2>
-            
-            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
-              <p className="text-green-800 dark:text-green-200 mb-4">
-                <strong>Registration successful!</strong> Your farm "{onboardingData.farmName}" is now set up.
-              </p>
-              <p className="text-sm text-green-600 dark:text-green-300">
-                Redirecting to your dashboard...
-              </p>
-            </div>
-          </div>
+          <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Profile complete</h2>
+          <p className="text-gray-600 dark:text-gray-300">
+            Your farm &quot;{onboardingData.farmName}&quot; is set up. Redirecting to your dashboard...
+          </p>
         </motion.div>
       </div>
     );
@@ -195,69 +180,69 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-900 dark:to-green-900/20">
-      {/* Header */}
       <div className="flex items-center justify-between p-6">
         <div className="flex items-center space-x-2">
           <Sprout className="h-8 w-8 text-primary-600" />
           <span className="text-2xl font-heading font-bold text-primary-600">FarmKeeper</span>
         </div>
-        
-        {/* User Info */}
         <div className="flex items-center space-x-3">
           <div className="text-right">
-            <p className="text-sm font-medium text-gray-900 dark:text-white">{userName}</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-white">{onboardingData.name || userName}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">{userEmail}</p>
           </div>
           {userImage && (
-            <img
-              src={userImage}
-              alt={userName}
-              className="h-8 w-8 rounded-full"
-            />
+            <img src={userImage} alt={userName} className="h-8 w-8 rounded-full" />
           )}
         </div>
       </div>
 
       <div className="flex items-center justify-center px-4 sm:px-6 lg:px-8 pb-12">
-        <div className="w-full max-w-2xl">
-          {/* Progress Steps */}
+        <div className={`w-full ${currentStep === 3 ? 'max-w-5xl' : 'max-w-2xl'}`}>
           <div className="mb-8">
             <div className="flex items-center justify-between">
-              {steps.map((step, index) => (
-                <div key={step.id} className="flex items-center">
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-                    currentStep >= step.id
-                      ? 'bg-primary-600 border-primary-600 text-white'
-                      : 'border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500'
-                  }`}>
-                    {currentStep > step.id ? (
-                      <CheckCircle className="h-5 w-5" />
-                    ) : (
-                      <span className="text-sm font-medium">{step.id}</span>
+              {STEPS.map((step, index) => {
+                const Icon = step.icon;
+                return (
+                  <div key={step.id} className="flex items-center">
+                    <div
+                      className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                        currentStep >= step.id
+                          ? 'bg-primary-600 border-primary-600 text-white'
+                          : 'border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500'
+                      }`}
+                    >
+                      {currentStep > step.id ? (
+                        <CheckCircle className="h-5 w-5" />
+                      ) : (
+                        <span className="text-sm font-medium">{step.id}</span>
+                      )}
+                    </div>
+                    {index < STEPS.length - 1 && (
+                      <div
+                        className={`flex-1 h-0.5 mx-4 min-w-[24px] ${
+                          currentStep > step.id ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+                        }`}
+                      />
                     )}
                   </div>
-                  {index < steps.length - 1 && (
-                    <div className={`flex-1 h-0.5 mx-4 ${
-                      currentStep > step.id
-                        ? 'bg-primary-600'
-                        : 'bg-gray-300 dark:bg-gray-600'
-                    }`} />
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
-          <Card className="shadow-xl border-0">
-            <CardHeader className="text-center pb-8">
-              <div className={`flex justify-center mb-4 ${steps[currentStep - 1].color}`}>
-                {steps[currentStep - 1].icon}
+          <Card className={`shadow-xl border-0 ${currentStep === 3 ? 'bg-gray-900 dark:bg-gray-900 border border-gray-800' : ''}`}>
+            <CardHeader className={`text-center pb-8 ${currentStep === 3 ? 'border-b border-gray-800' : ''}`}>
+              <div className={`flex justify-center mb-4 ${currentStep === 3 ? 'text-green-500' : STEPS[currentStep - 1].color}`}>
+                {(() => {
+                  const Icon = STEPS[currentStep - 1].icon;
+                  return <Icon className="h-8 w-8" />;
+                })()}
               </div>
-              <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white font-heading">
-                {steps[currentStep - 1].title}
+              <CardTitle className={`text-2xl font-bold font-heading ${currentStep === 3 ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                {STEPS[currentStep - 1].title}
               </CardTitle>
-              <CardDescription className="text-lg text-gray-600 dark:text-gray-300">
-                {steps[currentStep - 1].description}
+              <CardDescription className={`text-base ${currentStep === 3 ? 'text-gray-400' : 'text-gray-600 dark:text-gray-300'}`}>
+                {STEPS[currentStep - 1].description}
               </CardDescription>
             </CardHeader>
 
@@ -268,140 +253,138 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
+                  transition={{ duration: 0.2 }}
                 >
                   {currentStep === 1 && (
-                    <div className="text-center space-y-6">
-                      <div className="space-y-4">
-                        <p className="text-gray-600 dark:text-gray-300">
-                          Hi <strong>{userName}</strong>! We're excited to have you join FarmKeeper.
-                        </p>
-                        <p className="text-gray-600 dark:text-gray-300">
-                          Let's set up your farm profile so you can start managing your operations efficiently.
-                        </p>
-                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                          <p className="text-blue-800 dark:text-blue-200 text-sm">
-                            <strong>What we'll collect:</strong>
-                          </p>
-                          <ul className="text-blue-700 dark:text-blue-300 text-sm mt-2 space-y-1">
-                            <li>• Your farm name and details</li>
-                            <li>• Subscription plan preference</li>
-                            <li>• Farm location for weather and recommendations</li>
-                          </ul>
-                        </div>
-                      </div>
+                    <div className="text-center space-y-4">
+                      <p className="text-gray-600 dark:text-gray-300">
+                        Hi <strong>{userName || 'there'}</strong>! Complete this short form to start using FarmKeeper.
+                      </p>
+                      <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1 text-left list-disc list-inside">
+                        <li>Farm name</li>
+                        <li>Your display name</li>
+                        <li>Subscription plan</li>
+                      </ul>
                     </div>
                   )}
 
                   {currentStep === 2 && (
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                       <div className="space-y-2">
-                        <Label htmlFor="farmName">Farm Name *</Label>
+                        <Label htmlFor="farmName">Farm name *</Label>
                         <Input
                           id="farmName"
                           type="text"
                           required
                           placeholder="e.g., Green Valley Farm"
                           value={onboardingData.farmName}
-                          onChange={(e) => setOnboardingData(prev => ({ ...prev, farmName: e.target.value }))}
+                          onChange={(e) =>
+                            setOnboardingData((prev) => ({ ...prev, farmName: e.target.value }))
+                          }
                           className="text-lg"
                         />
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          This will be your farm's display name in FarmKeeper
-                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="yourName">Your name *</Label>
+                        <Input
+                          id="yourName"
+                          type="text"
+                          required
+                          placeholder="e.g., John Okello"
+                          value={onboardingData.name}
+                          onChange={(e) =>
+                            setOnboardingData((prev) => ({ ...prev, name: e.target.value }))
+                          }
+                          className="text-lg"
+                        />
                       </div>
                     </div>
                   )}
 
                   {currentStep === 3 && (
-                    <div className="space-y-4">
-                      <div className="grid gap-4">
-                        {[
-                          {
-                            id: 'trial',
-                            name: 'Free Trial',
-                            price: '14 days free',
-                            description: 'Perfect for getting started',
-                            features: ['Basic farm management', 'Up to 50 livestock', 'Basic reporting']
-                          },
-                          {
-                            id: 'pro',
-                            name: 'Pro Plan',
-                            price: 'UGX 75,000/month',
-                            description: 'For growing farms',
-                            features: ['Advanced analytics', 'Unlimited livestock', 'Weather integration', 'Priority support']
-                          },
-                          {
-                            id: 'enterprise',
-                            name: 'Enterprise',
-                            price: 'UGX 150,000/month',
-                            description: 'For large operations',
-                            features: ['All Pro features', 'Multi-farm management', 'Custom integrations', 'Dedicated support']
-                          }
-                        ].map((plan) => (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {PLANS.map((plan) => {
+                        const isSelected = onboardingData.plan === plan.id;
+                        const isPro = plan.mostPopular;
+                        return (
                           <div
                             key={plan.id}
-                            className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                              onboardingData.plan === plan.id
-                                ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20'
-                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setOnboardingData((prev) => ({ ...prev, plan: plan.id }))}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setOnboardingData((prev) => ({ ...prev, plan: plan.id }));
+                              }
+                            }}
+                            className={`relative flex flex-col rounded-xl p-6 cursor-pointer transition-all border-2 bg-gray-800/80 dark:bg-gray-800/90 ${
+                              isPro
+                                ? 'border-green-500 ring-2 ring-green-500/30 shadow-lg shadow-green-500/10'
+                                : isSelected
+                                  ? 'border-green-500 dark:border-green-500'
+                                  : 'border-gray-700 dark:border-gray-700 hover:border-gray-600 dark:hover:border-gray-600'
                             }`}
-                            onClick={() => setOnboardingData(prev => ({ ...prev, plan: plan.id }))}
                           >
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <h3 className="font-semibold text-gray-900 dark:text-white">{plan.name}</h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-300">{plan.description}</p>
-                                <p className="text-lg font-bold text-primary-600">{plan.price}</p>
+                            {plan.mostPopular && (
+                              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                                <span className="inline-block px-3 py-0.5 rounded-full bg-green-500 text-white text-xs font-semibold uppercase tracking-wide">
+                                  Most Popular
+                                </span>
                               </div>
-                              <div className={`w-4 h-4 rounded-full border-2 ${
-                                onboardingData.plan === plan.id
-                                  ? 'border-primary-600 bg-primary-600'
-                                  : 'border-gray-300 dark:border-gray-600'
-                              }`}>
-                                {onboardingData.plan === plan.id && (
-                                  <div className="w-full h-full rounded-full bg-white scale-50" />
-                                )}
-                              </div>
+                            )}
+                            <div className="mb-4">
+                              <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
+                              <p className="mt-2 flex items-baseline gap-1">
+                                <span className="text-3xl font-bold text-white">{plan.price}</span>
+                                <span className="text-gray-400 text-sm">{plan.pricePeriod}</span>
+                              </p>
+                              <p className="mt-2 text-sm text-gray-400">{plan.description}</p>
                             </div>
-                            <ul className="mt-3 text-sm text-gray-600 dark:text-gray-300 space-y-1">
-                              {plan.features.map((feature, index) => (
-                                <li key={index}>• {feature}</li>
-                              ))}
-                            </ul>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOnboardingData((prev) => ({ ...prev, plan: plan.id }));
+                              }}
+                              className={`mt-auto w-full py-2.5 px-4 rounded-lg font-medium text-sm transition-colors ${
+                                isPro
+                                  ? 'bg-green-500 text-gray-900 hover:bg-green-400'
+                                  : plan.id === 'enterprise'
+                                    ? 'border-2 border-green-500 text-green-500 bg-transparent hover:bg-green-500/10'
+                                    : 'border border-green-600 text-green-600 dark:border-green-500 dark:text-green-500 bg-transparent hover:bg-green-500/10'
+                              }`}
+                            >
+                              {plan.buttonLabel}
+                            </button>
+                            <div className="mt-6 pt-4 border-t border-gray-700">
+                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                                {plan.featuresHeading}
+                              </p>
+                              <ul className="space-y-2">
+                                {plan.features.map((f, i) => (
+                                  <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
+                                    <Check className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                                    <span>{f}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {currentStep === 4 && (
-                    <div className="space-y-4">
-                      <p className="text-gray-600 dark:text-gray-300">
-                        Help us provide accurate weather forecasts and local farming recommendations by setting your farm's location.
-                      </p>
-                      <LocationSelector
-                        initialLocation={onboardingData.location}
-                        onLocationChange={handleLocationChange}
-                        required={true}
-                      />
+                        );
+                      })}
                     </div>
                   )}
                 </motion.div>
               </AnimatePresence>
 
               {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg"
-                >
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm">
                   {error}
-                </motion.div>
+                </div>
               )}
 
-              {/* Navigation Buttons */}
-              <div className="flex justify-between pt-6">
+              <div className={`flex justify-between pt-6 ${currentStep === 3 ? 'border-t border-gray-800' : ''}`}>
                 <Button
                   variant="outline"
                   onClick={handlePrevious}
@@ -412,12 +395,8 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
                   <span>Previous</span>
                 </Button>
 
-                {currentStep < steps.length ? (
-                  <Button
-                    onClick={handleNext}
-                    disabled={!isStepValid()}
-                    className="flex items-center space-x-2"
-                  >
+                {currentStep < STEPS.length ? (
+                  <Button onClick={handleNext} disabled={!isStepValid()} className="flex items-center space-x-2">
                     <span>Next</span>
                     <ArrowRight className="h-4 w-4" />
                   </Button>
@@ -429,12 +408,12 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
                   >
                     {isLoading ? (
                       <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
                         <span>Setting up...</span>
                       </>
                     ) : (
                       <>
-                        <span>Complete Setup</span>
+                        <span>Complete setup</span>
                         <CheckCircle className="h-4 w-4" />
                       </>
                     )}

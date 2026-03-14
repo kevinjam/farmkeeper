@@ -173,6 +173,15 @@ export default function DashboardLayout({
   useEffect(() => {
     const fetchUserData = async () => {
       try {
+        // Process token from URL hash (Google OAuth redirect) before any auth check
+        if (typeof window !== 'undefined' && window.location.hash) {
+          const params = new URLSearchParams(window.location.hash.slice(1));
+          const tokenFromHash = params.get('token');
+          if (tokenFromHash) {
+            localStorage.setItem('auth-token', tokenFromHash);
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          }
+        }
         setIsLoading(true);
         console.log('Dashboard: Fetching user authentication status');
         
@@ -206,13 +215,13 @@ export default function DashboardLayout({
           console.log('Dashboard: Auth failed, redirecting to login');
           console.log('Dashboard: Auth failure reason:', data.message || 'Unknown error');
           setIsAuthenticated(false);
-          router.replace('/auth/login');
+          router.replace('/en/auth/login');
           return;
         }
         
         if (!data.isSignedUp) {
           console.log('Dashboard: User not signed up with farm, redirecting to registration');
-          router.replace('/auth/register');
+          router.replace('/en/auth/register');
           return;
         }
         
@@ -373,7 +382,7 @@ export default function DashboardLayout({
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-800 dark:text-white">{userName}</p>
-              <Link href="/auth/logout" className="text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400">
+              <Link href="/en/auth/logout" className="text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400">
                 Sign out
               </Link>
             </div>
