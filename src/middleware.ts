@@ -90,14 +90,16 @@ export async function middleware(request: NextRequest) {
   }
 
   // If no locale prefix and not a farm route, redirect to default locale
+  // IMPORTANT: preserve search (query) string so OAuth callbacks keep ?code=... etc.
+  const search = request.nextUrl.search;
   if (segments.length > 1) {
-    // This is likely a route that should have a locale prefix
     const newUrl = new URL(`/en${path}`, request.url);
+    newUrl.search = search;
     return NextResponse.redirect(newUrl);
   }
 
-  // If no locale prefix, redirect to default locale (/en + current path)
   const redirectUrl = new URL(`/en${path === '/' ? '' : path}`, request.url);
+  redirectUrl.search = search;
   return NextResponse.redirect(redirectUrl);
 }
 

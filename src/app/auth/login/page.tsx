@@ -4,30 +4,55 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Sprout, Eye, EyeOff, ArrowRight, CheckCircle } from 'lucide-react';
+import { Sprout, Mail, Lock, ArrowRight, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiClient } from '@/lib/api';
 import { setAuthCookie } from '@/lib/cookies';
 import { SimpleBackendGoogleSignIn } from '@/components/auth/BackendGoogleSignIn';
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [loginSuccess, setLoginSuccess] = useState(false);
   const [dashboardUrl, setDashboardUrl] = useState('');
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const router = useRouter();
 
+  // If user already has a token (e.g. just came from Google OAuth), redirect to onboarding or dashboard
+  useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') || localStorage.getItem('token') : null;
+    if (!token) {
+      setCheckingAuth(false);
+      return;
+    }
+    const headers: HeadersInit = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+    fetch(`${BACKEND_URL}/api/auth/status`, { credentials: 'include', headers })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data?.isAuthenticated) {
+          setCheckingAuth(false);
+          return;
+        }
+        if (!data.isSignedUp) {
+          router.replace('/en/auth/onboarding');
+          return;
+        }
+        if (data.farm?.slug) {
+          router.replace(`/en/${data.farm.slug}/dashboard`);
+          return;
+        }
+        setCheckingAuth(false);
+      })
+      .catch(() => setCheckingAuth(false));
+  }, [router]);
 
   // Pro fix: useEffect for redirect after login
   useEffect(() => {
     if (loginSuccess && dashboardUrl) {
-      // Use Next.js router for proper client-side navigation
       router.push(dashboardUrl);
     }
   }, [loginSuccess, dashboardUrl, router]);
@@ -84,9 +109,9 @@ export default function Login() {
         setAuthCookie(data.token);
       }
       
-      // Redirect to login success page with farm info
       const successUrl = `/auth/login-success?farmSlug=${encodeURIComponent(data.farmSlug)}&farmName=${encodeURIComponent(data.farmName || '')}`;
-      router.push(successUrl);
+      setDashboardUrl(successUrl);
+      setLoginSuccess(true);
     } catch (error) {
       console.error('Login error:', error);
       if (error instanceof Error) {
@@ -105,165 +130,172 @@ export default function Login() {
     }
   };
 
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-900 dark:to-green-900/20 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary-600 mx-auto mb-3" />
+          <p className="text-gray-600 dark:text-gray-400 text-sm">Checking session...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-900 dark:to-green-900/20">
-      {/* Header */}
-      <div className="flex items-center justify-between p-6">
-        <Link href="/" className="flex items-center space-x-2">
-          <Sprout className="h-8 w-8 text-primary-600" />
-          <span className="text-2xl font-heading font-bold text-primary-600">FarmKeeper</span>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-900 dark:to-green-900/20 flex flex-col">
+      <header className="flex items-center justify-between px-4 py-4 sm:px-6">
+        <Link href="/" className="flex items-center gap-2">
+          <Sprout className="h-7 w-7 text-primary-600" />
+          <span className="text-lg font-bold text-primary-600 dark:text-white">FarmKeeper</span>
         </Link>
-      </div>
+        <Link href="/en/auth/login" className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+          Contact Support
+        </Link>
+      </header>
 
-      <div className="flex items-center justify-center px-4 sm:px-6 lg:px-8 pb-12">
+      <main className="flex-1 flex items-center justify-center px-4 py-6">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="w-full max-w-md"
+          transition={{ duration: 0.3 }}
+          className="w-full max-w-[320px]"
         >
-          <Card className="shadow-xl border-0">
-            <CardHeader className="text-center pb-8">
-              <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white font-heading">
-                Welcome back
-              </CardTitle>
-              <CardDescription className="text-lg text-gray-600 dark:text-gray-300">
-                Sign in to access your farm management dashboard
-              </CardDescription>
-            </CardHeader>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Welcome back</h1>
+          <p className="mt-1 text-gray-600 dark:text-gray-400 text-xs">
+            Enter your credentials to access your farm intelligence
+          </p>
 
-            <CardContent className="space-y-6">
-              {loginSuccess ? (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="text-center space-y-6"
-                >
-                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
-                    <div className="flex items-center justify-center mb-4">
-                      <CheckCircle className="h-12 w-12 text-green-500" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-2">
-                      Login Successful!
-                    </h3>
-                    <p className="text-sm text-green-600 dark:text-green-300">
-                      You should be redirected to your dashboard shortly.
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      If you're not redirected automatically, click below:
-                    </p>
-                    <Button onClick={navigateToDashboard} className="w-full" size="lg">
-                      Continue to Dashboard
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
-                </motion.div>
-              ) : (
-                <>
-                  {/* Email/Password Form */}
-                  <form className="space-y-4" onSubmit={handleSubmit}>
-                    {error && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg"
-                      >
-                        {error}
-                      </motion.div>
-                    )}
-
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email address</Label>
-                        <Input
-                          id="email"
-                          name="email"
-                          type="email"
-                          autoComplete="email"
-                          required
-                          placeholder="you@example.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          disabled={isLoading}
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
-                        <div className="relative">
-                          <Input
-                            id="password"
-                            name="password"
-                            type={showPassword ? "text" : "password"}
-                            autoComplete="current-password"
-                            required
-                            placeholder="Enter your password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            disabled={isLoading}
-                            className="pr-10"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                            onClick={() => setShowPassword(!showPassword)}
-                            disabled={isLoading}
-                          >
-                            {showPassword ? (
-                              <EyeOff className="h-4 w-4 text-gray-500" />
-                            ) : (
-                              <Eye className="h-4 w-4 text-gray-500" />
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
-                      {isLoading ? 'Signing in...' : 'Sign in'}
-                      {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
-                    </Button>
-                  </form>
-
-                  {/* Divider */}
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t border-gray-200 dark:border-gray-700" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-white dark:bg-gray-900 px-2 text-gray-500 dark:text-gray-400">
-                        Or continue with
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Google Sign In */}
-                  <SimpleBackendGoogleSignIn 
-                    className="w-full" 
-                    size="lg" 
-                    variant="outline"
-                  />
-                </>
-              )}
-
-              <div className="text-center pt-4 border-t border-gray-200 dark:border-gray-700">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Don't have an account?{' '}
-                  <Link href="/auth/register" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
-                    Sign up for free
-                  </Link>
-                </p>
+          {loginSuccess ? (
+            <div className="mt-5 p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-center">
+              <CheckCircle className="h-10 w-10 text-primary-600 mx-auto mb-2" />
+              <p className="text-gray-900 dark:text-white font-medium text-sm">Login successful</p>
+              <p className="text-gray-500 dark:text-gray-400 text-xs mt-0.5">Redirecting...</p>
+              <Button
+                onClick={navigateToDashboard}
+                className="mt-3 w-full h-9 text-sm bg-primary-600 hover:bg-primary-700 text-white"
+              >
+                Continue to Dashboard
+                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="mt-5">
+                <SimpleBackendGoogleSignIn
+                  className="w-full h-10 text-sm bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md font-medium shadow-sm"
+                  size="default"
+                  variant="outline"
+                />
               </div>
-            </CardContent>
-          </Card>
+
+              <div className="relative my-5">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-gray-200 dark:border-gray-700" />
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="bg-white dark:bg-gray-900 px-2 text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Or email login
+                  </span>
+                </div>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-3">
+                {error && (
+                  <div className="rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-xs px-3 py-2">
+                    {error}
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="email" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Work Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      placeholder="name@company.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={isLoading}
+                      className="w-full h-9 pl-8 pr-3 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label htmlFor="password" className="block text-xs font-medium text-gray-700 dark:text-gray-300">
+                      Password
+                    </label>
+                    <Link
+                      href="/en/auth/forgot-password"
+                      className="text-xs text-primary-600 dark:text-primary-400 hover:underline"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
+                  <div className="relative">
+                    <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      id="password"
+                      name="password"
+                      type="password"
+                      autoComplete="current-password"
+                      required
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={isLoading}
+                      className="w-full h-9 pl-8 pr-3 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50"
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full h-9 rounded-md text-sm bg-primary-600 hover:bg-primary-700 text-white font-medium"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+                      Signing in...
+                    </>
+                  ) : (
+                    <>
+                      Sign In to Dashboard
+                      <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                    </>
+                  )}
+                </Button>
+              </form>
+
+              <p className="mt-4 text-center text-xs text-gray-600 dark:text-gray-400">
+                Don&apos;t have an account?{' '}
+                <Link href="/en/auth/register" className="text-primary-600 dark:text-primary-400 font-medium hover:underline">
+                  Create an account
+                </Link>
+              </p>
+            </>
+          )}
         </motion.div>
-      </div>
+      </main>
+
+      <footer className="px-4 py-4 sm:px-6 border-t border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <nav className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+          <Link href="/en/privacy" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Privacy</Link>
+          <Link href="/en/terms" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Terms</Link>
+          <Link href="/en/security" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Security</Link>
+        </nav>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          © {new Date().getFullYear()} FarmKeeper
+        </p>
+      </footer>
     </div>
   );
 }

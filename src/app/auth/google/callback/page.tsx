@@ -16,40 +16,54 @@ function GoogleCallbackContent() {
       try {
         const code = searchParams.get('code');
         const error = searchParams.get('error');
+        const errorDescription = searchParams.get('error_description');
         const state = searchParams.get('state');
 
         if (error) {
           setStatus('error');
-          setMessage('Google authentication was cancelled or failed.');
+          const detail = errorDescription
+            ? decodeURIComponent(errorDescription.replace(/\+/g, ' '))
+            : 'Google authentication was cancelled or failed.';
+          setMessage(detail);
           setTimeout(() => {
-            router.push('/auth/login');
-          }, 3000);
+            router.push('/en/auth/login');
+          }, 4000);
           return;
         }
 
         if (!code) {
           setStatus('error');
-          setMessage('No authorization code received from Google.');
+          const baseUrl =
+            typeof window !== 'undefined' ? window.location.origin : '';
+          setMessage(
+            `No authorization code in the URL. In Google Cloud Console, add this exact redirect URI: ${baseUrl}/auth/google/callback`
+          );
           setTimeout(() => {
-            router.push('/auth/login');
-          }, 3000);
+            router.push('/en/auth/login');
+          }, 5000);
           return;
         }
 
-        // The backend should have already handled the callback and redirected us
-        // If we're here, something went wrong
-        setStatus('error');
-        setMessage('Authentication completed but redirect failed.');
-        setTimeout(() => {
-          router.push('/auth/login');
-        }, 3000);
+        // We have an authorization code - hand off to the backend
+        setStatus('loading');
+        setMessage('Completing authentication...');
 
-      } catch (error) {
-        console.error('Error handling Google callback:', error);
+        const backendUrl =
+          process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
+
+        // Let the browser follow redirects from the backend callback handler
+        const redirectUrl = `${backendUrl}/api/auth/google/callback?code=${encodeURIComponent(
+          code
+        )}${state ? `&state=${encodeURIComponent(state)}` : ''}`;
+
+        window.location.href = redirectUrl;
+
+      } catch (err) {
+        console.error('Error handling Google callback:', err);
         setStatus('error');
         setMessage('An error occurred during authentication.');
         setTimeout(() => {
-          router.push('/auth/login');
+          router.push('/en/auth/login');
         }, 3000);
       }
     };

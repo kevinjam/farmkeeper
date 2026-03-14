@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Poppins } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/components/providers/session-provider';
+import { AuthTokenFromHash } from '@/components/auth/auth-token-from-hash';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import '@/lib/suppress-warnings';
 
@@ -212,6 +213,7 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <AuthTokenFromHash />
         <LanguageProvider>
           <AuthProvider>
             <ThemeProvider

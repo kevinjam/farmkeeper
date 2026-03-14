@@ -349,7 +349,7 @@ function RegisterForm() {
               <div className="text-center pt-4 border-t border-gray-200 dark:border-gray-700">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Already have an account?{' '}
-                  <Link href="/auth/login" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
+                  <Link href="/en/auth/login" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
                     Sign in
                   </Link>
                 </p>
