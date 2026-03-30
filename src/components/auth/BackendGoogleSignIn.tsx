@@ -64,12 +64,11 @@ export function BackendGoogleSignIn({
     setIsLoading(true);
     try {
       // Get Google OAuth URL from backend
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001'}/api/auth/google/auth-url`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      // No Content-Type on GET — avoids a CORS preflight; server still returns JSON
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001'}/api/auth/google/auth-url`,
+        { method: 'GET' }
+      );
 
       if (!response.ok) {
         throw new Error('Failed to get Google auth URL');
