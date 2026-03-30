@@ -63,29 +63,34 @@ export function BackendGoogleSignIn({
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      // Get Google OAuth URL from backend
-      // No Content-Type on GET — avoids a CORS preflight; server still returns JSON
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001'}/api/auth/google/auth-url`,
-        { method: 'GET' }
-      );
+      // Same-origin proxy avoids CORS when Render returns 503/HTML without ACAO headers
+      const response = await fetch('/api/backend-auth/google/auth-url', {
+        method: 'GET',
+      });
+
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error('Failed to get Google auth URL');
+        const msg =
+          (typeof data?.message === 'string' && data.message) ||
+          `Could not start Google sign-in (HTTP ${response.status}).`;
+        throw new Error(msg);
       }
 
-      const data = await response.json();
-      
       if (data.success && data.authUrl) {
-        // Redirect to Google OAuth URL
         window.location.href = data.authUrl;
       } else {
-        throw new Error('Invalid response from server');
+        throw new Error(
+          typeof data?.message === 'string' ? data.message : 'Invalid response from server'
+        );
       }
     } catch (error) {
       console.error('Error initiating Google sign-in:', error);
-      // You could show a toast notification here
-      alert('Failed to initiate Google sign-in. Please try again.');
+      alert(
+        error instanceof Error
+          ? error.message
+          : 'Failed to initiate Google sign-in. Please try again.'
+      );
     } finally {
       setIsLoading(false);
     }
