@@ -4,6 +4,16 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
+import {
+  LayoutDashboard,
+  ClipboardList,
+  BarChart3,
+  Settings,
+  Bell,
+  Menu,
+  Plus,
+  Sprout,
+} from 'lucide-react';
 import { useTranslations } from '@/hooks/useTranslations';
 
 // Navigation items for sidebar with subscription requirements
@@ -148,6 +158,48 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useTranslations('common');
+
+  const dashboardRootHref = `/${farmId}/dashboard`;
+  const isDashboardHome = pathname === dashboardRootHref;
+
+  const mobileNavItems = [
+    {
+      label: t('navigation.dashboard'),
+      shortLabel: 'Home',
+      href: dashboardRootHref,
+      icon: LayoutDashboard,
+      isActive: (p: string) => p === dashboardRootHref,
+    },
+    {
+      label: 'Activities',
+      shortLabel: 'Tasks',
+      href: `/${farmId}/dashboard/livestock`,
+      icon: ClipboardList,
+      isActive: (p: string) =>
+        p.startsWith(`/${farmId}/dashboard/livestock`) ||
+        p.startsWith(`/${farmId}/dashboard/eggs`) ||
+        p.startsWith(`/${farmId}/dashboard/crops`) ||
+        p.startsWith(`/${farmId}/dashboard/feed`) ||
+        p.startsWith(`/${farmId}/dashboard/finances`),
+    },
+    {
+      label: 'Reports',
+      shortLabel: 'Reports',
+      href: `/${farmId}/dashboard/analytics`,
+      icon: BarChart3,
+      isActive: (p: string) => p.startsWith(`/${farmId}/dashboard/analytics`),
+    },
+    {
+      label: t('navigation.settings'),
+      shortLabel: 'Settings',
+      href: `/${farmId}/dashboard/settings`,
+      icon: Settings,
+      isActive: (p: string) =>
+        p.startsWith(`/${farmId}/dashboard/settings`) ||
+        p.startsWith(`/${farmId}/dashboard/subscription`) ||
+        p.startsWith(`/${farmId}/dashboard/billing`),
+    },
+  ] as const;
 
   const fetchSubscriptionStatus = async () => {
     try {
@@ -391,38 +443,45 @@ export default function DashboardLayout({
       </aside>
       
       <div className="lg:pl-64 flex flex-col min-h-screen">
-        <header className="sticky top-0 z-10 bg-white dark:bg-gray-800 shadow-sm">
-          <div className="px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+        {/* Desktop / tablet header — unchanged */}
+        <header className="hidden md:block sticky top-0 z-10 bg-white dark:bg-gray-800 shadow-sm border-b border-gray-100 dark:border-gray-700/80">
+          <div className="px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center gap-3">
             <button
+              type="button"
               onClick={() => setIsSidebarOpen(true)}
-              className="lg:hidden text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              className="lg:hidden flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               aria-label="Open sidebar"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            
-            <h1 className="text-xl font-semibold text-gray-800 dark:text-white">
+            <h1 className="flex-1 text-center lg:text-left text-xl font-semibold text-gray-800 dark:text-white truncate">
               {(
                 getNavigationItems(t).find((item) => {
                   const fullHref = `/${farmId}${item.href}`;
                   const isDashboardRoot = item.href === '/dashboard';
                   return isDashboardRoot
                     ? pathname === fullHref
-                    : (pathname === fullHref || pathname.startsWith(`${fullHref}/`));
+                    : pathname === fullHref || pathname.startsWith(`${fullHref}/`);
                 })?.name
               ) || 'Dashboard'}
             </h1>
-            
-            <div className="flex items-center space-x-4">
-              <button className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300" aria-label="Notifications">
+            <div className="flex items-center space-x-4 shrink-0">
+              <button
+                type="button"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                aria-label="Notifications"
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
               </button>
-              
-              <button className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300" aria-label="Help">
+              <button
+                type="button"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                aria-label="Help"
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -430,10 +489,88 @@ export default function DashboardLayout({
             </div>
           </div>
         </header>
-        
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+
+        {/* Mobile app bar — native shell */}
+        <header className="md:hidden sticky top-0 z-20 flex items-center gap-2 px-3 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2.5 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-200/80 dark:border-gray-800 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.2)]">
+          <button
+            type="button"
+            onClick={() => setIsSidebarOpen(true)}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-gray-700 dark:text-gray-200 active:scale-95 transition-transform"
+            aria-label="Open menu"
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-white shadow-sm">
+              <Sprout className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-[15px] font-bold text-gray-900 dark:text-white leading-tight">
+                {farmName}
+              </p>
+              <p className="truncate text-[11px] text-gray-500 dark:text-gray-400">FarmKeeper</p>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-0.5">
+            <button
+              type="button"
+              className="flex h-11 w-11 items-center justify-center rounded-xl text-gray-600 dark:text-gray-300 active:scale-95 transition-transform"
+              aria-label="Notifications"
+            >
+              <Bell className="h-[22px] w-[22px]" />
+            </button>
+            <Link
+              href={`/${farmId}/dashboard/settings/profile`}
+              className="flex h-11 w-11 items-center justify-center rounded-xl text-gray-600 dark:text-gray-300 active:scale-95 transition-transform"
+              aria-label="Profile"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/50 text-xs font-semibold text-primary-800 dark:text-primary-200">
+                {userName ? userName.charAt(0).toUpperCase() : 'U'}
+              </div>
+            </Link>
+          </div>
+        </header>
+
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-md:px-3 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))] max-md:pt-3">
           {children}
         </main>
+
+        {/* Mobile bottom navigation */}
+        <nav
+          className="md:hidden fixed bottom-0 left-0 right-0 z-30 flex items-stretch justify-around border-t border-gray-200/90 bg-white/95 px-1 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur-md dark:border-gray-800 dark:bg-gray-950/95 shadow-[0_-8px_30px_-12px_rgba(0,0,0,0.18)]"
+          aria-label="Primary"
+        >
+          {mobileNavItems.map((item) => {
+            const active = item.isActive(pathname);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setIsSidebarOpen(false)}
+                className={`flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1 active:scale-[0.97] transition-transform ${
+                  active
+                    ? 'text-primary-600 dark:text-primary-400'
+                    : 'text-gray-500 dark:text-gray-400'
+                }`}
+              >
+                <Icon className={`h-5 w-5 ${active ? 'stroke-[2.25px]' : ''}`} strokeWidth={active ? 2.25 : 2} />
+                <span className="max-w-[4.25rem] truncate text-[10px] font-semibold">{item.shortLabel}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* FAB — dashboard home only, mobile */}
+        {isDashboardHome && (
+          <Link
+            href={`/${farmId}/dashboard/eggs/record`}
+            className="md:hidden fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary-600 text-white shadow-lg shadow-primary-600/35 ring-1 ring-white/20 active:scale-95 transition-transform"
+            aria-label="Add record"
+          >
+            <Plus className="h-7 w-7" strokeWidth={2.5} />
+          </Link>
+        )}
       </div>
     </div>
   );
