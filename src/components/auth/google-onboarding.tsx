@@ -1,9 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sprout, ArrowRight, ArrowLeft, CheckCircle, CreditCard, Building, Check } from 'lucide-react';
+import {
+  Sprout,
+  ArrowRight,
+  ArrowLeft,
+  CheckCircle,
+  CreditCard,
+  Building,
+  Check,
+  ChevronLeft,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -94,6 +103,15 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
     name: userName || '',
     plan: 'trial',
   });
+  const farmNameInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (currentStep !== 2) return;
+    const mq = window.matchMedia('(max-width: 767px)');
+    if (!mq.matches) return;
+    const id = window.setTimeout(() => farmNameInputRef.current?.focus(), 280);
+    return () => window.clearTimeout(id);
+  }, [currentStep]);
 
   const handleNext = () => {
     if (currentStep < STEPS.length) setCurrentStep(currentStep + 1);
@@ -162,15 +180,22 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-900 dark:to-green-900/20">
+      <div className="min-h-[100dvh] md:min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-900 dark:to-green-900/20 px-4 py-8">
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0, scale: 0.94 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="text-center space-y-6 max-w-md mx-auto p-8"
+          transition={{ type: 'spring', stiffness: 320, damping: 24 }}
+          className="text-center space-y-5 max-w-md mx-auto"
         >
-          <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.08, type: 'spring', stiffness: 400, damping: 18 }}
+          >
+            <CheckCircle className="h-16 w-16 text-green-500 mx-auto drop-shadow-sm" />
+          </motion.div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Profile complete</h2>
-          <p className="text-gray-600 dark:text-gray-300">
+          <p className="text-gray-600 dark:text-gray-300 text-sm max-md:text-base leading-relaxed">
             Your farm &quot;{onboardingData.farmName}&quot; is set up. Redirecting to your dashboard...
           </p>
         </motion.div>
@@ -178,101 +203,194 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
     );
   }
 
+  const stepMeta = STEPS[currentStep - 1];
+  const progressFraction = currentStep / STEPS.length;
+  const stepsRemaining = STEPS.length - currentStep;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-900 dark:to-green-900/20">
-      <div className="flex items-center justify-between p-6">
-        <div className="flex items-center space-x-2">
-          <Sprout className="h-8 w-8 text-primary-600" />
-          <span className="text-2xl font-heading font-bold text-primary-600">FarmKeeper</span>
+    <div className="min-h-[100dvh] md:min-h-screen flex flex-col bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-900 dark:to-green-900/20">
+      <header className="shrink-0 flex items-center justify-between gap-2 px-4 pt-3 pb-2 md:p-6">
+        <div className="flex items-center gap-1 min-w-0 flex-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={handlePrevious}
+            disabled={currentStep === 1}
+            className="md:hidden rounded-xl h-10 w-10 shrink-0 text-gray-700 dark:text-gray-200 active:scale-[0.97] disabled:opacity-30"
+            aria-label="Back"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex items-center gap-2 min-w-0">
+            <Sprout className="h-7 w-7 md:h-8 md:w-8 text-primary-600 shrink-0" />
+            <span className="text-lg md:text-2xl font-heading font-bold text-primary-600 truncate">
+              FarmKeeper
+            </span>
+          </div>
         </div>
-        <div className="flex items-center space-x-3">
+        <p className="md:hidden text-xs font-semibold text-gray-500 dark:text-gray-400 tabular-nums shrink-0">
+          Step {currentStep} of {STEPS.length}
+        </p>
+        <div className="hidden md:flex items-center space-x-3 shrink-0">
           <div className="text-right">
-            <p className="text-sm font-medium text-gray-900 dark:text-white">{onboardingData.name || userName}</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-white">
+              {onboardingData.name || userName}
+            </p>
             <p className="text-xs text-gray-500 dark:text-gray-400">{userEmail}</p>
           </div>
           {userImage && (
-            <img src={userImage} alt={userName} className="h-8 w-8 rounded-full" />
+            <img src={userImage} alt="" className="h-8 w-8 rounded-full" />
           )}
+        </div>
+      </header>
+
+      {/* Mobile: progress */}
+      <div className="md:hidden px-4 pb-3 space-y-2 shrink-0">
+        <div className="h-2 rounded-full bg-gray-200/90 dark:bg-gray-700 overflow-hidden">
+          <motion.div
+            className="h-full rounded-full bg-primary-600"
+            initial={false}
+            animate={{ width: `${progressFraction * 100}%` }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+          />
+        </div>
+        <div className="flex justify-center gap-1.5">
+          {STEPS.map((s) => (
+            <div
+              key={s.id}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                currentStep > s.id
+                  ? 'w-6 bg-primary-600'
+                  : currentStep === s.id
+                    ? 'w-6 bg-primary-400'
+                    : 'w-1.5 bg-gray-300 dark:bg-gray-600'
+              }`}
+            />
+          ))}
+        </div>
+        {stepsRemaining > 0 && (
+          <p className="text-center text-xs text-gray-500 dark:text-gray-400">
+            {stepsRemaining === 1 ? 'Almost done!' : `Just ${stepsRemaining} more steps`}
+          </p>
+        )}
+      </div>
+
+      {/* Desktop: stepper */}
+      <div className="hidden md:block px-4 sm:px-6 lg:px-8">
+        <div className={`w-full mx-auto mb-8 ${currentStep === 3 ? 'max-w-5xl' : 'max-w-2xl'}`}>
+          <div className="flex items-center justify-between">
+            {STEPS.map((step, index) => (
+              <div key={step.id} className="flex items-center">
+                <div
+                  className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                    currentStep >= step.id
+                      ? 'bg-primary-600 border-primary-600 text-white'
+                      : 'border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500'
+                  }`}
+                >
+                  {currentStep > step.id ? (
+                    <CheckCircle className="h-5 w-5" />
+                  ) : (
+                    <span className="text-sm font-medium">{step.id}</span>
+                  )}
+                </div>
+                {index < STEPS.length - 1 && (
+                  <div
+                    className={`flex-1 h-0.5 mx-4 min-w-[24px] ${
+                      currentStep > step.id ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+                    }`}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="flex items-center justify-center px-4 sm:px-6 lg:px-8 pb-12">
-        <div className={`w-full ${currentStep === 3 ? 'max-w-5xl' : 'max-w-2xl'}`}>
-          <div className="mb-8">
-            <div className="flex items-center justify-between">
-              {STEPS.map((step, index) => {
-                const Icon = step.icon;
-                return (
-                  <div key={step.id} className="flex items-center">
-                    <div
-                      className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-                        currentStep >= step.id
-                          ? 'bg-primary-600 border-primary-600 text-white'
-                          : 'border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500'
-                      }`}
-                    >
-                      {currentStep > step.id ? (
-                        <CheckCircle className="h-5 w-5" />
-                      ) : (
-                        <span className="text-sm font-medium">{step.id}</span>
-                      )}
-                    </div>
-                    {index < STEPS.length - 1 && (
-                      <div
-                        className={`flex-1 h-0.5 mx-4 min-w-[24px] ${
-                          currentStep > step.id ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
-                        }`}
-                      />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <Card className={`shadow-xl border-0 ${currentStep === 3 ? 'bg-gray-900 dark:bg-gray-900 border border-gray-800' : ''}`}>
-            <CardHeader className={`text-center pb-8 ${currentStep === 3 ? 'border-b border-gray-800' : ''}`}>
-              <div className={`flex justify-center mb-4 ${currentStep === 3 ? 'text-green-500' : STEPS[currentStep - 1].color}`}>
+      <div className="flex-1 flex flex-col min-h-0 md:block px-4 sm:px-6 lg:px-8 md:pb-12">
+        <div
+          className={`w-full mx-auto flex-1 flex flex-col min-h-0 md:flex-none ${
+            currentStep === 3 ? 'max-w-5xl' : 'max-w-2xl'
+          }`}
+        >
+          <Card
+            className={`flex-1 flex flex-col min-h-0 overflow-hidden md:overflow-visible shadow-xl border-0 md:rounded-xl max-md:rounded-2xl max-md:bg-white/80 max-md:dark:bg-gray-900/50 max-md:backdrop-blur-sm max-md:border max-md:border-gray-200/80 max-md:dark:border-gray-700/80 max-md:shadow-lg ${
+              currentStep === 3 ? 'md:bg-gray-900 md:dark:bg-gray-900 md:border md:border-gray-800' : ''
+            }`}
+          >
+            <CardHeader
+              className={`shrink-0 text-center pb-6 md:pb-8 max-md:pt-5 max-md:px-5 max-md:text-left md:px-6 ${
+                currentStep === 3 ? 'md:border-b md:border-gray-800' : ''
+              }`}
+            >
+              <div
+                className={`flex max-md:justify-start justify-center mb-3 md:mb-4 ${
+                  currentStep === 3 ? 'md:text-green-500' : stepMeta.color
+                } max-md:text-primary-600`}
+              >
                 {(() => {
-                  const Icon = STEPS[currentStep - 1].icon;
-                  return <Icon className="h-8 w-8" />;
+                  const Icon = stepMeta.icon;
+                  return <Icon className="h-9 w-9 md:h-8 md:w-8" />;
                 })()}
               </div>
-              <CardTitle className={`text-2xl font-bold font-heading ${currentStep === 3 ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
-                {STEPS[currentStep - 1].title}
+              <CardTitle
+                className={`text-xl md:text-2xl font-bold font-heading leading-tight ${
+                  currentStep === 3 ? 'md:text-white' : 'text-gray-900 dark:text-white'
+                }`}
+              >
+                {stepMeta.title}
               </CardTitle>
-              <CardDescription className={`text-base ${currentStep === 3 ? 'text-gray-400' : 'text-gray-600 dark:text-gray-300'}`}>
-                {STEPS[currentStep - 1].description}
+              <CardDescription
+                className={`text-sm md:text-base mt-1.5 leading-relaxed ${
+                  currentStep === 3 ? 'md:text-gray-400' : 'text-gray-600 dark:text-gray-300'
+                }`}
+              >
+                {stepMeta.description}
               </CardDescription>
             </CardHeader>
 
-            <CardContent className="space-y-6">
+            <CardContent className="flex-1 flex flex-col min-h-0 overflow-y-auto md:overflow-visible md:space-y-6 px-4 pb-4 md:px-6 md:pb-6 max-md:pt-0 max-md:pb-[calc(8rem+env(safe-area-inset-bottom))]">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentStep}
-                  initial={{ opacity: 0, x: 20 }}
+                  initial={{ opacity: 0, x: 24 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.2 }}
+                  exit={{ opacity: 0, x: -24 }}
+                  transition={{ duration: 0.22, ease: 'easeOut' }}
+                  className="flex-1 md:flex-none"
                 >
                   {currentStep === 1 && (
-                    <div className="text-center space-y-4">
-                      <p className="text-gray-600 dark:text-gray-300">
-                        Hi <strong>{userName || 'there'}</strong>! Complete this short form to start using FarmKeeper.
+                    <div className="max-md:text-left text-center space-y-5 py-1 md:py-0">
+                      <p className="text-gray-700 dark:text-gray-200 text-base leading-relaxed">
+                        Hi <strong>{userName || 'there'}</strong> — in a few taps we&apos;ll set up your farm on
+                        FarmKeeper.
                       </p>
-                      <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1 text-left list-disc list-inside">
-                        <li>Farm name</li>
-                        <li>Your display name</li>
-                        <li>Subscription plan</li>
+                      <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-3 max-md:rounded-2xl max-md:border max-md:border-gray-200/80 max-md:dark:border-gray-700 max-md:bg-white/60 max-md:dark:bg-gray-800/40 max-md:p-4">
+                        <li className="flex items-center gap-2">
+                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 text-xs font-bold">
+                            1
+                          </span>
+                          <span>Farm &amp; your name</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 text-xs font-bold">
+                            2
+                          </span>
+                          <span>Choose your plan</span>
+                        </li>
                       </ul>
                     </div>
                   )}
 
                   {currentStep === 2 && (
-                    <div className="space-y-6">
+                    <div className="space-y-5 md:space-y-6">
                       <div className="space-y-2">
-                        <Label htmlFor="farmName">Farm name *</Label>
+                        <Label htmlFor="farmName" className="text-sm font-medium">
+                          Farm name *
+                        </Label>
                         <Input
+                          ref={farmNameInputRef}
                           id="farmName"
                           type="text"
                           required
@@ -281,11 +399,13 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
                           onChange={(e) =>
                             setOnboardingData((prev) => ({ ...prev, farmName: e.target.value }))
                           }
-                          className="text-lg"
+                          className="text-base md:text-lg min-h-12 md:min-h-10 rounded-xl border-gray-300/90 dark:border-gray-600 focus-visible:ring-primary-500/50 transition-shadow [font-size:16px] md:[font-size:1.125rem]"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="yourName">Your name *</Label>
+                        <Label htmlFor="yourName" className="text-sm font-medium">
+                          Your name *
+                        </Label>
                         <Input
                           id="yourName"
                           type="text"
@@ -295,14 +415,14 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
                           onChange={(e) =>
                             setOnboardingData((prev) => ({ ...prev, name: e.target.value }))
                           }
-                          className="text-lg"
+                          className="text-base md:text-lg min-h-12 md:min-h-10 rounded-xl border-gray-300/90 dark:border-gray-600 focus-visible:ring-primary-500/50 transition-shadow [font-size:16px] md:[font-size:1.125rem]"
                         />
                       </div>
                     </div>
                   )}
 
                   {currentStep === 3 && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                       {PLANS.map((plan) => {
                         const isSelected = onboardingData.plan === plan.id;
                         const isPro = plan.mostPopular;
@@ -318,28 +438,34 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
                                 setOnboardingData((prev) => ({ ...prev, plan: plan.id }));
                               }
                             }}
-                            className={`relative flex flex-col rounded-xl p-6 cursor-pointer transition-all border-2 bg-gray-800/80 dark:bg-gray-800/90 ${
+                            className={`relative flex flex-col rounded-2xl p-5 md:p-6 cursor-pointer transition-all duration-200 border-2 active:scale-[0.99] max-md:min-h-0 md:bg-gray-800/80 md:dark:bg-gray-800/90 max-md:bg-white max-md:dark:bg-gray-900 max-md:shadow-sm ${
                               isPro
-                                ? 'border-green-500 ring-2 ring-green-500/30 shadow-lg shadow-green-500/10'
+                                ? 'border-primary-500 ring-2 ring-primary-500/25 shadow-md shadow-primary-500/10'
                                 : isSelected
-                                  ? 'border-green-500 dark:border-green-500'
-                                  : 'border-gray-700 dark:border-gray-700 hover:border-gray-600 dark:hover:border-gray-600'
+                                  ? 'border-primary-600 md:border-green-500 dark:border-green-500'
+                                  : 'border-gray-200 dark:border-gray-700 md:border-gray-700 hover:border-gray-300 md:hover:border-gray-600 dark:hover:border-gray-600'
                             }`}
                           >
                             {plan.mostPopular && (
-                              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                                <span className="inline-block px-3 py-0.5 rounded-full bg-green-500 text-white text-xs font-semibold uppercase tracking-wide">
-                                  Most Popular
+                              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
+                                <span className="inline-block px-3 py-0.5 rounded-full bg-primary-600 text-white text-[10px] font-bold uppercase tracking-wide">
+                                  Most popular
                                 </span>
                               </div>
                             )}
-                            <div className="mb-4">
-                              <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
+                            <div className="mb-3 md:mb-4">
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white md:text-white">
+                                {plan.name}
+                              </h3>
                               <p className="mt-2 flex items-baseline gap-1">
-                                <span className="text-3xl font-bold text-white">{plan.price}</span>
-                                <span className="text-gray-400 text-sm">{plan.pricePeriod}</span>
+                                <span className="text-2xl md:text-3xl font-bold text-primary-700 dark:text-primary-400 md:text-white">
+                                  {plan.price}
+                                </span>
+                                <span className="text-gray-500 md:text-gray-400 text-sm">{plan.pricePeriod}</span>
                               </p>
-                              <p className="mt-2 text-sm text-gray-400">{plan.description}</p>
+                              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 md:text-gray-400">
+                                {plan.description}
+                              </p>
                             </div>
                             <button
                               type="button"
@@ -347,24 +473,27 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
                                 e.stopPropagation();
                                 setOnboardingData((prev) => ({ ...prev, plan: plan.id }));
                               }}
-                              className={`mt-auto w-full py-2.5 px-4 rounded-lg font-medium text-sm transition-colors ${
+                              className={`mt-auto w-full min-h-11 py-2.5 px-4 rounded-xl font-semibold text-sm transition-colors active:scale-[0.99] ${
                                 isPro
-                                  ? 'bg-green-500 text-gray-900 hover:bg-green-400'
+                                  ? 'bg-primary-600 text-white hover:bg-primary-700 md:bg-green-500 md:text-gray-900 md:hover:bg-green-400'
                                   : plan.id === 'enterprise'
-                                    ? 'border-2 border-green-500 text-green-500 bg-transparent hover:bg-green-500/10'
-                                    : 'border border-green-600 text-green-600 dark:border-green-500 dark:text-green-500 bg-transparent hover:bg-green-500/10'
+                                    ? 'border-2 border-primary-600 text-primary-700 dark:text-primary-400 bg-transparent hover:bg-primary-500/10 md:border-green-500 md:text-green-500'
+                                    : 'border-2 border-primary-500/80 text-primary-700 dark:text-primary-300 bg-transparent hover:bg-primary-500/10 md:border-green-600 md:text-green-600 dark:md:border-green-500 dark:md:text-green-500'
                               }`}
                             >
                               {plan.buttonLabel}
                             </button>
-                            <div className="mt-6 pt-4 border-t border-gray-700">
-                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                            <div className="mt-4 md:mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 md:border-gray-700">
+                              <p className="text-[10px] md:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 md:mb-3">
                                 {plan.featuresHeading}
                               </p>
                               <ul className="space-y-2">
                                 {plan.features.map((f, i) => (
-                                  <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
-                                    <Check className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                                  <li
+                                    key={i}
+                                    className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300 md:text-gray-300"
+                                  >
+                                    <Check className="h-4 w-4 text-primary-600 md:text-green-500 shrink-0 mt-0.5" />
                                     <span>{f}</span>
                                   </li>
                                 ))}
@@ -379,12 +508,16 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
               </AnimatePresence>
 
               {error && (
-                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm">
+                <div className="hidden md:block bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm mt-4">
                   {error}
                 </div>
               )}
 
-              <div className={`flex justify-between pt-6 ${currentStep === 3 ? 'border-t border-gray-800' : ''}`}>
+              <div
+                className={`hidden md:flex justify-between pt-6 mt-auto ${
+                  currentStep === 3 ? 'border-t border-gray-800' : ''
+                }`}
+              >
                 <Button
                   variant="outline"
                   onClick={handlePrevious}
@@ -422,6 +555,66 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
               </div>
             </CardContent>
           </Card>
+
+          {/* Mobile: fixed bottom CTA (keyboard-safe scroll area above via CardContent padding) */}
+          <div className="md:hidden fixed bottom-0 left-0 right-0 z-20 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-gray-200/80 dark:border-gray-700/80 bg-white/95 dark:bg-gray-950/95 backdrop-blur-md space-y-3 shadow-[0_-8px_30px_-12px_rgba(0,0,0,0.15)]">
+            {error && (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-3 py-2.5 rounded-xl text-sm">
+                {error}
+              </div>
+            )}
+            {currentStep === 1 && (
+              <button
+                type="button"
+                onClick={handleNext}
+                className="w-full text-center text-sm font-medium text-gray-500 dark:text-gray-400 py-1 active:opacity-70"
+              >
+                Skip intro
+              </button>
+            )}
+            <div className="flex gap-3">
+              {currentStep > 1 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handlePrevious}
+                  className="min-h-12 rounded-xl px-4 shrink-0 active:scale-[0.98] transition-transform"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              )}
+              {currentStep < STEPS.length ? (
+                <Button
+                  type="button"
+                  onClick={handleNext}
+                  disabled={!isStepValid()}
+                  className="flex-1 min-h-12 rounded-xl text-base font-semibold bg-primary-600 text-white hover:bg-primary-700 active:scale-[0.99] transition-transform disabled:opacity-50"
+                >
+                  Continue
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={handleComplete}
+                  disabled={!isStepValid() || isLoading}
+                  className="flex-1 min-h-12 rounded-xl text-base font-semibold bg-primary-600 text-white hover:bg-primary-700 active:scale-[0.99] transition-transform disabled:opacity-50"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2" />
+                      Setting up…
+                    </>
+                  ) : (
+                    <>
+                      Complete setup
+                      <CheckCircle className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

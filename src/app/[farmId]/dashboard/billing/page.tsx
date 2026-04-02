@@ -355,20 +355,18 @@ export default function BillingPage({ params }: { params: { farmId: string } }) 
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-900 dark:to-green-900/20">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-900 dark:to-green-900/20 max-md:pb-[calc(9rem+env(safe-area-inset-bottom))]">
+      <div className="container mx-auto px-3 py-6 sm:px-4 md:py-8">
+        <div className="mb-6 overflow-hidden rounded-2xl border border-gray-200/90 bg-white/90 shadow-md backdrop-blur-sm dark:border-gray-700 dark:bg-gray-800/90 md:mb-8 md:rounded-xl md:text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
+            className="max-md:bg-gradient-to-br max-md:from-emerald-500/12 max-md:via-white max-md:to-white max-md:p-5 max-md:dark:from-emerald-500/12 max-md:dark:via-gray-800 max-md:dark:to-gray-800 md:p-8"
           >
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Subscription & Billing
-            </h1>
-            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Choose the perfect plan for your farm. Start with our 30-day free trial and upgrade when you're ready.
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white md:text-4xl">Subscription &amp; billing</h1>
+            <p className="mt-2 max-w-2xl text-[15px] leading-snug text-gray-600 dark:text-gray-300 md:mx-auto md:mt-4 md:text-lg">
+              Choose the perfect plan for your farm. Start with our 30-day free trial and upgrade when you&apos;re ready.
             </p>
           </motion.div>
         </div>
@@ -377,7 +375,7 @@ export default function BillingPage({ params }: { params: { farmId: string } }) 
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg mb-6"
+            className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300 md:rounded-lg"
           >
             {error}
           </motion.div>
@@ -391,7 +389,7 @@ export default function BillingPage({ params }: { params: { farmId: string } }) 
             transition={{ duration: 0.6, delay: 0.1 }}
             className="mb-8"
           >
-            <Card className="border-2 border-primary-200 dark:border-primary-800">
+            <Card className="border-2 border-primary-200 dark:border-primary-800 max-md:rounded-2xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Clock className="h-5 w-5 text-primary-600" />
@@ -454,7 +452,7 @@ export default function BillingPage({ params }: { params: { farmId: string } }) 
             className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"
           >
             {/* Premium Plan */}
-            <Card className="relative border-2 border-primary-200 dark:border-primary-800">
+            <Card className="relative border-2 border-primary-200 dark:border-primary-800 max-md:rounded-2xl max-md:shadow-lg">
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                 <Badge className="bg-primary-600 text-white">
                   <Star className="h-3 w-3 mr-1" />
@@ -487,7 +485,7 @@ export default function BillingPage({ params }: { params: { farmId: string } }) 
                   </div>
                   
                   <Button 
-                    className="w-full" 
+                    className="w-full max-md:min-h-12 max-md:rounded-xl" 
                     variant="default"
                     onClick={() => handleSubscribe('premium')}
                     disabled={isSubscribing && selectedPlan === 'premium'}
@@ -513,7 +511,7 @@ export default function BillingPage({ params }: { params: { farmId: string } }) 
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
         >
-          <Card>
+          <Card className="max-md:rounded-2xl max-md:shadow-md">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Smartphone className="h-5 w-5 text-primary-600" />
@@ -524,9 +522,9 @@ export default function BillingPage({ params }: { params: { farmId: string } }) 
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="flex items-center gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <div className="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
+                <div className="flex items-center gap-3 rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20">
                     <Smartphone className="h-4 w-4 text-green-600" />
                   </div>
                   <div>
@@ -534,22 +532,22 @@ export default function BillingPage({ params }: { params: { farmId: string } }) 
                     <div className="text-sm text-gray-600 dark:text-gray-400">*165*99#</div>
                   </div>
                 </div>
-                
-                <div className="flex items-center gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <div className="w-8 h-8 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
+
+                <div className="flex items-center gap-3 rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
                     <Smartphone className="h-4 w-4 text-red-600" />
                   </div>
                   <div>
                     <div className="font-medium">Airtel Money</div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">*185*99#</div>
                   </div>
-  </div>
-                
-                <div className="flex items-center gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
+                </div>
+
+                <div className="flex items-center gap-3 rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/20">
                     <CreditCard className="h-4 w-4 text-blue-600" />
                   </div>
-                <div>
+                  <div>
                     <div className="font-medium">Card Payment</div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">Visa, Mastercard</div>
                   </div>
@@ -561,11 +559,11 @@ export default function BillingPage({ params }: { params: { farmId: string } }) 
 
         {/* Professional Payment Modal */}
         {showPaymentModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 md:items-center md:p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4"
+              className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl dark:bg-gray-800 md:mx-4 md:rounded-xl md:p-6"
             >
               {/* Modal Header */}
               <div className="flex items-center justify-between mb-6">

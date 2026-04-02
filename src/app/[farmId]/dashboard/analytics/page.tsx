@@ -41,11 +41,19 @@ interface AnalyticsData {
 }
 
 const KpiCard = ({ title, value, change, positive }: { title: string; value: string; change: string; positive: boolean }) => (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</h3>
-        <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-white">{value}</p>
-        <p className={`mt-2 text-xs ${positive ? 'text-green-600' : 'text-red-600'}`}>{change}</p>
-    </div>
+  <div className="relative flex min-h-[6.75rem] flex-col rounded-2xl border border-gray-200/90 bg-white p-4 shadow-md dark:border-gray-700 dark:bg-gray-800 md:min-h-0 md:rounded-lg md:p-6 md:shadow">
+    <h3 className="text-[10px] font-semibold uppercase leading-tight tracking-wide text-gray-500 dark:text-gray-400 md:text-sm md:font-medium md:normal-case md:tracking-normal">
+      {title}
+    </h3>
+    <p className="mt-1.5 text-[1.2rem] font-extrabold leading-tight tracking-tight text-gray-900 dark:text-white md:mt-1 md:text-3xl md:font-bold md:tracking-normal">
+      {value}
+    </p>
+    <p
+      className={`mt-auto pt-2 text-[10px] font-medium leading-snug md:mt-2 md:text-xs ${positive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
+    >
+      {change}
+    </p>
+  </div>
 );
 
 export default function AnalyticsPage() {
@@ -103,7 +111,7 @@ export default function AnalyticsPage() {
 
     if (loading) {
         return (
-            <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto max-md:pb-[calc(9rem+env(safe-area-inset-bottom))] py-8 px-4 sm:px-6 lg:px-8">
                 <div className="space-y-8">
                     {/* Header Skeleton */}
                     <div className="text-center">
@@ -204,8 +212,8 @@ export default function AnalyticsPage() {
 
     if (error) {
         return (
-            <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4">
+            <div className="max-w-7xl mx-auto max-md:mx-3 max-md:pb-[calc(6rem+env(safe-area-inset-bottom))] py-8 px-4 sm:px-6 lg:px-8">
+                <div className="rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950/40 md:rounded-md">
                     <div className="flex">
                         <div className="ml-3">
                             <h3 className="text-sm font-medium text-red-800 dark:text-red-200">Error loading analytics</h3>
@@ -225,8 +233,8 @@ export default function AnalyticsPage() {
 
     if (!analyticsData) {
         return (
-            <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-                <div className="text-center py-12">
+            <div className="max-w-7xl mx-auto max-md:mx-3 max-md:pb-[calc(6rem+env(safe-area-inset-bottom))] py-8 px-4 sm:px-6 lg:px-8">
+                <div className="rounded-2xl border border-dashed border-gray-200 py-12 text-center dark:border-gray-600">
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">No analytics data available</h3>
                     <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Start adding financial records and egg collections to see analytics.</p>
                 </div>
@@ -262,47 +270,51 @@ export default function AnalyticsPage() {
     ];
     
     return (
-        <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-            {/* Header and Date Filter */}
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Farm Analytics</h1>
-                    <p className="mt-1 text-lg text-gray-500 dark:text-gray-400">Insights into your farm's performance.</p>
-                </div>
-                <div className="mt-4 md:mt-0">
+        <div className="max-w-7xl mx-auto max-md:px-0 max-md:pb-[calc(9rem+env(safe-area-inset-bottom))] py-8 px-4 sm:px-6 lg:px-8">
+            <div className="mb-6 overflow-hidden bg-white shadow-md dark:bg-gray-800 max-md:mx-3 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:shadow-lg dark:max-md:border-gray-700/80 md:rounded-xl md:shadow-lg">
+                <div className="max-md:bg-gradient-to-br max-md:from-violet-500/12 max-md:via-white max-md:to-white max-md:p-4 max-md:dark:from-violet-500/12 max-md:dark:via-gray-800 max-md:dark:to-gray-800 md:p-6">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <h1 className="text-xl font-bold text-gray-900 dark:text-white md:text-3xl">Farm analytics</h1>
+                            <p className="mt-1 text-[13px] text-gray-600 dark:text-gray-300 md:text-lg md:text-gray-500">
+                                Insights into your farm&apos;s performance.
+                            </p>
+                        </div>
+                        <div className="w-full md:mt-0 md:w-auto">
                     <select
                         value={dateRange}
                         onChange={(e) => setDateRange(e.target.value)}
-                        className="block pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="input block w-full max-md:min-h-12 max-md:rounded-xl pl-3 pr-10 py-2 text-base focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm md:w-auto md:rounded-md dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                     >
                         <option value="7d">Last 7 Days</option>
                         <option value="30d">Last 30 Days</option>
                         <option value="90d">Last 90 Days</option>
                         <option value="year">This Year</option>
                     </select>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Controls */}
-            <div className="flex flex-col md:flex-row gap-4 mb-8">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Period</label>
+            <div className="mb-6 max-md:mx-3 flex flex-col gap-4 rounded-2xl border border-gray-200/90 bg-white p-4 shadow-md dark:border-gray-700 dark:bg-gray-800 md:flex-row md:rounded-xl md:p-6">
+                <div className="min-w-0 flex-1">
+                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300 max-md:text-[13px] max-md:font-semibold">Period</label>
                     <select
                         value={period}
                         onChange={(e) => setPeriod(e.target.value)}
-                        className="block pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="input block w-full max-md:min-h-12 max-md:rounded-xl pl-3 pr-10 py-2 text-base focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                     >
                         <option value="daily">Daily</option>
                         <option value="weekly">Weekly</option>
                         <option value="monthly">Monthly</option>
                     </select>
                 </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sort Flocks By</label>
+                <div className="min-w-0 flex-1">
+                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300 max-md:text-[13px] max-md:font-semibold">Sort Flocks By</label>
                     <select
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value)}
-                        className="block pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="input block w-full max-md:min-h-12 max-md:rounded-xl pl-3 pr-10 py-2 text-base focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm dark:border-gray-700 dark:bg-gray-700 dark:text-white"
                     >
                         <option value="performance">Performance</option>
                         <option value="health">Health</option>
@@ -312,20 +324,17 @@ export default function AnalyticsPage() {
                 </div>
             </div>
 
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="mb-6 grid grid-cols-2 gap-2 md:grid-cols-2 md:gap-4 lg:grid-cols-4 lg:gap-6 max-md:px-3">
                 {kpiData.map((kpi, index) => (
                     <KpiCard key={index} {...kpi} />
                 ))}
             </div>
 
-            {/* Main Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                {/* Income vs. Expenses */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Income vs. Expenses</h3>
+            <div className="mb-6 grid grid-cols-1 gap-4 max-md:mx-3 lg:grid-cols-2 lg:gap-8">
+                <div className="rounded-2xl border border-gray-200/90 bg-white p-4 shadow-md dark:border-gray-700 dark:bg-gray-800 md:rounded-lg md:p-6 md:shadow">
+                    <h3 className="mb-4 text-base font-semibold text-gray-900 dark:text-white md:text-lg">Income vs. Expenses</h3>
                     {analyticsData.incomeExpenses.length > 0 ? (
-                        <ResponsiveContainer width="100%" height={300}>
+                        <ResponsiveContainer width="100%" height={280}>
                             <BarChart data={analyticsData.incomeExpenses}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                 <XAxis dataKey="month" />
@@ -344,11 +353,10 @@ export default function AnalyticsPage() {
                     )}
                 </div>
 
-                {/* Egg Collection Trends */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Egg Collection Trends</h3>
+                <div className="rounded-2xl border border-gray-200/90 bg-white p-4 shadow-md dark:border-gray-700 dark:bg-gray-800 md:rounded-lg md:p-6 md:shadow">
+                    <h3 className="mb-4 text-base font-semibold text-gray-900 dark:text-white md:text-lg">Egg Collection Trends</h3>
                     {analyticsData.eggTrends.length > 0 ? (
-                        <ResponsiveContainer width="100%" height={300}>
+                        <ResponsiveContainer width="100%" height={280}>
                             <LineChart data={analyticsData.eggTrends}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false}/>
                                 <XAxis dataKey="period" />
@@ -367,11 +375,9 @@ export default function AnalyticsPage() {
                     )}
                 </div>
             </div>
-            
-            {/* Data Tables */}
-             <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-                <div className="p-6">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Top Performing Flocks</h3>
+            <div className="max-md:mx-3 overflow-hidden rounded-2xl border border-gray-200/90 bg-white shadow-md dark:border-gray-700 dark:bg-gray-800 md:rounded-lg md:shadow">
+                <div className="p-4 md:p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white md:text-xl">Top Performing Flocks</h3>
                     <div className="mt-4 overflow-x-auto">
                         {analyticsData.topFlocks.length > 0 ? (
                             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">

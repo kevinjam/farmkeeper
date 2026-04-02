@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
+import { Settings } from 'lucide-react';
 import { useTranslations } from '@/hooks/useTranslations';
 import { apiClient } from '@/lib/api';
 import { LocationSelector } from '@/components/LocationSelector';
@@ -104,7 +105,7 @@ export default function FarmSettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="max-md:pb-[calc(9rem+env(safe-area-inset-bottom))] space-y-6">
         {/* Loading Header */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6">
           <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-2 animate-pulse"></div>
@@ -164,38 +165,45 @@ export default function FarmSettingsPage() {
 
   if (!settings) {
     return (
-      <div className="bg-red-50 dark:bg-red-900 p-4 rounded-md">
-        <p className="text-red-600 dark:text-red-200">{t('settings.settingsLoadError')}</p>
+      <div className="max-md:mx-3 max-md:rounded-2xl bg-red-50 p-4 dark:bg-red-900/30 md:rounded-md">
+        <p className="text-sm font-medium text-red-600 dark:text-red-200">{t('settings.settingsLoadError')}</p>
       </div>
     );
   }
 
+  const inputClass =
+    'w-full px-3 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white text-sm sm:text-base max-md:min-h-12 max-md:rounded-xl max-md:text-base [font-size:16px]';
+
   return (
-    <div className="w-full max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="mb-6 sm:mb-8 px-4 sm:px-0">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{t('settings.title')}</h1>
-        <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">
-          {t('settings.subtitle')}
-        </p>
+    <div className="mx-auto w-full max-w-4xl max-md:pb-[calc(9rem+env(safe-area-inset-bottom))]">
+      <div className="mb-6 overflow-hidden bg-white shadow-md dark:bg-gray-800 max-md:mx-3 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:shadow-lg dark:max-md:border-gray-700/80 md:rounded-xl md:shadow-lg">
+        <div className="flex max-md:items-start max-md:gap-3 max-md:bg-gradient-to-br max-md:from-slate-500/10 max-md:via-white max-md:to-white max-md:p-4 max-md:dark:from-slate-500/12 max-md:dark:via-gray-800 max-md:dark:to-gray-800 md:p-6">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-500/15 text-slate-800 dark:bg-slate-500/20 dark:text-slate-200 md:hidden">
+            <Settings className="h-6 w-6" strokeWidth={2} />
+          </div>
+          <div className="min-w-0 md:pl-0">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white sm:text-2xl md:text-3xl">{t('settings.title')}</h1>
+            <p className="mt-1 text-[13px] leading-snug text-gray-600 dark:text-gray-400 sm:mt-2 sm:text-base">
+              {t('settings.subtitle')}
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Alert Messages */}
       {error && (
-        <div className="mb-4 sm:mb-6 mx-4 sm:mx-0 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 sm:p-4">
-          <p className="text-sm sm:text-base text-red-700 dark:text-red-300">{error}</p>
+        <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950/40 sm:mb-6 mx-4 sm:mx-0 md:rounded-lg">
+          <p className="text-sm font-medium text-red-700 dark:text-red-300">{error}</p>
         </div>
       )}
 
       {success && (
-        <div className="mb-4 sm:mb-6 mx-4 sm:mx-0 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 sm:p-4">
-          <p className="text-sm sm:text-base text-green-700 dark:text-green-300">{success}</p>
+        <div className="mb-4 rounded-2xl border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950/30 sm:mb-6 mx-4 sm:mx-0 md:rounded-lg">
+          <p className="text-sm font-medium text-green-700 dark:text-green-300">{success}</p>
         </div>
       )}
 
       <div className="space-y-4 sm:space-y-6 lg:space-y-8 px-4 sm:px-0">
-        {/* Farm Information */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6">
+        <div className="max-md:mx-0 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:shadow-md dark:max-md:border-gray-700/80 bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 md:border-0 md:shadow">
           <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6">{t('settings.farmInformation')}</h2>
           
           <div className="space-y-4 sm:space-y-6">
@@ -207,7 +215,7 @@ export default function FarmSettingsPage() {
                 type="text"
                 value={settings.name}
                 onChange={(e) => setSettings(prev => ({ ...prev!, name: e.target.value }))}
-                className="w-full px-3 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white text-sm sm:text-base"
+                className={inputClass}
                 placeholder={t('settings.farmNamePlaceholder')}
               />
             </div>
@@ -222,7 +230,7 @@ export default function FarmSettingsPage() {
                   type="text"
                   value={settings.slug}
                   onChange={(e) => setSettings(prev => ({ ...prev!, slug: e.target.value }))}
-                  className="flex-1 px-3 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white text-sm sm:text-base"
+                  className={`flex-1 ${inputClass}`}
                   placeholder="your-farm-name"
                 />
               </div>
@@ -231,7 +239,7 @@ export default function FarmSettingsPage() {
         </div>
 
         {/* Location Settings */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6">
+        <div className="max-md:mx-0 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:shadow-md dark:max-md:border-gray-700/80 bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 md:border-0 md:shadow">
           <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6">{t('settings.locationSettings')}</h2>
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4 sm:mb-6">
             {t('settings.locationDescription')}
@@ -244,7 +252,7 @@ export default function FarmSettingsPage() {
           />
 
           {/* Troubleshooting Section */}
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+          <div className="mt-4 sm:mt-6 rounded-xl border border-gray-100 bg-gray-50 p-3 sm:p-4 dark:border-gray-600 dark:bg-gray-700/80">
             <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2 sm:mb-3">{t('settings.locationTroubleshooting')}</h3>
             <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 space-y-1 sm:space-y-2">
               <p><strong>{t('settings.locationTroubleshootingTitle')}</strong></p>
@@ -264,7 +272,7 @@ export default function FarmSettingsPage() {
         </div>
 
         {/* General Settings */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6">
+        <div className="max-md:mx-0 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:shadow-md dark:max-md:border-gray-700/80 bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 md:border-0 md:shadow">
           <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6">{t('settings.generalSettings')}</h2>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
@@ -278,7 +286,7 @@ export default function FarmSettingsPage() {
                   ...prev!,
                   settings: { ...prev!.settings, currency: e.target.value }
                 }))}
-                className="w-full px-3 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white text-sm sm:text-base"
+                className={inputClass}
               >
                 <option value="UGX">{t('currencies.UGX')}</option>
                 <option value="USD">{t('currencies.USD')}</option>
@@ -298,7 +306,7 @@ export default function FarmSettingsPage() {
                   ...prev!,
                   settings: { ...prev!.settings, timezone: e.target.value }
                 }))}
-                className="w-full px-3 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white text-sm sm:text-base"
+                className={inputClass}
               >
                 <option value="Africa/Kampala">{t('timezones.Africa/Kampala')}</option>
                 <option value="Africa/Nairobi">{t('timezones.Africa/Nairobi')}</option>
@@ -325,11 +333,11 @@ export default function FarmSettingsPage() {
         </div>
 
         {/* Save Button */}
-        <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 px-4 sm:px-0">
+        <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 px-4 sm:px-0 max-md:pb-2">
           <button
             onClick={handleSaveSettings}
             disabled={isSaving}
-            className="w-full sm:w-auto px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm sm:text-base transition-colors duration-200"
+            className="w-full sm:w-auto px-6 py-3 max-md:min-h-12 max-md:rounded-xl bg-primary-600 text-white rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm sm:text-base transition-colors duration-200"
           >
             {isSaving ? (
               <span className="flex items-center justify-center">
