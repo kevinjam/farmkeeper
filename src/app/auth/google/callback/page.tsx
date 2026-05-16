@@ -35,8 +35,10 @@ function GoogleCallbackContent() {
           setStatus('error');
           const baseUrl =
             typeof window !== 'undefined' ? window.location.origin : '';
+          const backendUrl =
+            process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
           setMessage(
-            `No authorization code in the URL. In Google Cloud Console, add this exact redirect URI: ${baseUrl}/auth/google/callback`
+            `No authorization code in the URL. In Google Cloud Console → OAuth client → Authorized redirect URIs, add: ${baseUrl}/auth/google/callback (and for API-only dev: ${backendUrl}/api/auth/google/callback)`
           );
           setTimeout(() => {
             router.push('/en/auth/login');
