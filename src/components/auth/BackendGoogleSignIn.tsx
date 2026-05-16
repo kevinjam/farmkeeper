@@ -4,7 +4,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { LogIn, LogOut, User, Loader2, ExternalLink } from 'lucide-react';
-import { isStandaloneOrLikelyRestrictedOAuthContext } from '@/lib/googleOAuthDisplay';
+import {
+  isStandaloneOrLikelyRestrictedOAuthContext,
+  openUrlPreferringSystemBrowser,
+} from '@/lib/googleOAuthDisplay';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -77,13 +80,14 @@ export function BackendGoogleSignIn({
   const handleGoogleSignIn = async () => {
     if (typeof window !== 'undefined' && isStandaloneOrLikelyRestrictedOAuthContext()) {
       const url = `${window.location.origin}${window.location.pathname}${window.location.search}`;
-      const opened = window.open(url, '_blank', 'noopener,noreferrer');
-      if (!opened) {
+      const { usedAndroidIntent, openedAuxiliary } = openUrlPreferringSystemBrowser(url);
+      if (!usedAndroidIntent && !openedAuxiliary) {
         try {
           await navigator.clipboard?.writeText(url);
         } catch (_) {}
         alert(
-          'Could not open a new tab. Copy this link, open Safari or Chrome, and sign in there:\n\n' + url
+          'Could not open Safari or Chrome from here. Copy this link, paste it into your browser, then use Sign in with Google again:\n\n' +
+            url
         );
       }
       return;
@@ -231,8 +235,9 @@ export function BackendGoogleSignIn({
         >
           <p className="font-semibold">Sign-in with Google needs Safari or Chrome</p>
           <p className="mt-1 leading-snug text-amber-900/90 dark:text-amber-100/90">
-            Installed shortcuts use a view Google blocks. Tap the button below to open this page in your
-            browser, then use <span className="font-medium">Sign in with Google</span> again.
+            This view (installed shortcut, WebView, or an in-app browser) is blocked by Google. Tap below to
+            open this page in your real browser, then tap <span className="font-medium">Sign in with Google</span>{' '}
+            again.
           </p>
         </div>
       )}
