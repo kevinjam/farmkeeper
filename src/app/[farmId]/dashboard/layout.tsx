@@ -304,13 +304,6 @@ export default function DashboardLayout({
     }
   }, []);
 
-  // Helper function to check if user has access to a feature
-  const hasFeatureAccess = (requiredFeatures: string[]) => {
-    if (!subscriptionStatus) return false;
-    if (requiredFeatures.length === 0) return true; // No requirements = available to all
-    return requiredFeatures.every(feature => subscriptionStatus.features.includes(feature));
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -367,59 +360,23 @@ export default function DashboardLayout({
             const isActive = isDashboardRoot
               ? pathname === fullHref
               : (pathname === fullHref || pathname.startsWith(`${fullHref}/`));
-            const hasAccess = hasFeatureAccess(item.requiredFeatures);
-            const isLocked = !hasAccess && item.requiredFeatures.length > 0;
-            
             return (
-              <div key={item.name} className="relative">
-                {isLocked ? (
-                  <div className="flex items-center px-2 py-2 rounded-md text-sm font-medium text-gray-400 dark:text-gray-500 cursor-not-allowed">
-                    <div className="mr-3">
-                      {item.icon}
-                    </div>
-                    <span className="flex-1">{item.name}</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
+              <div key={item.name}>
+                <Link
+                  href={`/${farmId}${item.href}`}
+                  className={`flex items-center px-2 py-2 rounded-md text-sm font-medium ${
+                    isActive
+                      ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300'
+                      : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                  aria-current={isActive ? 'page' : undefined}
+                  onClick={() => setIsSidebarOpen(false)}
+                >
+                  <div className={`mr-3 ${isActive ? 'text-primary-600 dark:text-primary-400' : ''}`}>
+                    {item.icon}
                   </div>
-                ) : (
-                  <Link
-                    href={`/${farmId}${item.href}`}
-                    className={`flex items-center px-2 py-2 rounded-md text-sm font-medium ${
-                      isActive
-                        ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300'
-                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
-                    aria-current={isActive ? 'page' : undefined}
-                    onClick={() => setIsSidebarOpen(false)}
-                  >
-                    <div className={`mr-3 ${isActive ? 'text-primary-600 dark:text-primary-400' : ''}`}>
-                      {item.icon}
-                    </div>
-                    {item.name}
-                  </Link>
-                )}
-                
-                {/* Upgrade prompt for locked items */}
-                {isLocked && (
-                  <div className="absolute left-full top-0 ml-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 z-50 opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
-                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                      {item.isPremium ? 'Premium Feature' : 'Upgrade Required'}
-                    </div>
-                    <div className="text-sm text-gray-800 dark:text-white mb-2">
-                      Upgrade to Premium to access {item.name}
-                    </div>
-                    <Link
-                      href={`/${farmId}/dashboard/subscription`}
-                      className="inline-flex items-center text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
-                    >
-                      Upgrade Now
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </Link>
-                  </div>
-                )}
+                  {item.name}
+                </Link>
               </div>
             );
           })}
