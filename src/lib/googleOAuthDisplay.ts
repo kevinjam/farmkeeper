@@ -11,16 +11,114 @@ export type OpenSystemBrowserResult = {
   openedAuxiliary: boolean;
 };
 
+function getUserAgent(): string {
+  return typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
+}
+
+/** iOS installed PWA / home-screen shortcut */
+function isIOSStandalonePwa(): boolean {
+  if (typeof window === 'undefined') return false;
+  const nav = window.navigator as Navigator & { standalone?: boolean };
+  return nav.standalone === true;
+}
+
+/** Android/iOS display-mode standalone or minimal-ui */
+function isDisplayModeStandalone(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.matchMedia?.('(display-mode: standalone)').matches === true ||
+    window.matchMedia?.('(display-mode: minimal-ui)').matches === true
+  );
+}
+
+/**
+ * Embedded WebView / in-app browser heuristics (Google blocks these for OAuth).
+ */
+function isEmbeddedOrInAppBrowser(ua: string): boolean {
+  if (document.referrer?.startsWith('android-app://')) return true;
+  if (/;\s*wv\)/i.test(ua)) return true;
+
+  if (/Instagram/i.test(ua)) return true;
+  if (/FBAN|FBAV|FB_IAB|FB4A|FBIOS|FBSSO/i.test(ua)) return true;
+  if (/Messenger/i.test(ua)) return true;
+  if (/Line\//i.test(ua)) return true;
+  if (/Snapchat/i.test(ua)) return true;
+  if (/musical_ly|BytedanceWebview|Bytedance|trill_|TikTok/i.test(ua)) return true;
+  if (/MicroMessenger/i.test(ua)) return true;
+  if (/LinkedInApp/i.test(ua)) return true;
+  if (/Pinterest/i.test(ua)) return true;
+  if (/Twitter/i.test(ua)) return true;
+  if (/cordova|Capacitor|Ionic|Crosswalk/i.test(ua)) return true;
+
+  return false;
+}
+
+/**
+ * iOS WKWebView often has AppleWebKit but not a full Safari token.
+ * Real Safari / Chrome / Firefox / Edge on iOS are allowed.
+ */
+function isIOSWebView(ua: string): boolean {
+  if (!/iPhone|iPad|iPod/i.test(ua)) return false;
+  if (/CriOS|FxiOS|OPiOS|EdgiOS|DuckDuckGo/i.test(ua)) return false;
+  if (/Safari/i.test(ua) && !isEmbeddedOrInAppBrowser(ua)) return false;
+  return /AppleWebKit/i.test(ua);
+}
+
+/**
+ * True when OAuth must not run inside this WebView (open Google in Safari/Chrome instead).
+ */
+export function isStandaloneOrLikelyRestrictedOAuthContext(): boolean {
+  if (typeof window === 'undefined') return false;
+
+  const ua = getUserAgent();
+
+  if (isIOSStandalonePwa()) return true;
+  if (isDisplayModeStandalone()) return true;
+  if (isEmbeddedOrInAppBrowser(ua)) return true;
+  if (isIOSWebView(ua)) return true;
+
+  return false;
+}
+
+/**
+ * Mobile browsers Google accepts for in-page OAuth redirect.
+ */
+export function isTrustedMobileBrowser(): boolean {
+  if (typeof window === 'undefined') return true;
+
+  const ua = getUserAgent();
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+  if (!isMobile) return true;
+
+  if (isStandaloneOrLikelyRestrictedOAuthContext()) return false;
+
+  if (/iPhone|iPad|iPod/i.test(ua)) {
+    return /Safari|CriOS|FxiOS|OPiOS|EdgiOS/i.test(ua);
+  }
+
+  if (/Android/i.test(ua)) {
+    if (/; wv\)/i.test(ua)) return false;
+    return /Chrome|Firefox|SamsungBrowser|EdgA/i.test(ua);
+  }
+
+  return true;
+}
+
+/** Open Google OAuth in the system browser when the current shell is not trusted. */
+export function shouldOpenGoogleAuthExternally(): boolean {
+  return !isTrustedMobileBrowser();
+}
+
 /**
  * Best-effort: open `url` in a real browser instead of an embedded WebView.
- * On Android, prefers Chrome via an intent: URL; otherwise tries window.open and a synthetic <a target="_blank">.
+ * On Android, prefers Chrome via an intent: URL.
  */
 export function openUrlPreferringSystemBrowser(url: string): OpenSystemBrowserResult {
   if (typeof window === 'undefined') {
     return { usedAndroidIntent: false, openedAuxiliary: false };
   }
 
-  const ua = navigator.userAgent || '';
+  const ua = getUserAgent();
   const isAndroid = /Android/i.test(ua);
 
   if (isAndroid) {
@@ -59,36 +157,4 @@ export function openUrlPreferringSystemBrowser(url: string): OpenSystemBrowserRe
 
   popup = window.open(url, '_blank', 'noopener,noreferrer');
   return { usedAndroidIntent: false, openedAuxiliary: !!popup };
-}
-
-export function isStandaloneOrLikelyRestrictedOAuthContext(): boolean {
-  if (typeof window === 'undefined') return false;
-
-  const ua = navigator.userAgent || '';
-
-  const nav = window.navigator as Navigator & { standalone?: boolean };
-  if (nav.standalone === true) return true;
-
-  if (window.matchMedia?.('(display-mode: standalone)').matches) return true;
-  if (window.matchMedia?.('(display-mode: minimal-ui)').matches) return true;
-
-  if (document.referrer?.startsWith('android-app://')) return true;
-
-  // Android System WebView (documented “; wv” marker in user agent)
-  if (/;\s*wv\)/i.test(ua)) return true;
-
-  // Common in-app / embedded browsers that use disallowed user agents for Google OAuth
-  if (/Instagram/i.test(ua)) return true;
-  if (/FBAN|FBAV|FB_IAB|FB4A|FBIOS/i.test(ua)) return true;
-  if (/Line\//i.test(ua)) return true;
-  if (/Snapchat/i.test(ua)) return true;
-  if (/musical_ly|BytedanceWebview|Bytedance|trill_|TikTok/i.test(ua)) return true;
-  if (/MicroMessenger/i.test(ua)) return true;
-  if (/LinkedInApp/i.test(ua)) return true;
-  if (/Pinterest/i.test(ua)) return true;
-  if (/Twitter/i.test(ua)) return true;
-
-  if (/cordova|Capacitor|Ionic/i.test(ua)) return true;
-
-  return false;
 }
