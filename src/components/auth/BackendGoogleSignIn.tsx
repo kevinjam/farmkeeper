@@ -7,6 +7,7 @@ import { LogIn, LogOut, User, Loader2, ExternalLink } from 'lucide-react';
 import {
   isStandaloneOrLikelyRestrictedOAuthContext,
   openUrlPreferringSystemBrowser,
+  shouldOpenGoogleAuthExternally,
 } from '@/lib/googleOAuthDisplay';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -78,27 +79,10 @@ export function BackendGoogleSignIn({
   }, []);
 
   const handleGoogleSignIn = async () => {
-    if (typeof window !== 'undefined' && isStandaloneOrLikelyRestrictedOAuthContext()) {
-      const url = `${window.location.origin}${window.location.pathname}${window.location.search}`;
-      const { usedAndroidIntent, openedAuxiliary } = openUrlPreferringSystemBrowser(url);
-      if (!usedAndroidIntent && !openedAuxiliary) {
-        try {
-          await navigator.clipboard?.writeText(url);
-        } catch (_) {}
-        alert(
-          'Could not open Safari or Chrome from here. Copy this link, paste it into your browser, then use Sign in with Google again:\n\n' +
-            url
-        );
-      }
-      return;
-    }
-
     setIsLoading(true);
     try {
-      // Must hit the API from the browser with credentials so PKCE cookies
-      // (g_oauth_cv, g_oauth_state) are set on the API origin. The Next.js proxy
-      // calls the backend server-to-server; Set-Cookie would never reach the browser,
-      // and Google redirect back to the API would miss the code_verifier cookie.
+      // Browser must call the API so PKCE state is stored (MongoDB + optional cookies).
+      // Do not use the Next.js proxy — Set-Cookie would not reach the browser.
       const response = await fetch(`${BACKEND_URL}/api/auth/google/auth-url`, {
         method: 'GET',
         credentials: 'include',
@@ -114,13 +98,30 @@ export function BackendGoogleSignIn({
         throw new Error(msg);
       }
 
-      if (data.success && data.authUrl) {
-        window.location.href = data.authUrl;
-      } else {
+      if (!data.success || typeof data.authUrl !== 'string') {
         throw new Error(
           typeof data?.message === 'string' ? data.message : 'Invalid response from server'
         );
       }
+
+      const authUrl = data.authUrl as string;
+      const openExternally = shouldOpenGoogleAuthExternally();
+
+      if (openExternally) {
+        const { usedAndroidIntent, openedAuxiliary } =
+          openUrlPreferringSystemBrowser(authUrl);
+        if (!usedAndroidIntent && !openedAuxiliary) {
+          try {
+            await navigator.clipboard?.writeText(authUrl);
+          } catch (_) {}
+          alert(
+            'Google sign-in must open in Safari or Chrome. The link was copied — paste it into your browser’s address bar.'
+          );
+        }
+        return;
+      }
+
+      window.location.href = authUrl;
     } catch (error) {
       console.error('Error initiating Google sign-in:', error);
       alert(
@@ -233,11 +234,10 @@ export function BackendGoogleSignIn({
           className="rounded-xl border border-amber-200/90 bg-amber-50 px-3 py-2.5 text-left text-xs text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/35 dark:text-amber-100 md:text-sm"
           role="note"
         >
-          <p className="font-semibold">Sign-in with Google needs Safari or Chrome</p>
+          <p className="font-semibold">Google sign-in opens in Safari or Chrome</p>
           <p className="mt-1 leading-snug text-amber-900/90 dark:text-amber-100/90">
-            This view (installed shortcut, WebView, or an in-app browser) is blocked by Google. Tap below to
-            open this page in your real browser, then tap <span className="font-medium">Sign in with Google</span>{' '}
-            again.
+            This app view is blocked by Google. Tap below — we&apos;ll open Google sign-in in your browser.
+            Complete sign-in there, then you&apos;ll return to FarmKeeper automatically.
           </p>
         </div>
       )}
@@ -257,7 +257,7 @@ export function BackendGoogleSignIn({
         ) : isPwaOAuthMode ? (
           <>
             <ExternalLink className="h-4 w-4 shrink-0" />
-            <span>Open in browser for Google sign-in</span>
+            <span>Continue in Safari / Chrome</span>
           </>
         ) : (
           <>
