@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
+import { useFarmPaths } from '@/hooks/useFarmPaths';
 
 // Define type for livestock data
 type Livestock = {
@@ -28,6 +29,7 @@ export default function LivestockViewPage({
 }) {
   const router = useRouter();
   const { farmId, livestockId } = params;
+  const { farmPath } = useFarmPaths(farmId);
   const [livestock, setLivestock] = useState<Livestock | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -75,7 +77,7 @@ export default function LivestockViewPage({
         throw new Error(response.error || 'Failed to delete livestock');
       }
 
-      router.push(`/${farmId}/dashboard/livestock`);
+      router.push(farmPath('/dashboard/livestock'));
     } catch (err) {
       console.error('Error deleting livestock:', err);
       setError('Failed to delete livestock. Please try again.');
@@ -122,7 +124,7 @@ export default function LivestockViewPage({
       <div className="text-center py-12">
         <div className="text-red-500 text-lg mb-4">{error}</div>
         <Link 
-          href={`/${farmId}/dashboard/livestock`}
+          href={farmPath('/dashboard/livestock')}
           className="text-primary-600 hover:text-primary-800 underline"
         >
           Back to Livestock List
@@ -136,7 +138,7 @@ export default function LivestockViewPage({
       <div className="text-center py-12">
         <div className="text-gray-500 text-lg mb-4">Livestock not found</div>
         <Link 
-          href={`/${farmId}/dashboard/livestock`}
+          href={farmPath('/dashboard/livestock')}
           className="text-primary-600 hover:text-primary-800 underline"
         >
           Back to Livestock List
@@ -152,7 +154,7 @@ export default function LivestockViewPage({
         <div className="flex items-center justify-between">
           <div>
             <Link 
-              href={`/${farmId}/dashboard/livestock`}
+              href={farmPath('/dashboard/livestock')}
               className="text-primary-600 hover:text-primary-800 text-sm font-medium mb-2 inline-flex items-center"
             >
               ← Back to Livestock
@@ -165,7 +167,7 @@ export default function LivestockViewPage({
           </div>
           <div className="flex space-x-3">
             <Link
-              href={`/${farmId}/dashboard/livestock/${livestockId}/edit`}
+              href={farmPath(`/dashboard/livestock/${livestockId}/edit`)}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
             >
               Edit
@@ -274,7 +276,7 @@ export default function LivestockViewPage({
             
             <div className="space-y-3">
               <Link
-                href={`/${farmId}/dashboard/livestock/${livestockId}/edit`}
+                href={farmPath(`/dashboard/livestock/${livestockId}/edit`)}
                 className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
               >
                 Edit Details

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Beef, Loader2 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
+import { useFarmPaths } from '@/hooks/useFarmPaths';
 
 const inputClass =
   'mt-1.5 block w-full border border-gray-300 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white max-md:min-h-12 max-md:rounded-xl max-md:px-3.5 max-md:text-base md:rounded-lg md:py-2 md:pl-3 md:pr-3 md:text-sm [font-size:16px]';
@@ -14,7 +15,7 @@ const sectionTitleClass =
 
 export default function AddLivestockPage({ params }: { params: { farmId: string } }) {
   const router = useRouter();
-  const { farmId } = params;
+  const { farmId, farmPath } = useFarmPaths(params.farmId);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -41,7 +42,7 @@ export default function AddLivestockPage({ params }: { params: { farmId: string 
         throw new Error(response.error || 'Failed to add livestock');
       }
 
-      router.push(`/${farmId}/dashboard/livestock`);
+      router.push(farmPath('/dashboard/livestock'));
     } catch (error) {
       console.error('Error adding livestock:', error);
       alert('Failed to add livestock. Please try again.');

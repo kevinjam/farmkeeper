@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useFarmPaths } from '@/hooks/useFarmPaths';
 import {
   Beef,
   ChevronRight,
@@ -88,7 +89,7 @@ function shortId(id: string) {
 }
 
 export default function LivestockPage({ params }: { params: { farmId: string } }) {
-  const { farmId } = params;
+  const { farmId, farmPath } = useFarmPaths(params.farmId);
   
   // State for livestock data
   const [livestock, setLivestock] = useState<Livestock[]>([]);
@@ -322,7 +323,7 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
         Try adjusting your filters or add animals to get started.
       </p>
       <Link
-        href={`/${farmId}/dashboard/livestock/add`}
+        href={farmPath('/dashboard/livestock/add')}
         className="btn btn-primary mt-5 inline-flex items-center justify-center gap-2 max-md:min-h-12 max-md:w-full max-md:rounded-xl"
       >
         <Plus className="h-5 w-5" strokeWidth={2} />
@@ -349,7 +350,7 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
               </div>
             </div>
             <Link
-              href={`/${farmId}/dashboard/livestock/add`}
+              href={farmPath('/dashboard/livestock/add')}
               className="btn btn-primary mt-4 inline-flex w-full shrink-0 items-center justify-center gap-2 max-md:min-h-12 max-md:rounded-xl md:mt-0 md:w-auto"
             >
               <Plus className="h-5 w-5 md:h-4 md:w-4" strokeWidth={2} />
@@ -557,14 +558,14 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
               </dl>
               <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3 dark:border-gray-700/80">
                 <Link
-                  href={`/${farmId}/dashboard/livestock/${item._id}`}
+                  href={farmPath(`/dashboard/livestock/${item._id}`)}
                   className="inline-flex flex-1 min-w-[5.5rem] items-center justify-center gap-1 rounded-xl bg-primary-600 px-3 py-2.5 text-center text-sm font-semibold text-white shadow-sm active:scale-[0.98] dark:bg-primary-500"
                 >
                   View
                   <ChevronRight className="h-4 w-4 opacity-90" />
                 </Link>
                 <Link
-                  href={`/${farmId}/dashboard/livestock/${item._id}/edit`}
+                  href={farmPath(`/dashboard/livestock/${item._id}/edit`)}
                   className="inline-flex flex-1 min-w-[5.5rem] items-center justify-center rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-center text-sm font-semibold text-gray-800 active:scale-[0.98] dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
                 >
                   Edit
@@ -696,13 +697,13 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <Link
-                        href={`/${farmId}/dashboard/livestock/${item._id}`}
+                        href={farmPath(`/dashboard/livestock/${item._id}`)}
                         className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-3"
                       >
                         View
                       </Link>
                       <Link
-                        href={`/${farmId}/dashboard/livestock/${item._id}/edit`}
+                        href={farmPath(`/dashboard/livestock/${item._id}/edit`)}
                         className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3"
                       >
                         Edit
