@@ -50,9 +50,10 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // Check if this is a farm route: /[farmId]/dashboard/... or /[farmId]/billing
-  const isFarmRoute = segments.length >= 2 && 
-    (segments[2] === 'dashboard' || segments[2] === 'billing' || segments.length === 2);
+  // Farm routes: /[farmId]/dashboard/... or /[farmId]/billing (not bare /dashboard)
+  const isFarmRoute =
+    segments.length >= 3 &&
+    (segments[2] === 'dashboard' || segments[2] === 'billing');
   
   if (isFarmRoute) {
     // This is a farm route, handle authentication

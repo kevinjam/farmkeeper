@@ -2,8 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useRouter } from 'next/navigation';
+import { usePathname, useParams, useRouter } from 'next/navigation';
+import {
+  buildFarmPath,
+  getLocaleFromPathname,
+  stripLocaleFromPathname,
+} from '@/lib/farmPaths';
 import {
   LayoutDashboard,
   ClipboardList,
@@ -143,7 +147,8 @@ export default function DashboardLayout({
   children: React.ReactNode;
   params: { farmId: string };
 }) {
-  const { farmId } = params;
+  const routeParams = useParams();
+  const farmId = (routeParams?.farmId as string) || params.farmId;
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [userName, setUserName] = useState('');
   const [farmName, setFarmName] = useState('');
@@ -158,9 +163,13 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useTranslations('common');
+  const locale = getLocaleFromPathname(pathname);
+  const pathnameWithoutLocale = stripLocaleFromPathname(pathname);
 
-  const dashboardRootHref = `/${farmId}/dashboard`;
-  const isDashboardHome = pathname === dashboardRootHref;
+  const dashboardRootHref = buildFarmPath(farmId, '/dashboard', locale);
+  const isDashboardHome =
+    pathnameWithoutLocale === `/${farmId}/dashboard` ||
+    pathnameWithoutLocale === `/${farmId}/dashboard/`;
 
   const mobileNavItems = [
     {
@@ -173,31 +182,31 @@ export default function DashboardLayout({
     {
       label: 'Activities',
       shortLabel: 'Tasks',
-      href: `/${farmId}/dashboard/livestock`,
+      href: buildFarmPath(farmId, '/dashboard/livestock', locale),
       icon: ClipboardList,
       isActive: (p: string) =>
-        p.startsWith(`/${farmId}/dashboard/livestock`) ||
-        p.startsWith(`/${farmId}/dashboard/eggs`) ||
-        p.startsWith(`/${farmId}/dashboard/crops`) ||
-        p.startsWith(`/${farmId}/dashboard/feed`) ||
-        p.startsWith(`/${farmId}/dashboard/finances`),
+        p.startsWith(buildFarmPath(farmId, '/dashboard/livestock', locale)) ||
+        p.startsWith(buildFarmPath(farmId, '/dashboard/eggs', locale)) ||
+        p.startsWith(buildFarmPath(farmId, '/dashboard/crops', locale)) ||
+        p.startsWith(buildFarmPath(farmId, '/dashboard/feed', locale)) ||
+        p.startsWith(buildFarmPath(farmId, '/dashboard/finances', locale)),
     },
     {
       label: 'Reports',
       shortLabel: 'Reports',
-      href: `/${farmId}/dashboard/analytics`,
+      href: buildFarmPath(farmId, '/dashboard/analytics', locale),
       icon: BarChart3,
-      isActive: (p: string) => p.startsWith(`/${farmId}/dashboard/analytics`),
+      isActive: (p: string) => p.startsWith(buildFarmPath(farmId, '/dashboard/analytics', locale)),
     },
     {
       label: t('navigation.settings'),
       shortLabel: 'Settings',
-      href: `/${farmId}/dashboard/settings`,
+      href: buildFarmPath(farmId, '/dashboard/settings', locale),
       icon: Settings,
       isActive: (p: string) =>
-        p.startsWith(`/${farmId}/dashboard/settings`) ||
-        p.startsWith(`/${farmId}/dashboard/subscription`) ||
-        p.startsWith(`/${farmId}/dashboard/billing`),
+        p.startsWith(buildFarmPath(farmId, '/dashboard/settings', locale)) ||
+        p.startsWith(buildFarmPath(farmId, '/dashboard/subscription', locale)) ||
+        p.startsWith(buildFarmPath(farmId, '/dashboard/billing', locale)),
     },
   ] as const;
 
@@ -355,15 +364,17 @@ export default function DashboardLayout({
         
         <nav className="px-4 py-2 space-y-1">
           {getNavigationItems(t).map((item) => {
-            const fullHref = `/${farmId}${item.href}`;
+            const fullHref = buildFarmPath(farmId, item.href, locale);
+            const farmPath = `/${farmId}${item.href}`;
             const isDashboardRoot = item.href === '/dashboard';
             const isActive = isDashboardRoot
-              ? pathname === fullHref
-              : (pathname === fullHref || pathname.startsWith(`${fullHref}/`));
+              ? pathnameWithoutLocale === farmPath
+              : pathnameWithoutLocale === farmPath ||
+                pathnameWithoutLocale.startsWith(`${farmPath}/`);
             return (
               <div key={item.name}>
                 <Link
-                  href={`/${farmId}${item.href}`}
+                  href={fullHref}
                   className={`flex items-center px-2 py-2 rounded-md text-sm font-medium ${
                     isActive
                       ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300'
@@ -416,11 +427,12 @@ export default function DashboardLayout({
             <h1 className="flex-1 text-center lg:text-left text-xl font-semibold text-gray-800 dark:text-white truncate">
               {(
                 getNavigationItems(t).find((item) => {
-                  const fullHref = `/${farmId}${item.href}`;
                   const isDashboardRoot = item.href === '/dashboard';
+                  const farmPath = `/${farmId}${item.href}`;
                   return isDashboardRoot
-                    ? pathname === fullHref
-                    : pathname === fullHref || pathname.startsWith(`${fullHref}/`);
+                    ? pathnameWithoutLocale === farmPath
+                    : pathnameWithoutLocale === farmPath ||
+                        pathnameWithoutLocale.startsWith(`${farmPath}/`);
                 })?.name
               ) || 'Dashboard'}
             </h1>
@@ -477,7 +489,7 @@ export default function DashboardLayout({
               <Bell className="h-[22px] w-[22px]" />
             </button>
             <Link
-              href={`/${farmId}/dashboard/settings/profile`}
+              href={buildFarmPath(farmId, '/dashboard/settings/profile', locale)}
               className="flex h-11 w-11 items-center justify-center rounded-xl text-gray-600 dark:text-gray-300 active:scale-95 transition-transform"
               aria-label="Profile"
             >
@@ -521,7 +533,7 @@ export default function DashboardLayout({
         {/* FAB — dashboard home only, mobile */}
         {isDashboardHome && (
           <Link
-            href={`/${farmId}/dashboard/eggs/record`}
+            href={buildFarmPath(farmId, '/dashboard/eggs/record', locale)}
             className="md:hidden fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary-600 text-white shadow-lg shadow-primary-600/35 ring-1 ring-white/20 active:scale-95 transition-transform"
             aria-label="Add record"
           >
