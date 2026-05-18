@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
+import { useFarmPaths } from '@/hooks/useFarmPaths';
 
 // Define type for livestock data
 type Livestock = {
@@ -28,6 +29,7 @@ export default function LivestockEditPage({
 }) {
   const router = useRouter();
   const { farmId, livestockId } = params;
+  const { farmPath } = useFarmPaths(farmId);
   const [livestock, setLivestock] = useState<Livestock | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -90,7 +92,7 @@ export default function LivestockEditPage({
         throw new Error(response.error || 'Failed to update livestock');
       }
 
-      router.push(`/${farmId}/dashboard/livestock/${livestockId}`);
+      router.push(farmPath(`/dashboard/livestock/${livestockId}`));
     } catch (error) {
       console.error('Error updating livestock:', error);
       setError('Failed to update livestock. Please try again.');
@@ -112,7 +114,7 @@ export default function LivestockEditPage({
       <div className="text-center py-12">
         <div className="text-red-500 text-lg mb-4">{error}</div>
         <Link 
-          href={`/${farmId}/dashboard/livestock`}
+          href={farmPath('/dashboard/livestock')}
           className="text-primary-600 hover:text-primary-800 underline"
         >
           Back to Livestock List
@@ -126,7 +128,7 @@ export default function LivestockEditPage({
       <div className="text-center py-12">
         <div className="text-gray-500 text-lg mb-4">Livestock not found</div>
         <Link 
-          href={`/${farmId}/dashboard/livestock`}
+          href={farmPath('/dashboard/livestock')}
           className="text-primary-600 hover:text-primary-800 underline"
         >
           Back to Livestock List
@@ -142,7 +144,7 @@ export default function LivestockEditPage({
           <div className="flex items-center justify-between">
             <div>
               <Link 
-                href={`/${farmId}/dashboard/livestock/${livestockId}`}
+                href={farmPath(`/dashboard/livestock/${livestockId}`)}
                 className="text-primary-600 hover:text-primary-800 text-sm font-medium mb-2 inline-flex items-center"
               >
                 ← Back to {livestock.name}
@@ -326,7 +328,7 @@ export default function LivestockEditPage({
 
           <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 text-right border-t border-gray-200 dark:border-gray-700">
             <Link
-              href={`/${farmId}/dashboard/livestock/${livestockId}`}
+              href={farmPath(`/dashboard/livestock/${livestockId}`)}
               className="mr-2 inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
             >
               Cancel
