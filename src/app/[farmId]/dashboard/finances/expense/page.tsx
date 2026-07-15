@@ -1,8 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Receipt, Loader2 } from 'lucide-react';
+import { Receipt, Loader2, X, FileText } from 'lucide-react';
+import { apiClient } from '@/lib/api';
+import { EXPENSE_CATEGORY_MAP } from '@/lib/financeMappings';
+import { useFarmPaths } from '@/hooks/useFarmPaths';
+import {
+  RECEIPT_ACCEPT,
+  formatReceiptSize,
+  validateReceiptFile,
+} from '@/lib/receiptUpload';
 
 const inputClass =
   'mt-1.5 block w-full border border-gray-300 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white max-md:min-h-12 max-md:rounded-xl max-md:px-3.5 max-md:text-base md:rounded-lg md:py-2 md:pl-3 md:pr-3 md:text-sm [font-size:16px]';
@@ -13,26 +21,106 @@ const sectionTitleClass =
 
 export default function AddExpensePage({ params }: { params: { farmId: string } }) {
   const router = useRouter();
-  const { farmId } = params;
+  const { farmId, farmPath } = useFarmPaths(params.farmId);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitPhase, setSubmitPhase] = useState<'idle' | 'uploading' | 'saving'>('idle');
+  const [error, setError] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Feed');
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!receiptFile || !receiptFile.type.startsWith('image/')) {
+      setReceiptPreview(null);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(receiptFile);
+    setReceiptPreview(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [receiptFile]);
+
+  const handleReceiptSelect = (file: File | null) => {
+    if (!file) return;
+    const validationError = validateReceiptFile(file);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    setError('');
+    setReceiptFile(file);
+  };
+
+  const clearReceipt = () => {
+    setReceiptFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
-    const formData = new FormData(e.currentTarget);
-    const data = Object.fromEntries(formData.entries());
-    console.log('New Expense Data:', data);
+    setError('');
 
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const formData = new FormData(e.currentTarget);
+      const categoryLabel = formData.get('category') as string;
+      const category = EXPENSE_CATEGORY_MAP[categoryLabel] || 'other';
+      const amount = parseFloat(formData.get('amount') as string);
+      const vendor = (formData.get('vendor') as string)?.trim();
+      const feedQuantity = formData.get('feedQuantity') as string;
 
-    setIsSubmitting(false);
-    router.push(`/${farmId}/dashboard/finances`);
+      let attachmentUrls: string[] | undefined;
+      if (receiptFile) {
+        setSubmitPhase('uploading');
+        const uploadResponse = await apiClient.uploadReceipt(farmId, receiptFile);
+        if (!uploadResponse.success || !uploadResponse.data?.url) {
+          throw new Error(uploadResponse.error || 'Failed to upload receipt');
+        }
+        attachmentUrls = [uploadResponse.data.url];
+      }
+
+      setSubmitPhase('saving');
+      const response = await apiClient.createFinancialTransaction(farmId, {
+        type: 'expense',
+        category,
+        amount,
+        currency: 'UGX',
+        description: formData.get('description') as string,
+        date: formData.get('expenseDate') as string,
+        ...(vendor && { reference: vendor }),
+        ...(attachmentUrls && { attachments: attachmentUrls }),
+        metadata: {
+          ...(feedQuantity && { quantity: parseFloat(feedQuantity) }),
+          ...(vendor && { notes: `Vendor: ${vendor}` }),
+        },
+      });
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to add expense');
+      }
+
+      router.push(farmPath('/dashboard/finances'));
+    } catch (err) {
+      console.error('Error adding expense:', err);
+      setError(err instanceof Error ? err.message : 'Failed to add expense. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+      setSubmitPhase('idle');
+    }
   };
 
+  const submitLabel =
+    submitPhase === 'uploading'
+      ? 'Uploading receipt…'
+      : submitPhase === 'saving'
+        ? 'Saving…'
+        : 'Add expense';
+
   return (
-    <div className="mx-auto max-w-4xl max-md:max-w-full md:px-4 md:py-8 lg:px-8 max-md:px-0 max-md:pb-[calc(9rem+env(safe-area-inset-bottom))]">
-      <div className="overflow-hidden bg-white shadow-md dark:bg-gray-800 md:rounded-xl md:shadow-lg max-md:mx-3 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:shadow-lg dark:max-md:border-gray-700/80">
+    <div className="mx-auto max-w-4xl max-md:max-w-full max-md:pb-[calc(9rem+env(safe-area-inset-bottom))] md:py-2">
+      <div className="overflow-hidden bg-white shadow-md dark:bg-gray-800 md:rounded-xl md:shadow-lg max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:shadow-lg dark:max-md:border-gray-700/80">
         <div className="border-b border-gray-200 dark:border-gray-700 max-md:border-gray-200/80 max-md:bg-gradient-to-br max-md:from-rose-500/10 max-md:via-white max-md:to-white max-md:p-4 max-md:dark:from-rose-500/10 max-md:dark:via-gray-800 max-md:dark:to-gray-800 md:p-6">
           <div className="flex max-md:items-start max-md:gap-3 md:block">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300 md:hidden">
@@ -50,6 +138,11 @@ export default function AddExpensePage({ params }: { params: { farmId: string } 
         </div>
 
         <form onSubmit={handleSubmit}>
+          {error && (
+            <div className="mx-6 mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300 max-md:mx-4">
+              {error}
+            </div>
+          )}
           <div className="space-y-6 p-6 max-md:space-y-5 max-md:p-4">
             <div className="max-md:rounded-2xl max-md:border max-md:border-rose-200/50 max-md:bg-rose-50/40 max-md:p-3.5 dark:max-md:border-rose-900/25 dark:max-md:bg-rose-950/15">
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">
@@ -163,21 +256,81 @@ export default function AddExpensePage({ params }: { params: { farmId: string } 
 
             <div>
               <label className={labelClass}>Attach receipt (optional)</label>
-              <div className="mt-1.5 flex justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50/50 px-4 py-8 dark:border-gray-600 dark:bg-gray-900/30 md:rounded-lg md:px-6 md:pt-5 md:pb-6">
-                <div className="space-y-1 text-center">
-                  <Receipt className="mx-auto h-10 w-10 text-gray-400 md:h-12 md:w-12" strokeWidth={1.25} />
-                  <div className="flex flex-wrap items-center justify-center gap-1 text-sm text-gray-600 dark:text-gray-400">
-                    <label
-                      htmlFor="file-upload"
-                      className="cursor-pointer rounded-md font-semibold text-primary-600 hover:text-primary-500 dark:text-primary-400"
+              <div
+                className="mt-1.5 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50/50 px-4 py-6 dark:border-gray-600 dark:bg-gray-900/30 md:rounded-lg md:px-6 md:py-8"
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) handleReceiptSelect(file);
+                }}
+              >
+                {receiptFile ? (
+                  <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex min-w-0 items-center gap-3">
+                      {receiptPreview ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={receiptPreview}
+                          alt="Receipt preview"
+                          className="h-20 w-20 shrink-0 rounded-lg border border-gray-200 object-cover dark:border-gray-700"
+                        />
+                      ) : (
+                        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+                          <FileText className="h-10 w-10 text-rose-500" />
+                        </div>
+                      )}
+                      <div className="min-w-0 text-left">
+                        <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+                          {receiptFile.name}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {formatReceiptSize(receiptFile.size)}
+                        </p>
+                        <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
+                          Ready to upload when you save
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={clearReceipt}
+                      className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800"
                     >
-                      <span>Upload a file</span>
-                      <input id="file-upload" name="file-upload" type="file" className="sr-only" />
-                    </label>
-                    <span className="hidden sm:inline">or drag and drop</span>
+                      <X className="h-4 w-4" />
+                      Remove
+                    </button>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-500">PNG, JPG, PDF up to 10MB</p>
-                </div>
+                ) : (
+                  <div className="space-y-1 text-center">
+                    <Receipt className="mx-auto h-10 w-10 text-gray-400 md:h-12 md:w-12" strokeWidth={1.25} />
+                    <div className="flex flex-wrap items-center justify-center gap-1 text-sm text-gray-600 dark:text-gray-400">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="cursor-pointer rounded-md font-semibold text-primary-600 hover:text-primary-500 dark:text-primary-400"
+                      >
+                        Upload a file
+                      </button>
+                      <span className="hidden sm:inline">or drag and drop</span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-500">
+                      PNG, JPG, WebP, or PDF up to 10MB — stored securely on Cloudinary
+                    </p>
+                  </div>
+                )}
+                <input
+                  ref={fileInputRef}
+                  id="file-upload"
+                  type="file"
+                  accept={RECEIPT_ACCEPT}
+                  className="sr-only"
+                  onChange={(e) => handleReceiptSelect(e.target.files?.[0] ?? null)}
+                />
               </div>
             </div>
           </div>
@@ -195,7 +348,7 @@ export default function AddExpensePage({ params }: { params: { farmId: string } 
               disabled={isSubmitting}
               className="inline-flex justify-center rounded-lg border border-transparent bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 disabled:opacity-50"
             >
-              {isSubmitting ? 'Saving...' : 'Add expense'}
+              {isSubmitting ? submitLabel : 'Add expense'}
             </button>
           </div>
 
@@ -215,7 +368,7 @@ export default function AddExpensePage({ params }: { params: { farmId: string } 
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  Saving…
+                  {submitLabel}
                 </>
               ) : (
                 <>

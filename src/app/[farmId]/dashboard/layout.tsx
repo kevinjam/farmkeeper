@@ -13,12 +13,27 @@ import {
   ClipboardList,
   BarChart3,
   Settings,
-  Bell,
   Menu,
   Plus,
   Sprout,
+  Lock,
+  Crown,
+  LogOut,
+  UserRound,
 } from 'lucide-react';
 import { useTranslations } from '@/hooks/useTranslations';
+import { apiClient } from '@/lib/api';
+import { hasFeatureAccess, canAccessDashboardPath, getGatedFeatureForDashboardPath } from '@/lib/features';
+import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
+import FeatureGate from '@/components/billing/FeatureGate';
+import { normalizePlanId, PlanId } from '@/lib/billing';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 // Navigation items for sidebar with subscription requirements
 const getNavigationItems = (t: (key: string) => string) => [
@@ -43,6 +58,16 @@ const getNavigationItems = (t: (key: string) => string) => [
     requiredFeatures: ['livestock'], // Available to all plans
   },
   {
+    name: t('navigation.tasks'),
+    href: '/dashboard/tasks',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+      </svg>
+    ),
+    requiredFeatures: [],
+  },
+  {
     name: t('navigation.crops'),
     href: '/dashboard/crops',
     icon: (
@@ -60,8 +85,7 @@ const getNavigationItems = (t: (key: string) => string) => [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
-    requiredFeatures: ['finances'], // Premium only
-    isPremium: true,
+    requiredFeatures: ['finances'],
   },
   {
     name: t('navigation.feedManagement'),
@@ -71,8 +95,7 @@ const getNavigationItems = (t: (key: string) => string) => [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h18v18H3zM8 8h.01M12 8h.01M16 8h.01M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01" />
       </svg>
     ),
-    requiredFeatures: ['feed_management'], // Premium only
-    isPremium: true,
+    requiredFeatures: ['feed_management'],
   },
   {
     name: t('navigation.eggsSales'),
@@ -82,8 +105,7 @@ const getNavigationItems = (t: (key: string) => string) => [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
       </svg>
     ),
-    requiredFeatures: ['eggs_sales'], // Premium only
-    isPremium: true,
+    requiredFeatures: ['eggs_sales'],
   },
   {
     name: t('navigation.weather'),
@@ -103,29 +125,17 @@ const getNavigationItems = (t: (key: string) => string) => [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
       </svg>
     ),
-    requiredFeatures: ['analytics'], // Premium only
-    isPremium: true,
+    requiredFeatures: ['analytics'],
   },
   {
-    name: t('navigation.subscription'),
-    href: '/dashboard/subscription',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-    requiredFeatures: [], // Available to all
-  },
-  {
-    name: t('navigation.billing'),
+    name: t('navigation.planBilling'),
     href: '/dashboard/billing',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
       </svg>
     ),
-    requiredFeatures: ['billing'], // Premium only
-    isPremium: true,
+    requiredFeatures: [],
   },
   {
     name: t('navigation.settings'),
@@ -140,6 +150,100 @@ const getNavigationItems = (t: (key: string) => string) => [
   },
 ];
 
+function ProfileAvatar({
+  name,
+  image,
+  size = 'md',
+}: {
+  name: string;
+  image?: string;
+  size?: 'sm' | 'md';
+}) {
+  const dim = size === 'sm' ? 'h-9 w-9 text-xs' : 'h-10 w-10 text-sm';
+  if (image) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={image}
+        alt=""
+        className={`${dim} rounded-full object-cover`}
+        referrerPolicy="no-referrer"
+      />
+    );
+  }
+  return (
+    <span
+      className={`flex ${dim} items-center justify-center rounded-full bg-primary-100 font-semibold text-primary-800 dark:bg-primary-900/60 dark:text-primary-200`}
+    >
+      {name ? name.charAt(0).toUpperCase() : 'U'}
+    </span>
+  );
+}
+
+function UserProfileMenu({
+  name,
+  email,
+  image,
+  profileHref,
+  size = 'md',
+}: {
+  name: string;
+  email: string;
+  image?: string;
+  profileHref: string;
+  size?: 'sm' | 'md';
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-full ring-2 ring-primary-500/30 transition hover:ring-primary-500/60 focus:outline-none focus-visible:ring-primary-500 dark:ring-primary-400/40 ${
+            size === 'sm' ? 'h-9 w-9' : 'h-10 w-10'
+          }`}
+          aria-label="Account menu"
+        >
+          <ProfileAvatar name={name} image={image} size={size} />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        sideOffset={8}
+        className="w-72 rounded-xl border border-gray-200 bg-white p-0 shadow-lg dark:border-gray-700 dark:bg-gray-900"
+      >
+        <div className="flex items-start gap-3 border-b border-gray-100 px-4 py-3.5 dark:border-gray-800">
+          <div className="mt-0.5 overflow-hidden rounded-full ring-2 ring-primary-500/20">
+            <ProfileAvatar name={name} image={image} size="md" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+              {name || 'Farm owner'}
+            </p>
+            <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400" title={email}>
+              {email || 'No email on file'}
+            </p>
+          </div>
+        </div>
+        <div className="p-1.5">
+          <DropdownMenuItem asChild className="cursor-pointer rounded-lg px-3 py-2.5">
+            <Link href={profileHref} className="flex items-center gap-2.5">
+              <UserRound className="h-4 w-4 text-gray-500" />
+              <span>Profile settings</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="my-1 bg-gray-100 dark:bg-gray-800" />
+          <DropdownMenuItem asChild className="cursor-pointer rounded-lg px-3 py-2.5 text-red-600 focus:text-red-600 dark:text-red-400">
+            <Link href="/en/auth/logout" className="flex items-center gap-2.5">
+              <LogOut className="h-4 w-4" />
+              <span>Sign out</span>
+            </Link>
+          </DropdownMenuItem>
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export default function DashboardLayout({
   children,
   params,
@@ -151,13 +255,23 @@ export default function DashboardLayout({
   const farmId = (routeParams?.farmId as string) || params.farmId;
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return localStorage.getItem('userEmail') || '';
+  });
+  const [userImage, setUserImage] = useState('');
   const [farmName, setFarmName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(true); // Assume authenticated until proven otherwise
   const [subscriptionStatus, setSubscriptionStatus] = useState<{
-    plan: 'free' | 'trial' | 'premium';
+    plan: PlanId;
     features: string[];
+    livestockLimit: number | null;
+    unlockAllFeatures: boolean;
+    daysLeft: number;
+    isTrialExpired: boolean;
+    isFarmerTrial: boolean;
   } | null>(null);
   
   const pathname = usePathname();
@@ -171,6 +285,27 @@ export default function DashboardLayout({
     pathnameWithoutLocale === `/${farmId}/dashboard` ||
     pathnameWithoutLocale === `/${farmId}/dashboard/`;
 
+  const features = subscriptionStatus?.features ?? [];
+  const unlockAll = subscriptionStatus?.unlockAllFeatures ?? false;
+  // Show every module; locked ones stay visible with a soft lock (upsell path).
+  const navItems = getNavigationItems(t);
+  const gatedFeature = subscriptionStatus
+    ? getGatedFeatureForDashboardPath(pathnameWithoutLocale, farmId)
+    : null;
+  const routeBlocked = Boolean(
+    subscriptionStatus &&
+      gatedFeature &&
+      !canAccessDashboardPath(pathnameWithoutLocale, farmId, features, unlockAll)
+  );
+  const canRecordEggs = hasFeatureAccess(features, 'eggs_sales', unlockAll);
+  const analyticsLocked = !hasFeatureAccess(features, 'analytics', unlockAll);
+  const showUnlockPremium =
+    subscriptionStatus !== null &&
+    subscriptionStatus.plan !== 'premium' &&
+    !unlockAll;
+  const profileHref = `${buildFarmPath(farmId, '/dashboard/settings', locale)}?tab=profile`;
+  const billingPlansHref = `${buildFarmPath(farmId, '/dashboard/billing', locale)}?tab=plans`;
+
   const mobileNavItems = [
     {
       label: t('navigation.dashboard'),
@@ -180,16 +315,12 @@ export default function DashboardLayout({
       isActive: (p: string) => p === dashboardRootHref,
     },
     {
-      label: 'Activities',
+      label: t('navigation.tasks'),
       shortLabel: 'Tasks',
-      href: buildFarmPath(farmId, '/dashboard/livestock', locale),
+      href: buildFarmPath(farmId, '/dashboard/tasks', locale),
       icon: ClipboardList,
       isActive: (p: string) =>
-        p.startsWith(buildFarmPath(farmId, '/dashboard/livestock', locale)) ||
-        p.startsWith(buildFarmPath(farmId, '/dashboard/eggs', locale)) ||
-        p.startsWith(buildFarmPath(farmId, '/dashboard/crops', locale)) ||
-        p.startsWith(buildFarmPath(farmId, '/dashboard/feed', locale)) ||
-        p.startsWith(buildFarmPath(farmId, '/dashboard/finances', locale)),
+        p.startsWith(buildFarmPath(farmId, '/dashboard/tasks', locale)),
     },
     {
       label: 'Reports',
@@ -212,19 +343,20 @@ export default function DashboardLayout({
 
   const fetchSubscriptionStatus = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001'}/api/billing/trial-status`, {
-        credentials: 'include',
-        cache: 'no-store',
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setSubscriptionStatus({
-            plan: data.data.plan,
-            features: data.data.features || []
-          });
-        }
+      const response = await apiClient.getSubscriptionStatus();
+      if (response.success && response.data) {
+        const data = response.data;
+        setSubscriptionStatus({
+          plan: normalizePlanId(data.rawPlan || data.plan || 'free'),
+          features: data.features || [],
+          livestockLimit: data.livestockLimit ?? null,
+          unlockAllFeatures: Boolean(data.unlockAllFeatures),
+          daysLeft: data.daysLeft ?? 0,
+          isTrialExpired: Boolean(
+            data.isTrialExpired ?? (data.isFarmerTrial && data.isExpired)
+          ),
+          isFarmerTrial: Boolean(data.isFarmerTrial),
+        });
       }
     } catch (error) {
       console.error('Error fetching subscription status:', error);
@@ -289,6 +421,15 @@ export default function DashboardLayout({
         // Set farm and user data from API response
         setFarmName(data.farm?.name || farmId.charAt(0).toUpperCase() + farmId.slice(1) + ' Farm');
         setUserName(data.user?.name || 'Farm Owner');
+        const resolvedEmail =
+          (typeof data.user?.email === 'string' && data.user.email.trim()) ||
+          localStorage.getItem('userEmail') ||
+          '';
+        setUserEmail(resolvedEmail);
+        if (resolvedEmail) {
+          localStorage.setItem('userEmail', resolvedEmail);
+        }
+        setUserImage(typeof data.user?.image === 'string' ? data.user.image : '');
         setIsAuthenticated(true);
         
         // Fetch subscription status after authentication
@@ -331,7 +472,21 @@ export default function DashboardLayout({
     );
   }
 
+  const subscriptionContextValue = {
+    plan: subscriptionStatus?.plan ?? ('free' as PlanId),
+    features,
+    unlockAllFeatures: unlockAll,
+    livestockLimit: subscriptionStatus?.livestockLimit ?? null,
+    daysLeft: subscriptionStatus?.daysLeft ?? 0,
+    isFarmerTrial: subscriptionStatus?.isFarmerTrial ?? false,
+    isTrialExpired: subscriptionStatus?.isTrialExpired ?? false,
+    loaded: subscriptionStatus !== null,
+  };
+
+  const visibleMobileNavItems = mobileNavItems;
+
   return (
+    <SubscriptionProvider value={subscriptionContextValue}>
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Sidebar */}
       <aside
@@ -362,8 +517,8 @@ export default function DashboardLayout({
           <h3 className="text-base font-semibold text-primary-600 truncate">{farmName}</h3>
         </div>
         
-        <nav className="px-4 py-2 space-y-1">
-          {getNavigationItems(t).map((item) => {
+        <nav className="px-4 py-2 space-y-1 overflow-y-auto max-h-[calc(100vh-13rem)]">
+          {navItems.map((item) => {
             const fullHref = buildFarmPath(farmId, item.href, locale);
             const farmPath = `/${farmId}${item.href}`;
             const isDashboardRoot = item.href === '/dashboard';
@@ -371,22 +526,42 @@ export default function DashboardLayout({
               ? pathnameWithoutLocale === farmPath
               : pathnameWithoutLocale === farmPath ||
                 pathnameWithoutLocale.startsWith(`${farmPath}/`);
+            const isLocked =
+              subscriptionStatus !== null &&
+              !hasFeatureAccess(features, item.requiredFeatures, unlockAll);
             return (
               <div key={item.name}>
                 <Link
                   href={fullHref}
                   className={`flex items-center px-2 py-2 rounded-md text-sm font-medium ${
-                    isActive
-                      ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300'
-                      : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    isLocked
+                      ? isActive
+                        ? 'bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200'
+                        : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/60'
+                      : isActive
+                        ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300'
+                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                   aria-current={isActive ? 'page' : undefined}
+                  aria-disabled={isLocked || undefined}
+                  title={isLocked ? 'Included on a higher plan — tap to upgrade' : undefined}
                   onClick={() => setIsSidebarOpen(false)}
                 >
-                  <div className={`mr-3 ${isActive ? 'text-primary-600 dark:text-primary-400' : ''}`}>
+                  <div
+                    className={`mr-3 ${
+                      isLocked
+                        ? 'text-gray-400 dark:text-gray-500'
+                        : isActive
+                          ? 'text-primary-600 dark:text-primary-400'
+                          : ''
+                    }`}
+                  >
                     {item.icon}
                   </div>
-                  {item.name}
+                  <span className="flex-1 truncate">{item.name}</span>
+                  {isLocked && (
+                    <Lock className="ml-2 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
+                  )}
                 </Link>
               </div>
             );
@@ -395,13 +570,34 @@ export default function DashboardLayout({
         
         <div className="absolute bottom-0 w-full border-t border-gray-200 dark:border-gray-700">
           <div className="px-4 py-4 flex items-center">
-            <div className="h-8 w-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-              <span className="text-gray-700 dark:text-gray-200 font-medium">
-                {userName ? userName.charAt(0) : 'U'}
-              </span>
+            <div className="h-8 w-8 overflow-hidden rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center ring-1 ring-primary-500/20">
+              {userImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={userImage} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+              ) : (
+                <span className="text-gray-700 dark:text-gray-200 font-medium">
+                  {userName ? userName.charAt(0) : 'U'}
+                </span>
+              )}
             </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-800 dark:text-white">{userName}</p>
+            <div className="ml-3 min-w-0">
+              <p className="text-sm font-medium text-gray-800 dark:text-white truncate">{userName}</p>
+              {userEmail ? (
+                <p className="truncate text-[11px] text-gray-500 dark:text-gray-400" title={userEmail}>
+                  {userEmail}
+                </p>
+              ) : null}
+              {subscriptionStatus && (
+                <p className="text-[11px] font-medium text-primary-700 dark:text-primary-300 truncate">
+                  {subscriptionStatus.isFarmerTrial
+                    ? `Farmer trial · ${subscriptionStatus.daysLeft}d left`
+                    : subscriptionStatus.plan === 'free'
+                      ? 'Free plan'
+                      : subscriptionStatus.plan === 'premium'
+                        ? 'Premium'
+                        : 'Farmer'}
+                </p>
+              )}
               <Link href="/en/auth/logout" className="text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400">
                 Sign out
               </Link>
@@ -413,7 +609,7 @@ export default function DashboardLayout({
       <div className="lg:pl-64 flex flex-col min-h-screen">
         {/* Desktop / tablet header — unchanged */}
         <header className="hidden md:block sticky top-0 z-10 bg-white dark:bg-gray-800 shadow-sm border-b border-gray-100 dark:border-gray-700/80">
-          <div className="px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center gap-3">
+          <div className="px-3 sm:px-4 lg:px-5 py-4 flex justify-between items-center gap-3">
             <button
               type="button"
               onClick={() => setIsSidebarOpen(true)}
@@ -426,7 +622,7 @@ export default function DashboardLayout({
             </button>
             <h1 className="flex-1 text-center lg:text-left text-xl font-semibold text-gray-800 dark:text-white truncate">
               {(
-                getNavigationItems(t).find((item) => {
+                navItems.find((item) => {
                   const isDashboardRoot = item.href === '/dashboard';
                   const farmPath = `/${farmId}${item.href}`;
                   return isDashboardRoot
@@ -436,25 +632,23 @@ export default function DashboardLayout({
                 })?.name
               ) || 'Dashboard'}
             </h1>
-            <div className="flex items-center space-x-4 shrink-0">
-              <button
-                type="button"
-                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                aria-label="Notifications"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                aria-label="Help"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
+            <div className="flex shrink-0 items-center gap-2">
+              {showUnlockPremium && (
+                <Link
+                  href={billingPlansHref}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800 ring-1 ring-amber-200/80 transition-colors hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-800/60 dark:hover:bg-amber-950/70"
+                >
+                  <Crown className="h-4 w-4" aria-hidden />
+                  Unlock Premium
+                </Link>
+              )}
+              <UserProfileMenu
+                name={userName}
+                email={userEmail}
+                image={userImage}
+                profileHref={profileHref}
+                size="md"
+              />
             </div>
           </div>
         </header>
@@ -480,28 +674,65 @@ export default function DashboardLayout({
               <p className="truncate text-[11px] text-gray-500 dark:text-gray-400">FarmKeeper</p>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-0.5">
-            <button
-              type="button"
-              className="flex h-11 w-11 items-center justify-center rounded-xl text-gray-600 dark:text-gray-300 active:scale-95 transition-transform"
-              aria-label="Notifications"
-            >
-              <Bell className="h-[22px] w-[22px]" />
-            </button>
-            <Link
-              href={buildFarmPath(farmId, '/dashboard/settings/profile', locale)}
-              className="flex h-11 w-11 items-center justify-center rounded-xl text-gray-600 dark:text-gray-300 active:scale-95 transition-transform"
-              aria-label="Profile"
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/50 text-xs font-semibold text-primary-800 dark:text-primary-200">
-                {userName ? userName.charAt(0).toUpperCase() : 'U'}
-              </div>
-            </Link>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {showUnlockPremium && (
+              <Link
+                href={billingPlansHref}
+                className="inline-flex max-w-[7.5rem] items-center gap-1 rounded-xl bg-amber-50 px-2.5 py-2 text-[11px] font-semibold leading-tight text-amber-800 ring-1 ring-amber-200/80 active:scale-95 dark:bg-amber-950/50 dark:text-amber-200 dark:ring-amber-800/50"
+              >
+                <Crown className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span className="truncate">Unlock Premium</span>
+              </Link>
+            )}
+            <UserProfileMenu
+              name={userName}
+              email={userEmail}
+              image={userImage}
+              profileHref={profileHref}
+              size="sm"
+            />
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-md:px-3 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))] max-md:pt-3">
-          {children}
+        {subscriptionStatus &&
+          subscriptionStatus.isFarmerTrial &&
+          (subscriptionStatus.isTrialExpired || subscriptionStatus.daysLeft <= 7) && (
+            <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/40 md:px-8">
+              <div className="mx-auto flex max-w-6xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+                  {subscriptionStatus.isTrialExpired
+                    ? 'Your free Farmer trial has ended.'
+                    : `Farmer free trial: ${subscriptionStatus.daysLeft} day${subscriptionStatus.daysLeft === 1 ? '' : 's'} left.`}
+                  {' '}Subscribe from UGX 4,000/mo to keep your tools.
+                </p>
+                <Link
+                  href={buildFarmPath(farmId, '/dashboard/billing', locale)}
+                  className="inline-flex min-h-10 items-center justify-center rounded-xl bg-amber-600 px-4 text-sm font-semibold text-white active:scale-[0.98]"
+                >
+                  View plans
+                </Link>
+              </div>
+            </div>
+          )}
+
+        <main className="flex-1 px-3 py-3 sm:px-4 sm:py-6 lg:px-5 lg:py-8 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
+          {gatedFeature && !subscriptionStatus ? (
+            <div className="flex items-center justify-center py-24 text-gray-500 dark:text-gray-400">
+              Loading…
+            </div>
+          ) : routeBlocked && gatedFeature && subscriptionStatus ? (
+            <FeatureGate
+              farmId={farmId}
+              feature={gatedFeature}
+              subscription={{
+                plan: subscriptionStatus.plan,
+                isFarmerTrial: subscriptionStatus.isFarmerTrial,
+                isTrialExpired: subscriptionStatus.isTrialExpired,
+              }}
+            />
+          ) : (
+            children
+          )}
         </main>
 
         {/* Mobile bottom navigation */}
@@ -509,29 +740,36 @@ export default function DashboardLayout({
           className="md:hidden fixed bottom-0 left-0 right-0 z-30 flex items-stretch justify-around border-t border-gray-200/90 bg-white/95 px-1 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur-md dark:border-gray-800 dark:bg-gray-950/95 shadow-[0_-8px_30px_-12px_rgba(0,0,0,0.18)]"
           aria-label="Primary"
         >
-          {mobileNavItems.map((item) => {
+          {visibleMobileNavItems.map((item) => {
             const active = item.isActive(pathname);
             const Icon = item.icon;
+            const locked = item.shortLabel === 'Reports' && analyticsLocked;
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setIsSidebarOpen(false)}
-                className={`flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1 active:scale-[0.97] transition-transform ${
-                  active
-                    ? 'text-primary-600 dark:text-primary-400'
-                    : 'text-gray-500 dark:text-gray-400'
+                className={`relative flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1 active:scale-[0.97] transition-transform ${
+                  locked
+                    ? 'text-gray-400 dark:text-gray-500'
+                    : active
+                      ? 'text-primary-600 dark:text-primary-400'
+                      : 'text-gray-500 dark:text-gray-400'
                 }`}
+                title={locked ? 'Premium — tap to upgrade' : undefined}
               >
-                <Icon className={`h-5 w-5 ${active ? 'stroke-[2.25px]' : ''}`} strokeWidth={active ? 2.25 : 2} />
+                <Icon className={`h-5 w-5 ${active && !locked ? 'stroke-[2.25px]' : ''}`} strokeWidth={active && !locked ? 2.25 : 2} />
                 <span className="max-w-[4.25rem] truncate text-[10px] font-semibold">{item.shortLabel}</span>
+                {locked && (
+                  <Lock className="absolute right-2 top-1 h-2.5 w-2.5 text-amber-600 dark:text-amber-400" aria-hidden />
+                )}
               </Link>
             );
           })}
         </nav>
 
         {/* FAB — dashboard home only, mobile */}
-        {isDashboardHome && (
+        {isDashboardHome && canRecordEggs && (
           <Link
             href={buildFarmPath(farmId, '/dashboard/eggs/record', locale)}
             className="md:hidden fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary-600 text-white shadow-lg shadow-primary-600/35 ring-1 ring-white/20 active:scale-95 transition-transform"
@@ -542,5 +780,6 @@ export default function DashboardLayout({
         )}
       </div>
     </div>
+    </SubscriptionProvider>
   );
 }

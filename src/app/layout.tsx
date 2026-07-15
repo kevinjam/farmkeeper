@@ -1,25 +1,10 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
-import { Inter, Poppins } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/components/providers/session-provider';
 import { AuthTokenFromHash } from '@/components/auth/auth-token-from-hash';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import '@/lib/suppress-warnings';
-
-// Initialize fonts
-const inter = Inter({ 
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-inter',
-});
-
-const poppins = Poppins({ 
-  weight: ['400', '500', '600', '700'],
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-poppins',
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://farmkeeper.vercel.app'),
@@ -112,7 +97,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${poppins.variable}`} suppressHydrationWarning>
+    <html lang="en" className="font-sans" suppressHydrationWarning>
       <head>
         {/* Additional icon and PWA meta tags */}
         <link rel="icon" type="image/x-icon" href="/icons/favicon.ico" />
@@ -212,7 +197,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body>
+      <body className="font-sans antialiased">
         <AuthTokenFromHash />
         <LanguageProvider>
           <AuthProvider>

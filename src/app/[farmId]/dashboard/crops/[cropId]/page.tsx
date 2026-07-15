@@ -103,7 +103,7 @@ export default function CropView({ params }: { params: { farmId: string; cropId:
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-4xl py-2">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-6"></div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
@@ -120,7 +120,7 @@ export default function CropView({ params }: { params: { farmId: string; cropId:
 
   if (error || !crop) {
     return (
-      <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-4xl py-2">
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
           <span className="block sm:inline">{error || 'Crop not found'}</span>
           <div className="mt-4">
@@ -143,7 +143,7 @@ export default function CropView({ params }: { params: { farmId: string; cropId:
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-4xl py-2">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

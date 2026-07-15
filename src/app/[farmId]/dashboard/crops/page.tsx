@@ -117,7 +117,7 @@ export default function CropsDashboard({ params }: { params: { farmId: string } 
 
   if (error) {
     return (
-      <div className="max-md:mx-3 max-md:mt-2 max-md:pb-[calc(6rem+env(safe-area-inset-bottom))] md:max-w-5xl md:mx-auto md:py-8 md:px-6 lg:px-8">
+      <div className="max-md:mt-2 max-md:pb-[calc(6rem+env(safe-area-inset-bottom))] md:py-2">
         <div
           className="rounded-2xl border border-red-200/80 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-950/40 md:rounded-lg"
           role="alert"
@@ -159,10 +159,10 @@ export default function CropsDashboard({ params }: { params: { farmId: string } 
 
   return (
     <>
-    <div className="flex flex-col gap-4 max-md:px-0 md:max-w-5xl md:mx-auto md:gap-6 md:py-8 md:px-6 lg:px-8 max-md:pb-[calc(9rem+env(safe-area-inset-bottom))]">
+    <div className="flex flex-col gap-4 max-md:pb-[calc(9rem+env(safe-area-inset-bottom))] sm:gap-5 md:py-2">
       {/* Header */}
-      <div className="order-1 overflow-hidden bg-white shadow-md dark:bg-gray-800 md:rounded-xl md:shadow-lg max-md:mx-3 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:shadow-lg dark:max-md:border-gray-700/80">
-        <div className="max-md:bg-gradient-to-br max-md:from-emerald-500/12 max-md:via-white max-md:to-white max-md:p-4 max-md:dark:from-emerald-500/12 max-md:dark:via-gray-800 max-md:dark:to-gray-800 md:p-6">
+      <div className="order-1 overflow-hidden bg-white shadow-md dark:bg-gray-800 md:rounded-xl md:shadow-lg max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:shadow-lg dark:max-md:border-gray-700/80">
+        <div className="max-md:bg-gradient-to-br max-md:from-emerald-500/12 max-md:via-white max-md:to-white max-md:p-4 max-md:dark:from-emerald-500/12 max-md:dark:via-gray-800 max-md:dark:to-gray-800 md:p-5 lg:p-6">
           <div className="flex max-md:flex-col md:flex-row md:items-center md:justify-between md:gap-4">
             <div className="flex max-md:items-start max-md:gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 md:hidden">
@@ -188,7 +188,7 @@ export default function CropsDashboard({ params }: { params: { farmId: string } 
       </div>
 
       {/* Overview — mobile-first tiles (desktop overview block follows list below) */}
-      <div className="order-2 grid grid-cols-2 gap-2 px-3 md:hidden">
+      <div className="order-2 grid grid-cols-2 gap-2 md:hidden">
         <div className="relative flex h-[7.25rem] flex-col rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/12 via-white to-white p-3 shadow-md dark:from-emerald-500/16 dark:via-gray-900 dark:to-gray-900/95 dark:border-emerald-500/25">
           <div className="pointer-events-none absolute left-0 top-0 h-1 w-full rounded-t-xl bg-emerald-500/50 opacity-90" />
           <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
@@ -227,7 +227,7 @@ export default function CropsDashboard({ params }: { params: { farmId: string } 
       </div>
 
       {/* Crop list */}
-      <div className="order-3 md:order-2 max-md:mx-3 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:bg-white max-md:p-4 max-md:shadow-md dark:max-md:border-gray-700/80 dark:max-md:bg-gray-800 md:bg-white md:rounded-xl md:shadow-lg md:p-6 dark:md:bg-gray-800">
+      <div className="order-3 md:order-2 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:bg-white max-md:p-4 max-md:shadow-md dark:max-md:border-gray-700/80 dark:max-md:bg-gray-800 md:bg-white md:rounded-xl md:shadow-lg md:p-5 lg:p-6 dark:md:bg-gray-800">
         <h2 className="text-base font-bold text-gray-900 dark:text-white md:text-lg md:font-semibold mb-4">
           Current crops
         </h2>

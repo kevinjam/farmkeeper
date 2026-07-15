@@ -1,47 +1,41 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Sprout, Eye, EyeOff, ArrowRight, CheckCircle, ChevronLeft, Mail, Lock, User, Home } from 'lucide-react';
+import { Sprout, Eye, EyeOff, ArrowRight, CheckCircle, ChevronLeft, Mail, Lock, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LocationSelector } from '@/components/LocationSelector';
+import { normalizeCountryCode } from '@/lib/countries';
 import { SimpleBackendGoogleSignIn } from '@/components/auth/BackendGoogleSignIn';
+import { setAuthCookie } from '@/lib/cookies';
 
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const selectedPlan = searchParams.get('plan') || 'trial';
-  
+  // Plan/country from landing-page links — carried into onboarding
+  const selectedPlan = searchParams.get('plan') || 'farmer';
+  const selectedCountryCode = normalizeCountryCode(searchParams.get('country') || 'UG');
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('signup-country', selectedCountryCode);
+      localStorage.setItem('signup-plan', selectedPlan);
+    } catch {
+      /* ignore */
+    }
+  }, [selectedCountryCode, selectedPlan]);
+
   const [formData, setFormData] = useState({
-    farmName: '',
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
-    confirmPassword: '',
-    plan: selectedPlan,
   });
-  const [location, setLocation] = useState({
-    address: '',
-    district: '',
-    country: 'Uganda',
-    coordinates: undefined as { latitude: number; longitude: number } | undefined
-  });
-
-  const handleLocationChange = (newLocation: any) => {
-    setLocation({
-      address: newLocation.address || '',
-      district: newLocation.district || '',
-      country: newLocation.country || 'Uganda',
-      coordinates: newLocation.coordinates
-    });
-  };
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -59,25 +53,26 @@ function RegisterForm() {
     e.preventDefault();
     setIsLoading(true);
     setError('');
-    
-    // Password validation
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+
+    const firstName = formData.firstName.trim();
+    const lastName = formData.lastName.trim();
+
+    if (!firstName || !lastName) {
+      setError('Please enter your first and last name');
       setIsLoading(false);
       return;
     }
+
+    const fullName = `${firstName} ${lastName}`;
     
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001'}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          farmName: formData.farmName,
-          name: formData.name,
+          name: fullName,
           email: formData.email,
           password: formData.password,
-          plan: formData.plan,
-          location: location
         }),
       });
       
@@ -86,16 +81,31 @@ function RegisterForm() {
       if (!response.ok) {
         throw new Error(data.message || 'Registration failed');
       }
+
+      if (data.token) {
+        localStorage.setItem('auth-token', data.token);
+        setAuthCookie(data.token);
+      }
       
-      // Show success message with email confirmation
       setSuccess(true);
       setUserEmail(formData.email);
+
+      const onboardingParams = new URLSearchParams({
+        plan: selectedPlan,
+        country: selectedCountryCode,
+      });
+
+      try {
+        localStorage.setItem('signup-country', selectedCountryCode);
+        localStorage.setItem('signup-plan', selectedPlan);
+      } catch {
+        /* ignore */
+      }
       
-      // Redirect to dashboard after showing success message
+      // Same onboarding flow as Google signup
       setTimeout(() => {
-        const farmSlug = data.farm?.slug || data.farmId;
-        router.push(`/${farmSlug}/dashboard`);
-      }, 3000);
+        router.push(`/en/auth/onboarding?${onboardingParams.toString()}`);
+      }, 1200);
     } catch (error: any) {
       setError(error.message || 'Something went wrong. Please try again.');
     } finally {
@@ -156,10 +166,10 @@ function RegisterForm() {
                 </div>
 
                 <div className="space-y-3">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Welcome to FarmKeeper</h2>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Account created</h2>
                   <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-4 text-left">
                     <p className="text-green-800 dark:text-green-200 text-sm">
-                      <strong>Registration successful.</strong> A welcome email was sent to:
+                      <strong>You&apos;re signed up.</strong> Next, set up your farm for:
                     </p>
                     <p className="mt-3 font-mono text-sm bg-white dark:bg-gray-800 px-3 py-2 rounded-xl border">
                       {userEmail}
@@ -167,7 +177,7 @@ function RegisterForm() {
                   </div>
                   <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4">
                     <p className="text-blue-800 dark:text-blue-200 text-sm font-medium">
-                      Redirecting to your dashboard in 3 seconds…
+                      Taking you to farm setup…
                     </p>
                   </div>
                 </div>
@@ -210,39 +220,43 @@ function RegisterForm() {
                     </motion.div>
                   )}
 
-                  <div className="space-y-2">
-                    <Label htmlFor="farmName" className="text-sm">Farm Name</Label>
-                    <div className="relative group">
-                      <Home className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-primary-600 transition-colors" />
-                      <Input
-                        id="farmName"
-                        name="farmName"
-                        type="text"
-                        required
-                        placeholder="Your farm name"
-                        value={formData.farmName}
-                        onChange={handleChange}
-                        disabled={isLoading}
-                        className="h-12 rounded-xl pl-11 [font-size:16px] transition focus-visible:ring-primary-500/60"
-                      />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName" className="text-sm">First Name</Label>
+                      <div className="relative group">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-primary-600 transition-colors" />
+                        <Input
+                          id="firstName"
+                          name="firstName"
+                          type="text"
+                          autoComplete="given-name"
+                          required
+                          placeholder="First name"
+                          value={formData.firstName}
+                          onChange={handleChange}
+                          disabled={isLoading}
+                          className="h-12 rounded-xl pl-11 [font-size:16px] transition focus-visible:ring-primary-500/60"
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="name" className="text-sm">Your Name</Label>
-                    <div className="relative group">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-primary-600 transition-colors" />
-                      <Input
-                        id="name"
-                        name="name"
-                        type="text"
-                        required
-                        placeholder="Your full name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        disabled={isLoading}
-                        className="h-12 rounded-xl pl-11 [font-size:16px] transition focus-visible:ring-primary-500/60"
-                      />
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName" className="text-sm">Last Name</Label>
+                      <div className="relative group">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-primary-600 transition-colors" />
+                        <Input
+                          id="lastName"
+                          name="lastName"
+                          type="text"
+                          autoComplete="family-name"
+                          required
+                          placeholder="Last name"
+                          value={formData.lastName}
+                          onChange={handleChange}
+                          disabled={isLoading}
+                          className="h-12 rounded-xl pl-11 [font-size:16px] transition focus-visible:ring-primary-500/60"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -298,64 +312,6 @@ function RegisterForm() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword" className="text-sm">Confirm Password</Label>
-                    <div className="relative group">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-primary-600 transition-colors" />
-                      <Input
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        autoComplete="new-password"
-                        required
-                        placeholder="Confirm your password"
-                        value={formData.confirmPassword}
-                        onChange={handleChange}
-                        disabled={isLoading}
-                        className="h-12 rounded-xl pl-11 pr-12 [font-size:16px] transition focus-visible:ring-primary-500/60"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 rounded-xl hover:bg-transparent active:scale-[0.98] transition"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        disabled={isLoading}
-                      >
-                        {showConfirmPassword ? (
-                          <EyeOff className="h-5 w-5 text-gray-500" />
-                        ) : (
-                          <Eye className="h-5 w-5 text-gray-500" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="plan" className="text-sm">Subscription Plan</Label>
-                    <select
-                      id="plan"
-                      name="plan"
-                      required
-                      className="flex h-12 w-full rounded-xl border border-gray-300/90 bg-white px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/60 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 transition [font-size:16px]"
-                      value={formData.plan}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    >
-                      <option value="trial">Free Trial - 30 days with Pro features</option>
-                      <option value="basic">Basic Plan - UGX 1,500/month</option>
-                      <option value="pro">Pro Plan - UGX 4,000/month</option>
-                    </select>
-                  </div>
-
-                  <div className="rounded-2xl border border-gray-200/80 dark:border-gray-700/80 bg-white/60 dark:bg-gray-900/40 p-3">
-                    <LocationSelector
-                      initialLocation={location}
-                      onLocationChange={handleLocationChange}
-                      required={true}
-                    />
-                  </div>
-
                   <Button
                     type="submit"
                     className="w-full h-12 rounded-xl text-base font-semibold bg-primary-600 hover:bg-primary-700 text-white active:scale-[0.99] transition disabled:opacity-60"
@@ -402,30 +358,21 @@ function RegisterForm() {
 
                     <div className="space-y-4">
                       <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                        Welcome to FarmKeeper! 🌱
+                        Account created
                       </h2>
 
                       <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
                         <p className="text-green-800 dark:text-green-200 mb-4">
-                          <strong>Registration successful!</strong> A welcome email has been sent to:
+                          <strong>You&apos;re signed up.</strong> Next, complete your farm profile for:
                         </p>
                         <p className="font-mono text-sm bg-white dark:bg-gray-800 px-3 py-2 rounded border">
                           {userEmail}
                         </p>
                       </div>
 
-                      <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
-                        <p>📧 Check your inbox for:</p>
-                        <ul className="text-left space-y-1 ml-4">
-                          <li>• Welcome message and getting started guide</li>
-                          <li>• Direct link to your farm dashboard</li>
-                          <li>• Tips for using FarmKeeper effectively</li>
-                        </ul>
-                      </div>
-
                       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                         <p className="text-blue-800 dark:text-blue-200 text-sm">
-                          <strong>Redirecting to your dashboard in 3 seconds...</strong>
+                          <strong>Taking you to farm setup…</strong>
                         </p>
                       </div>
                     </div>
@@ -444,28 +391,30 @@ function RegisterForm() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="farmName">Farm Name</Label>
+                        <Label htmlFor="firstName-desktop">First Name</Label>
                         <Input
-                          id="farmName"
-                          name="farmName"
+                          id="firstName-desktop"
+                          name="firstName"
                           type="text"
+                          autoComplete="given-name"
                           required
-                          placeholder="Your farm name"
-                          value={formData.farmName}
+                          placeholder="First name"
+                          value={formData.firstName}
                           onChange={handleChange}
                           disabled={isLoading}
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="name">Your Name</Label>
+                        <Label htmlFor="lastName-desktop">Last Name</Label>
                         <Input
-                          id="name"
-                          name="name"
+                          id="lastName-desktop"
+                          name="lastName"
                           type="text"
+                          autoComplete="family-name"
                           required
-                          placeholder="Your full name"
-                          value={formData.name}
+                          placeholder="Last name"
+                          value={formData.lastName}
                           onChange={handleChange}
                           disabled={isLoading}
                         />
@@ -487,94 +436,37 @@ function RegisterForm() {
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
-                        <div className="relative">
-                          <Input
-                            id="password"
-                            name="password"
-                            type={showPassword ? "text" : "password"}
-                            autoComplete="new-password"
-                            required
-                            placeholder="Create a password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            disabled={isLoading}
-                            className="pr-10"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                            onClick={() => setShowPassword(!showPassword)}
-                            disabled={isLoading}
-                          >
-                            {showPassword ? (
-                              <EyeOff className="h-4 w-4 text-gray-500" />
-                            ) : (
-                              <Eye className="h-4 w-4 text-gray-500" />
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="confirmPassword">Confirm Password</Label>
-                        <div className="relative">
-                          <Input
-                            id="confirmPassword"
-                            name="confirmPassword"
-                            type={showConfirmPassword ? "text" : "password"}
-                            autoComplete="new-password"
-                            required
-                            placeholder="Confirm your password"
-                            value={formData.confirmPassword}
-                            onChange={handleChange}
-                            disabled={isLoading}
-                            className="pr-10"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            disabled={isLoading}
-                          >
-                            {showConfirmPassword ? (
-                              <EyeOff className="h-4 w-4 text-gray-500" />
-                            ) : (
-                              <Eye className="h-4 w-4 text-gray-500" />
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-
                     <div className="space-y-2">
-                      <Label htmlFor="plan">Subscription Plan</Label>
-                      <select
-                        id="plan"
-                        name="plan"
-                        required
-                        className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-                        value={formData.plan}
-                        onChange={handleChange}
-                        disabled={isLoading}
-                      >
-                        <option value="trial">Free Trial - 30 days with Pro features</option>
-                        <option value="basic">Basic Plan - UGX 1,500/month</option>
-                        <option value="pro">Pro Plan - UGX 4,000/month</option>
-                      </select>
+                      <Label htmlFor="password">Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          name="password"
+                          type={showPassword ? "text" : "password"}
+                          autoComplete="new-password"
+                          required
+                          placeholder="Create a password"
+                          value={formData.password}
+                          onChange={handleChange}
+                          disabled={isLoading}
+                          className="pr-10"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                          disabled={isLoading}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4 text-gray-500" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-gray-500" />
+                          )}
+                        </Button>
+                      </div>
                     </div>
-
-                    <LocationSelector
-                      initialLocation={location}
-                      onLocationChange={handleLocationChange}
-                      required={true}
-                    />
 
                     <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
                       {isLoading ? 'Creating account...' : 'Create account'}

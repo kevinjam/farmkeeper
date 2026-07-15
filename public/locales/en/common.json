@@ -2,6 +2,7 @@
   "navigation": {
     "dashboard": "Dashboard",
     "livestock": "Livestock",
+    "tasks": "Tasks",
     "crops": "Crops",
     "finances": "Finances",
     "feedManagement": "Feed Management",
@@ -10,6 +11,7 @@
     "analytics": "Analytics",
     "subscription": "Subscription",
     "billing": "Billing",
+    "planBilling": "Plan & Billing",
     "settings": "Settings"
   },
   "settings": {

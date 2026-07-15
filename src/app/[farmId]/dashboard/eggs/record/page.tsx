@@ -30,8 +30,8 @@ export default function RecordEggsPage({ params }: { params: { farmId: string } 
     'text-lg font-semibold text-gray-900 dark:text-white max-md:text-base max-md:font-bold';
 
   return (
-    <div className="mx-auto max-w-4xl max-md:max-w-full md:px-4 md:py-8 lg:px-8 max-md:px-0 max-md:pb-[calc(9rem+env(safe-area-inset-bottom))]">
-      <div className="overflow-hidden bg-white shadow-md dark:bg-gray-800 md:rounded-lg max-md:mx-3 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:shadow-lg dark:max-md:border-gray-700/80">
+    <div className="mx-auto max-w-4xl max-md:max-w-full max-md:pb-[calc(9rem+env(safe-area-inset-bottom))] md:py-2">
+      <div className="overflow-hidden bg-white shadow-md dark:bg-gray-800 md:rounded-lg max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:shadow-lg dark:max-md:border-gray-700/80">
         {/* Header */}
         <div className="border-b border-gray-200 dark:border-gray-700 max-md:border-gray-200/80 max-md:bg-gradient-to-br max-md:from-amber-500/10 max-md:via-white max-md:to-white max-md:p-4 max-md:dark:from-amber-500/10 max-md:dark:via-gray-800 max-md:dark:to-gray-800 md:p-6">
           <div className="flex max-md:items-start max-md:gap-3 md:block">

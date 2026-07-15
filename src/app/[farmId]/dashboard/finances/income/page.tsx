@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TrendingUp, Loader2 } from 'lucide-react';
+import { apiClient } from '@/lib/api';
+import { INCOME_SOURCE_MAP, PAYMENT_METHOD_MAP } from '@/lib/financeMappings';
+import { useFarmPaths } from '@/hooks/useFarmPaths';
 
 const inputClass =
   'mt-1.5 block w-full border border-gray-300 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white max-md:min-h-12 max-md:rounded-xl max-md:px-3.5 max-md:text-base md:rounded-lg md:py-2 md:pl-3 md:pr-3 md:text-sm [font-size:16px]';
@@ -13,25 +16,57 @@ const sectionTitleClass =
 
 export default function RecordSalePage({ params }: { params: { farmId: string } }) {
   const router = useRouter();
-  const { farmId } = params;
+  const { farmId, farmPath } = useFarmPaths(params.farmId);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
-    const formData = new FormData(e.currentTarget);
-    const data = Object.fromEntries(formData.entries());
-    console.log('New Income Data:', data);
+    setError('');
 
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const formData = new FormData(e.currentTarget);
+      const sourceLabel = formData.get('source') as string;
+      const category = INCOME_SOURCE_MAP[sourceLabel] || 'other';
+      const paymentLabel = formData.get('paymentMethod') as string;
+      const paymentMethod = PAYMENT_METHOD_MAP[paymentLabel] || 'cash';
+      const customer = (formData.get('customer') as string)?.trim();
+      const quantity = formData.get('quantity') as string;
+      const pricePerUnit = formData.get('pricePerUnit') as string;
 
-    setIsSubmitting(false);
-    router.push(`/${farmId}/dashboard/finances`);
+      const response = await apiClient.createFinancialTransaction(farmId, {
+        type: 'income',
+        category,
+        amount: parseFloat(formData.get('totalAmount') as string),
+        currency: 'UGX',
+        description: formData.get('description') as string,
+        date: formData.get('saleDate') as string,
+        paymentMethod,
+        ...(customer && { reference: customer }),
+        metadata: {
+          ...(quantity && { quantity: parseFloat(quantity) }),
+          ...(pricePerUnit && { unitPrice: parseFloat(pricePerUnit) }),
+          ...(customer && { notes: `Customer: ${customer}` }),
+        },
+      });
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to record sale');
+      }
+
+      router.push(farmPath('/dashboard/finances'));
+    } catch (err) {
+      console.error('Error recording sale:', err);
+      setError(err instanceof Error ? err.message : 'Failed to record sale. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="mx-auto max-w-4xl max-md:max-w-full md:px-4 md:py-8 lg:px-8 max-md:px-0 max-md:pb-[calc(9rem+env(safe-area-inset-bottom))]">
-      <div className="overflow-hidden bg-white shadow-md dark:bg-gray-800 md:rounded-xl md:shadow-lg max-md:mx-3 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:shadow-lg dark:max-md:border-gray-700/80">
+    <div className="mx-auto max-w-4xl max-md:max-w-full max-md:pb-[calc(9rem+env(safe-area-inset-bottom))] md:py-2">
+      <div className="overflow-hidden bg-white shadow-md dark:bg-gray-800 md:rounded-xl md:shadow-lg max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:shadow-lg dark:max-md:border-gray-700/80">
         <div className="border-b border-gray-200 dark:border-gray-700 max-md:border-gray-200/80 max-md:bg-gradient-to-br max-md:from-emerald-500/10 max-md:via-white max-md:to-white max-md:p-4 max-md:dark:from-emerald-500/10 max-md:dark:via-gray-800 max-md:dark:to-gray-800 md:p-6">
           <div className="flex max-md:items-start max-md:gap-3 md:block">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 md:hidden">
@@ -49,6 +84,11 @@ export default function RecordSalePage({ params }: { params: { farmId: string } 
         </div>
 
         <form onSubmit={handleSubmit}>
+          {error && (
+            <div className="mx-6 mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300 max-md:mx-4">
+              {error}
+            </div>
+          )}
           <div className="space-y-6 p-6 max-md:space-y-5 max-md:p-4">
             <div className="max-md:rounded-2xl max-md:border max-md:border-emerald-200/50 max-md:bg-emerald-50/40 max-md:p-3.5 dark:max-md:border-emerald-900/25 dark:max-md:bg-emerald-950/15">
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">

@@ -21,9 +21,10 @@ export interface AuthResponse {
     email: string;
     role: string;
   };
-  farmSlug: string;
+  farmSlug?: string;
   farmName?: string;
   token?: string;
+  requiresOnboarding?: boolean;
 }
 
 export interface User {
@@ -172,13 +173,11 @@ class ApiClient {
 
   // Auth endpoints
   async register(data: {
-    farmName: string;
     name: string;
     email: string;
     password: string;
-    plan?: string;
-  }): Promise<ApiResponse<AuthResponse>> {
-    return this.request<AuthResponse>('/auth/register', {
+  }): Promise<ApiResponse<AuthResponse & { requiresOnboarding?: boolean }>> {
+    return this.request('/auth/register', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -310,9 +309,20 @@ class ApiClient {
   }
 
   // Tasks endpoints
-  async getUpcomingTasks(limit?: number): Promise<ApiResponse<any[]>> {
+  async getUpcomingTasks(farmSlug: string, limit?: number): Promise<ApiResponse<any[]>> {
     const params = limit ? `?limit=${limit}` : '';
-    return this.request(`/tasks/upcoming${params}`);
+    return this.request(`/farms/${farmSlug}/tasks/upcoming${params}`);
+  }
+
+  async getTasks(
+    farmSlug: string,
+    options?: { status?: string; limit?: number }
+  ): Promise<ApiResponse<any[]>> {
+    const params = new URLSearchParams();
+    if (options?.status) params.set('status', options.status);
+    if (options?.limit) params.set('limit', String(options.limit));
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return this.request(`/farms/${farmSlug}/tasks${qs}`);
   }
 
   async createTask(farmSlug: string, data: any): Promise<ApiResponse> {
@@ -322,10 +332,21 @@ class ApiClient {
     });
   }
 
+  async updateTask(
+    farmSlug: string,
+    taskId: string,
+    data: Record<string, unknown>
+  ): Promise<ApiResponse> {
+    return this.request(`/farms/${farmSlug}/tasks/${taskId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
   // Activity endpoints
-  async getRecentActivities(limit?: number): Promise<ApiResponse<any[]>> {
+  async getRecentActivities(farmSlug: string, limit?: number): Promise<ApiResponse<any[]>> {
     const params = limit ? `?limit=${limit}` : '';
-    return this.request(`/activity/recent${params}`);
+    return this.request(`/farms/${farmSlug}/recent-activity${params}`);
   }
 
   // Crops endpoints
@@ -358,7 +379,7 @@ class ApiClient {
     return this.request(`/farms/${farmSlug}/feedstock`);
   }
 
-  async getFeedstockSummary(): Promise<ApiResponse<{
+  async getFeedstockSummary(farmSlug: string): Promise<ApiResponse<{
     totalStock: number;
     stockPercentage: number;
     stockByType: any;
@@ -366,7 +387,7 @@ class ApiClient {
     lastUpdated: string | null;
     totalItems: number;
   }>> {
-    return this.request('/feedstock/summary');
+    return this.request(`/farms/${farmSlug}/feedstock/summary`);
   }
 
   async createFeedstock(farmSlug: string, data: any): Promise<ApiResponse> {
@@ -403,6 +424,82 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  }
+
+  /** Get a short-lived signed CDN URL to view a stored receipt. */
+  async getReceiptViewUrl(
+    farmSlug: string,
+    storedUrl: string
+  ): Promise<ApiResponse<{ url: string }>> {
+    const params = new URLSearchParams({ url: storedUrl });
+    return this.request(`/farms/${farmSlug}/uploads/receipt/view?${params.toString()}`);
+  }
+
+  /** Stream receipt file bytes through the API (authenticated). */
+  async fetchReceiptBlob(farmSlug: string, storedUrl: string): Promise<Blob> {
+    const params = new URLSearchParams({ url: storedUrl });
+    const url = `${this.baseURL}/farms/${farmSlug}/uploads/receipt/stream?${params.toString()}`;
+    const authHeaders = (await this.getHeaders()) as Record<string, string>;
+    const headers: Record<string, string> = {};
+    Object.entries(authHeaders).forEach(([key, value]) => {
+      if (key.toLowerCase() !== 'content-type' && value) {
+        headers[key] = value;
+      }
+    });
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      let message = `HTTP ${response.status}`;
+      try {
+        const body = await response.json();
+        message = body.message || message;
+      } catch {
+        // ignore
+      }
+      throw new Error(message);
+    }
+
+    return response.blob();
+  }
+
+  /** Upload an expense receipt image/PDF to Cloudinary via the backend. */
+  async uploadReceipt(
+    farmSlug: string,
+    file: File
+  ): Promise<ApiResponse<{ url: string; publicId: string; format: string }>> {
+    try {
+      const url = `${this.baseURL}/farms/${farmSlug}/uploads/receipt`;
+      const authHeaders = (await this.getHeaders()) as Record<string, string>;
+      const headers: Record<string, string> = { Accept: 'application/json' };
+      Object.entries(authHeaders).forEach(([key, value]) => {
+        if (key.toLowerCase() !== 'content-type' && value) {
+          headers[key] = value;
+        }
+      });
+
+      const formData = new FormData();
+      formData.append('receipt', file);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: formData,
+        credentials: 'include',
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Receipt upload error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to upload receipt',
+      };
+    }
   }
 
   async updateFinancialTransaction(farmSlug: string, transactionId: string, data: any): Promise<ApiResponse> {
@@ -456,8 +553,17 @@ class ApiClient {
   }
 
   // Billing endpoints
-  async getPlans(): Promise<ApiResponse<any>> {
-    return this.request('/billing/plans');
+  async getPlans(countryCode?: string): Promise<ApiResponse<any>> {
+    const query = countryCode ? `?country=${encodeURIComponent(countryCode)}` : '';
+    return this.request(`/billing/plans${query}`);
+  }
+
+  async getPaymentConfig(): Promise<ApiResponse<any>> {
+    return this.request('/billing/payment-config');
+  }
+
+  async verifyStripeSession(sessionId: string): Promise<ApiResponse<any>> {
+    return this.request(`/billing/stripe/session/${sessionId}`);
   }
 
   async getSubscriptionStatus(): Promise<ApiResponse<any>> {
@@ -465,7 +571,7 @@ class ApiClient {
   }
 
   async initiateSubscription(data: {
-    plan: 'premium';
+    plan: 'farmer' | 'premium';
     paymentMethod?: string;
     phoneNumber?: string;
   }): Promise<ApiResponse<any>> {
@@ -483,6 +589,41 @@ class ApiClient {
 
   async getSubscriptionHistory(): Promise<ApiResponse<any[]>> {
     return this.request('/billing/history');
+  }
+
+  /** Download invoice PDF for a completed payment (by reference). */
+  async downloadInvoice(reference: string): Promise<{ success: boolean; blob?: Blob; error?: string }> {
+    try {
+      const headers = await this.getHeaders();
+      const response = await fetch(`${this.baseURL}/billing/invoice/${encodeURIComponent(reference)}`, {
+        method: 'GET',
+        headers,
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        let message = `HTTP ${response.status}`;
+        try {
+          const data = await response.json();
+          message = data.message || data.error || message;
+        } catch {
+          /* ignore */
+        }
+        return { success: false, error: message };
+      }
+
+      const blob = await response.blob();
+      return { success: true, blob };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to download invoice',
+      };
+    }
+  }
+
+  async getPaymentStatus(reference: string): Promise<ApiResponse<{ status: string; plan?: string; amount?: number; currency?: string }>> {
+    return this.request(`/billing/payment-status/${reference}`);
   }
 
   // User Language endpoints

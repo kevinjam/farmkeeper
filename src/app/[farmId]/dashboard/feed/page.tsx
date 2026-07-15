@@ -177,8 +177,8 @@ export default function FeedManagementPage({ params }: { params: { farmId: strin
 
   return (
     <>
-      <div className="max-md:px-0 md:max-w-7xl md:mx-auto md:py-8 md:px-6 lg:px-8 max-md:pb-[calc(9rem+env(safe-area-inset-bottom))]">
-        <div className="overflow-hidden bg-white shadow-md dark:bg-gray-800 md:rounded-xl md:shadow-lg max-md:mx-3 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:shadow-lg dark:max-md:border-gray-700/80">
+      <div className="max-md:pb-[calc(9rem+env(safe-area-inset-bottom))] md:py-2">
+        <div className="overflow-hidden bg-white shadow-md dark:bg-gray-800 md:rounded-xl md:shadow-lg max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:shadow-lg dark:max-md:border-gray-700/80">
           <div className="max-md:bg-gradient-to-br max-md:from-orange-400/14 max-md:via-white max-md:to-white max-md:p-4 max-md:dark:from-orange-500/12 max-md:dark:via-gray-800 max-md:dark:to-gray-800 md:p-6 md:pb-8">
             <div className="flex max-md:flex-col md:flex-row md:items-center md:justify-between md:gap-4">
               <div className="flex max-md:items-start max-md:gap-3">
@@ -204,7 +204,7 @@ export default function FeedManagementPage({ params }: { params: { farmId: strin
         </div>
 
         {error && (
-          <div className="max-md:mx-3 mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950/40 md:rounded-lg">
+          <div className=" mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950/40 md:rounded-lg">
             <p className="text-sm font-medium text-red-700 dark:text-red-200">{error}</p>
           </div>
         )}
@@ -285,7 +285,7 @@ export default function FeedManagementPage({ params }: { params: { farmId: strin
           </div>
         </div>
 
-        <div className="mt-4 max-md:mx-3 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:bg-white max-md:shadow-md dark:max-md:border-gray-700/80 dark:max-md:bg-gray-800 md:mt-8 md:rounded-lg md:bg-white md:shadow dark:md:bg-gray-800">
+        <div className="mt-4 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:bg-white max-md:shadow-md dark:max-md:border-gray-700/80 dark:max-md:bg-gray-800 md:mt-8 md:rounded-lg md:bg-white md:shadow dark:md:bg-gray-800">
           <div className="p-4 md:p-6">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white md:text-xl">Current inventory</h2>
 

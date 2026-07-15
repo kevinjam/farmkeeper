@@ -88,29 +88,20 @@ export default function Login() {
 
       const data = response.data;
 
-      // Log success details
-      console.log('Login successful!');
-      console.log('Farm Slug:', data.farmSlug);
-      console.log('Farm name:', data.farmName || 'Unknown Farm');
-      
-      // Store farm info and token for client-side use
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('farmSlug', data.farmSlug);
-        localStorage.setItem('farmName', data.farmName || '');
-        
-        // Store token if provided
-        if (data.token) {
-          localStorage.setItem('auth-token', data.token);
-        }
-      }
-      
-      // Set authentication cookie for server-side middleware
       if (data.token) {
+        localStorage.setItem('auth-token', data.token);
         setAuthCookie(data.token);
       }
-      
-      const successUrl = `/auth/login-success?farmSlug=${encodeURIComponent(data.farmSlug)}&farmName=${encodeURIComponent(data.farmName || '')}`;
-      setDashboardUrl(successUrl);
+      if (data.user?.email) {
+        localStorage.setItem('userEmail', data.user.email);
+      }
+
+      if (data.requiresOnboarding || !data.farmSlug) {
+        setDashboardUrl('/en/auth/onboarding');
+      } else {
+        const successUrl = `/auth/login-success?farmSlug=${encodeURIComponent(data.farmSlug)}&farmName=${encodeURIComponent(data.farmName || '')}`;
+        setDashboardUrl(successUrl);
+      }
       setLoginSuccess(true);
     } catch (error) {
       console.error('Login error:', error);

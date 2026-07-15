@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sprout,
@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { SUPPORTED_COUNTRIES, getCountryByCode, normalizeCountryCode } from '@/lib/countries';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
 
@@ -24,6 +25,7 @@ interface OnboardingData {
   farmName: string;
   name: string;
   plan: string;
+  countryCode: string;
 }
 
 interface GoogleOnboardingProps {
@@ -56,44 +58,83 @@ const STEPS = [
   },
 ];
 
-const PLANS = [
-  {
-    id: 'trial',
-    name: 'Free Trial',
-    price: '$0',
-    pricePeriod: '/month',
-    description: 'Perfect for side projects and learning the platform basics.',
-    buttonLabel: 'Choose Free Plan',
-    featuresHeading: 'INCLUDES:',
-    features: ['3 active projects', 'Basic analytics dashboard', 'Community support forum', '1GB cloud storage'],
-    mostPopular: false,
-  },
-  {
-    id: 'pro',
-    name: 'Pro Plan',
-    price: '$49',
-    pricePeriod: '/month',
-    description: 'Everything you need to grow your small business or agency.',
-    buttonLabel: 'Choose Pro Plan',
-    featuresHeading: 'EVERYTHING IN FREE, PLUS:',
-    features: ['Unlimited active projects', 'Advanced real-time analytics', 'Priority email support (24h)', '20GB cloud storage', 'Custom domain mapping'],
-    mostPopular: true,
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    price: '$99',
-    pricePeriod: '/month',
-    description: 'Bespoke solutions for high-volume organizations and teams.',
-    buttonLabel: 'Contact Sales',
-    featuresHeading: 'EVERYTHING IN PRO, PLUS:',
-    features: ['Unlimited storage & members', 'Dedicated account manager', '24/7 priority phone support', 'SSO & Enterprise security', 'Custom legal contracts'],
-    mostPopular: false,
-  },
-];
+const SIGNUP_COUNTRY_KEY = 'signup-country';
+const SIGNUP_PLAN_KEY = 'signup-plan';
+
+const PRICES = {
+  UG: { farmerMonthly: 'UGX 4,000', premium: 'UGX 26,000', free: 'UGX 0', farmerTrial: 'UGX 0' },
+  INT: { farmerMonthly: '$5', premium: '$20', free: '$0', farmerTrial: '$0' },
+} as const;
+
+function getOnboardingPlans(countryCode: string) {
+  const isUganda = getCountryByCode(countryCode).paymentRegion === 'uganda';
+  const prices = isUganda ? PRICES.UG : PRICES.INT;
+  const payNote = isUganda
+    ? 'Pay with MTN, Airtel Money, or card.'
+    : 'Pay securely with card via Stripe (USD).';
+
+  return [
+    {
+      id: 'farmer',
+      name: 'Farmer (free trial)',
+      price: prices.farmerTrial,
+      pricePeriod: ' for 30 days',
+      description: `Full smallholder tools — finances, eggs, feed & more. Then ${prices.farmerMonthly}/mo. ${payNote}`,
+      buttonLabel: 'Start 30-day Farmer trial',
+      featuresHeading: 'INCLUDES DURING TRIAL:',
+      features: ['Up to 50 livestock', 'Finances & receipts', 'Eggs & sales', 'Feed management', 'Weather'],
+      mostPopular: true,
+    },
+    {
+      id: 'premium',
+      name: 'Premium',
+      price: prices.premium,
+      pricePeriod: '/month',
+      description: `Unlimited livestock and advanced analytics. ${payNote}`,
+      buttonLabel: 'Choose Premium',
+      featuresHeading: 'EVERYTHING IN FARMER, PLUS:',
+      features: ['Unlimited livestock', 'Advanced analytics', 'Priority support', 'Full billing history'],
+      mostPopular: false,
+    },
+    {
+      id: 'free',
+      name: 'Free forever',
+      price: prices.free,
+      pricePeriod: ' — no trial',
+      description: 'Basic records only. No finances, eggs, or feed until you upgrade.',
+      buttonLabel: 'Stay on Free',
+      featuresHeading: 'INCLUDES:',
+      features: ['Up to 5 livestock', 'Crops & weather', 'Farm settings'],
+      mostPopular: false,
+    },
+  ];
+}
+
+function resolveInitialPlan(planParam: string | null): string {
+  if (planParam === 'free' || planParam === 'premium' || planParam === 'farmer') return planParam;
+  if (planParam === 'trial') return 'farmer';
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem(SIGNUP_PLAN_KEY);
+    if (stored === 'free' || stored === 'premium' || stored === 'farmer') return stored;
+  }
+  return 'farmer';
+}
+
+function resolveInitialCountry(countryParam: string | null): string {
+  if (countryParam) return normalizeCountryCode(countryParam);
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem(SIGNUP_COUNTRY_KEY);
+    if (stored) return normalizeCountryCode(stored);
+  }
+  return 'UG';
+}
 
 export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboardingProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialPlan = resolveInitialPlan(searchParams.get('plan'));
+  const initialCountry = resolveInitialCountry(searchParams.get('country'));
+
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -101,9 +142,60 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     farmName: '',
     name: userName || '',
-    plan: 'trial',
+    plan: initialPlan,
+    countryCode: initialCountry,
   });
   const farmNameInputRef = useRef<HTMLInputElement>(null);
+  const plans = getOnboardingPlans(onboardingData.countryCode);
+
+  const syncUrlParams = (next: { plan?: string; country?: string }) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next.plan) params.set('plan', next.plan);
+    if (next.country) params.set('country', next.country);
+    router.replace(`/en/auth/onboarding?${params.toString()}`, { scroll: false });
+  };
+
+  const setCountryCode = (countryCode: string) => {
+    const code = normalizeCountryCode(countryCode);
+    setOnboardingData((prev) => ({ ...prev, countryCode: code }));
+    try {
+      localStorage.setItem(SIGNUP_COUNTRY_KEY, code);
+    } catch {
+      /* ignore */
+    }
+    syncUrlParams({ country: code, plan: onboardingData.plan });
+  };
+
+  const setPlanId = (plan: string) => {
+    setOnboardingData((prev) => ({ ...prev, plan }));
+    try {
+      localStorage.setItem(SIGNUP_PLAN_KEY, plan);
+    } catch {
+      /* ignore */
+    }
+    syncUrlParams({ plan, country: onboardingData.countryCode });
+  };
+
+  useEffect(() => {
+    // Keep URL in sync on first paint when country came from localStorage
+    const urlCountry = searchParams.get('country');
+    if (!urlCountry || normalizeCountryCode(urlCountry) !== onboardingData.countryCode) {
+      syncUrlParams({ country: onboardingData.countryCode, plan: onboardingData.plan });
+    }
+    try {
+      localStorage.setItem(SIGNUP_COUNTRY_KEY, onboardingData.countryCode);
+      localStorage.setItem(SIGNUP_PLAN_KEY, onboardingData.plan);
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
+  }, []);
+
+  useEffect(() => {
+    if (userName) {
+      setOnboardingData((prev) => (prev.name ? prev : { ...prev, name: userName }));
+    }
+  }, [userName]);
 
   useEffect(() => {
     if (currentStep !== 2) return;
@@ -143,7 +235,7 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const response = await fetch(`${BACKEND_URL}/api/auth/complete-google-signup`, {
+      const response = await fetch(`${BACKEND_URL}/api/auth/complete-signup`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -152,7 +244,7 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
           image: userImage,
           farmName: onboardingData.farmName.trim(),
           plan: onboardingData.plan,
-          location: { country: 'Uganda' },
+          location: { country: getCountryByCode(onboardingData.countryCode).name },
         }),
       });
 
@@ -418,12 +510,29 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
                           className="text-base md:text-lg min-h-12 md:min-h-10 rounded-xl border-gray-300/90 dark:border-gray-600 focus-visible:ring-primary-500/50 transition-shadow [font-size:16px] md:[font-size:1.125rem]"
                         />
                       </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="country" className="text-sm font-medium">
+                          Country *
+                        </Label>
+                        <select
+                          id="country"
+                          value={onboardingData.countryCode}
+                          onChange={(e) => setCountryCode(e.target.value)}
+                          className="w-full min-h-12 rounded-xl border border-gray-300/90 bg-white px-3 py-2 text-base dark:border-gray-600 dark:bg-gray-900 [font-size:16px]"
+                        >
+                          {SUPPORTED_COUNTRIES.map((c) => (
+                            <option key={c.code} value={c.code}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   )}
 
                   {currentStep === 3 && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                      {PLANS.map((plan) => {
+                      {plans.map((plan) => {
                         const isSelected = onboardingData.plan === plan.id;
                         const isPro = plan.mostPopular;
                         return (
@@ -431,11 +540,11 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
                             key={plan.id}
                             role="button"
                             tabIndex={0}
-                            onClick={() => setOnboardingData((prev) => ({ ...prev, plan: plan.id }))}
+                            onClick={() => setPlanId(plan.id)}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' || e.key === ' ') {
                                 e.preventDefault();
-                                setOnboardingData((prev) => ({ ...prev, plan: plan.id }));
+                                setPlanId(plan.id);
                               }
                             }}
                             className={`relative flex flex-col rounded-2xl p-5 md:p-6 cursor-pointer transition-all duration-200 border-2 active:scale-[0.99] max-md:min-h-0 md:bg-gray-800/80 md:dark:bg-gray-800/90 max-md:bg-white max-md:dark:bg-gray-900 max-md:shadow-sm ${
@@ -471,7 +580,7 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setOnboardingData((prev) => ({ ...prev, plan: plan.id }));
+                                setPlanId(plan.id);
                               }}
                               className={`mt-auto w-full min-h-11 py-2.5 px-4 rounded-xl font-semibold text-sm transition-colors active:scale-[0.99] ${
                                 isPro
