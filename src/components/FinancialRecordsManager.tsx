@@ -2,7 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import { FileText, Pencil, Plus, Trash2 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
+import { isCloudinaryReceiptUrl } from '@/lib/receiptUpload';
+import { useFarmPaths } from '@/hooks/useFarmPaths';
 
 interface FinancialRecord {
   _id: string;
@@ -15,6 +19,7 @@ interface FinancialRecord {
   paymentMethod?: string;
   reference?: string;
   tags?: string[];
+  attachments?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -34,6 +39,7 @@ interface FormData {
 const FinancialRecordsManager = () => {
   const params = useParams();
   const farmSlug = params.farmId as string;
+  const { farmPath } = useFarmPaths(farmSlug);
 
   const [records, setRecords] = useState<FinancialRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +47,7 @@ const FinancialRecordsManager = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingRecord, setEditingRecord] = useState<FinancialRecord | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [openingReceiptId, setOpeningReceiptId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<FormData>({
     type: 'income',
@@ -89,8 +96,44 @@ const FinancialRecordsManager = () => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     });
+  };
+
+  const formatDateShort = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const getCategoryLabel = (record: FinancialRecord) =>
+    categories[record.type].find((cat) => cat.value === record.category)?.label || record.category;
+
+  const openReceipt = async (recordId: string, storedUrl: string) => {
+    let blobUrl: string | null = null;
+
+    try {
+      setOpeningReceiptId(recordId);
+
+      if (isCloudinaryReceiptUrl(storedUrl)) {
+        // Proxy through API so auth + Cloudinary signing work reliably for PDFs.
+        const blob = await apiClient.fetchReceiptBlob(farmSlug, storedUrl);
+        blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      window.open(storedUrl, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      console.error('Error opening receipt:', err);
+      alert(err instanceof Error ? err.message : 'Could not open receipt');
+    } finally {
+      setOpeningReceiptId(null);
+      if (blobUrl) {
+        setTimeout(() => URL.revokeObjectURL(blobUrl!), 60_000);
+      }
+    }
   };
 
   // Fetch financial records
@@ -216,12 +259,16 @@ const FinancialRecordsManager = () => {
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 p-4 md:space-y-6 md:p-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Financial Records</h2>
-          <p className="text-gray-600 dark:text-gray-400">Manage your income and expense records</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-base font-bold text-gray-900 dark:text-white md:text-2xl">
+            Recent activity
+          </h2>
+          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400 md:text-sm md:text-gray-600">
+            {loading ? 'Loading…' : `${records.length} transaction${records.length === 1 ? '' : 's'}`}
+          </p>
         </div>
         <button
           onClick={() => {
@@ -229,12 +276,10 @@ const FinancialRecordsManager = () => {
             resetForm();
             setShowForm(true);
           }}
-          className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
+          className="hidden shrink-0 items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 md:inline-flex"
         >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          <span>Add Record</span>
+          <Plus className="h-5 w-5" />
+          <span>Add record</span>
         </button>
       </div>
 
@@ -254,9 +299,10 @@ const FinancialRecordsManager = () => {
 
       {/* Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 md:items-center md:p-4">
+          <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-white shadow-xl dark:bg-gray-800 md:max-w-2xl md:rounded-lg">
+            <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-gray-300 dark:bg-gray-600 md:hidden" />
+            <div className="p-4 md:p-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                   {editingRecord ? 'Edit Financial Record' : 'Add Financial Record'}
@@ -356,7 +402,7 @@ const FinancialRecordsManager = () => {
                   />
                 </div>
 
-                <div className="flex justify-end space-x-3 pt-4">
+                <div className="flex flex-col-reverse gap-2 pt-4 md:flex-row md:justify-end md:gap-3">
                   <button
                     type="button"
                     onClick={() => {
@@ -364,14 +410,14 @@ const FinancialRecordsManager = () => {
                       setEditingRecord(null);
                       resetForm();
                     }}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    className="min-h-11 rounded-xl border border-gray-300 px-4 py-2 text-gray-700 active:scale-[0.98] dark:border-gray-600 dark:text-gray-300 md:min-h-0 md:rounded-md md:hover:bg-gray-50 dark:md:hover:bg-gray-700"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-md disabled:opacity-50"
+                    className="min-h-11 rounded-xl bg-primary-600 px-4 py-2 text-white active:scale-[0.98] hover:bg-primary-700 disabled:opacity-50 md:min-h-0 md:rounded-md"
                   >
                     {submitting ? 'Saving...' : (editingRecord ? 'Update' : 'Create')}
                   </button>
@@ -382,23 +428,117 @@ const FinancialRecordsManager = () => {
         </div>
       )}
 
-      {/* Records Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+      {/* Records */}
+      <div className="overflow-hidden md:rounded-lg md:bg-white md:shadow md:dark:bg-gray-800">
         {loading ? (
-          <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">Loading records...</p>
+          <div className="space-y-2 py-4 md:p-8 md:text-center">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-[4.5rem] animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800/80 md:hidden"
+              />
+            ))}
+            <div className="hidden md:block">
+              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-primary-600" />
+              <p className="mt-2 text-gray-600 dark:text-gray-400">Loading records...</p>
+            </div>
           </div>
         ) : records.length === 0 ? (
-          <div className="p-8 text-center">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No financial records</h3>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Get started by creating your first financial record.</p>
+          <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50/80 px-4 py-10 text-center dark:border-gray-600 dark:bg-gray-900/40">
+            <FileText className="mx-auto h-10 w-10 text-gray-300 dark:text-gray-600" />
+            <h3 className="mt-3 text-base font-semibold text-gray-900 dark:text-white">No transactions yet</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Log an expense or record a sale to get started.
+            </p>
+            <div className="mt-5 grid grid-cols-2 gap-2 md:inline-flex md:gap-2">
+              <Link
+                href={farmPath('/dashboard/finances/expense')}
+                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-rose-600 px-3 text-sm font-semibold text-white active:scale-[0.98]"
+              >
+                Add expense
+              </Link>
+              <Link
+                href={farmPath('/dashboard/finances/income')}
+                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-emerald-600 px-3 text-sm font-semibold text-white active:scale-[0.98]"
+              >
+                Record sale
+              </Link>
+            </div>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            {/* Mobile: card list */}
+            <ul className="divide-y divide-gray-100 dark:divide-gray-800 md:hidden">
+              {records.map((record) => (
+                <li key={record._id} className="py-3.5 first:pt-0">
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${
+                        record.type === 'income'
+                          ? 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
+                          : 'bg-rose-500/15 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300'
+                      }`}
+                    >
+                      {record.type === 'income' ? '+' : '−'}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-[15px] font-semibold text-gray-900 dark:text-white">
+                            {record.description}
+                          </p>
+                          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                            {getCategoryLabel(record)} · {formatDateShort(record.date)}
+                          </p>
+                        </div>
+                        <p
+                          className={`shrink-0 text-[15px] font-bold tabular-nums ${
+                            record.type === 'income'
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : 'text-rose-600 dark:text-rose-400'
+                          }`}
+                        >
+                          {record.type === 'income' ? '+' : '−'}
+                          {formatCurrency(record.amount, record.currency).replace(`${record.currency} `, '')}
+                        </p>
+                      </div>
+                      <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                        {record.attachments?.[0] && (
+                          <button
+                            type="button"
+                            onClick={() => openReceipt(record._id, record.attachments![0])}
+                            disabled={openingReceiptId === record._id}
+                            className="inline-flex items-center gap-1 rounded-lg bg-primary-50 px-2.5 py-1 text-xs font-semibold text-primary-700 active:scale-[0.98] disabled:opacity-50 dark:bg-primary-900/30 dark:text-primary-300"
+                          >
+                            <FileText className="h-3.5 w-3.5" />
+                            {openingReceiptId === record._id ? 'Opening…' : 'Receipt'}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(record)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-700 active:scale-[0.98] dark:border-gray-600 dark:text-gray-300"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(record._id)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-red-200/80 px-2.5 py-1 text-xs font-medium text-red-600 active:scale-[0.98] dark:border-red-900/40 dark:text-red-400"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            {/* Desktop: table */}
+            <div className="hidden overflow-x-auto md:block">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
@@ -438,12 +578,22 @@ const FinancialRecordsManager = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {categories[record.type].find(cat => cat.value === record.category)?.label || record.category}
+                      {getCategoryLabel(record)}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
                       <div className="max-w-xs truncate" title={record.description}>
                         {record.description}
                       </div>
+                      {record.attachments?.[0] && (
+                        <button
+                          type="button"
+                          onClick={() => openReceipt(record._id, record.attachments![0])}
+                          disabled={openingReceiptId === record._id}
+                          className="mt-1 inline-flex text-xs font-medium text-primary-600 hover:underline disabled:opacity-50 dark:text-primary-400"
+                        >
+                          {openingReceiptId === record._id ? 'Opening…' : 'View receipt'}
+                        </button>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <span className={record.type === 'income' ? 'text-green-600' : 'text-red-600'}>
@@ -468,7 +618,8 @@ const FinancialRecordsManager = () => {
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         )}
       </div>
     </div>

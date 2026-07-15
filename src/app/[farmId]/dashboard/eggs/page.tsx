@@ -102,9 +102,9 @@ export default function EggsAndSalesPage({ params }: { params: { farmId: string 
           </nav>
         </div>
 
-        <div className="p-4 max-md:p-4 md:p-6">
+        <div className="p-4 md:p-6">
           {activeTab === 'collection' ? (
-            <div className="space-y-6">
+            <div className="space-y-0 md:space-y-6">
               <EggCollectionForm farmId={farmId} />
               <EggCollectionList farmId={farmId} />
             </div>

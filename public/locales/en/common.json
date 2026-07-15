@@ -10,6 +10,7 @@
     "analytics": "Analytics",
     "subscription": "Subscription",
     "billing": "Billing",
+    "planBilling": "Plan & Billing",
     "settings": "Settings"
   },
   "settings": {

@@ -19,6 +19,11 @@ import {
   Sprout,
 } from 'lucide-react';
 import { useTranslations } from '@/hooks/useTranslations';
+import { apiClient } from '@/lib/api';
+import { hasFeatureAccess, canAccessDashboardPath, getGatedFeatureForDashboardPath } from '@/lib/features';
+import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
+import FeatureGate from '@/components/billing/FeatureGate';
+import { normalizePlanId, PlanId } from '@/lib/billing';
 
 // Navigation items for sidebar with subscription requirements
 const getNavigationItems = (t: (key: string) => string) => [
@@ -60,8 +65,7 @@ const getNavigationItems = (t: (key: string) => string) => [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
-    requiredFeatures: ['finances'], // Premium only
-    isPremium: true,
+    requiredFeatures: ['finances'],
   },
   {
     name: t('navigation.feedManagement'),
@@ -71,8 +75,7 @@ const getNavigationItems = (t: (key: string) => string) => [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h18v18H3zM8 8h.01M12 8h.01M16 8h.01M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01" />
       </svg>
     ),
-    requiredFeatures: ['feed_management'], // Premium only
-    isPremium: true,
+    requiredFeatures: ['feed_management'],
   },
   {
     name: t('navigation.eggsSales'),
@@ -82,8 +85,7 @@ const getNavigationItems = (t: (key: string) => string) => [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
       </svg>
     ),
-    requiredFeatures: ['eggs_sales'], // Premium only
-    isPremium: true,
+    requiredFeatures: ['eggs_sales'],
   },
   {
     name: t('navigation.weather'),
@@ -103,29 +105,17 @@ const getNavigationItems = (t: (key: string) => string) => [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
       </svg>
     ),
-    requiredFeatures: ['analytics'], // Premium only
-    isPremium: true,
+    requiredFeatures: ['analytics'],
   },
   {
-    name: t('navigation.subscription'),
-    href: '/dashboard/subscription',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-    requiredFeatures: [], // Available to all
-  },
-  {
-    name: t('navigation.billing'),
+    name: t('navigation.planBilling'),
     href: '/dashboard/billing',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
       </svg>
     ),
-    requiredFeatures: ['billing'], // Premium only
-    isPremium: true,
+    requiredFeatures: [],
   },
   {
     name: t('navigation.settings'),
@@ -156,8 +146,13 @@ export default function DashboardLayout({
   const [error, setError] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(true); // Assume authenticated until proven otherwise
   const [subscriptionStatus, setSubscriptionStatus] = useState<{
-    plan: 'free' | 'trial' | 'premium';
+    plan: PlanId;
     features: string[];
+    livestockLimit: number | null;
+    unlockAllFeatures: boolean;
+    daysLeft: number;
+    isTrialExpired: boolean;
+    isFarmerTrial: boolean;
   } | null>(null);
   
   const pathname = usePathname();
@@ -170,6 +165,21 @@ export default function DashboardLayout({
   const isDashboardHome =
     pathnameWithoutLocale === `/${farmId}/dashboard` ||
     pathnameWithoutLocale === `/${farmId}/dashboard/`;
+
+  const features = subscriptionStatus?.features ?? [];
+  const unlockAll = subscriptionStatus?.unlockAllFeatures ?? false;
+  const visibleNavItems = getNavigationItems(t).filter((item) =>
+    hasFeatureAccess(features, item.requiredFeatures, unlockAll)
+  );
+  const gatedFeature = subscriptionStatus
+    ? getGatedFeatureForDashboardPath(pathnameWithoutLocale, farmId)
+    : null;
+  const routeBlocked = Boolean(
+    subscriptionStatus &&
+      gatedFeature &&
+      !canAccessDashboardPath(pathnameWithoutLocale, farmId, features, unlockAll)
+  );
+  const canRecordEggs = hasFeatureAccess(features, 'eggs_sales', unlockAll);
 
   const mobileNavItems = [
     {
@@ -212,19 +222,20 @@ export default function DashboardLayout({
 
   const fetchSubscriptionStatus = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001'}/api/billing/trial-status`, {
-        credentials: 'include',
-        cache: 'no-store',
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setSubscriptionStatus({
-            plan: data.data.plan,
-            features: data.data.features || []
-          });
-        }
+      const response = await apiClient.getSubscriptionStatus();
+      if (response.success && response.data) {
+        const data = response.data;
+        setSubscriptionStatus({
+          plan: normalizePlanId(data.rawPlan || data.plan || 'free'),
+          features: data.features || [],
+          livestockLimit: data.livestockLimit ?? null,
+          unlockAllFeatures: Boolean(data.unlockAllFeatures),
+          daysLeft: data.daysLeft ?? 0,
+          isTrialExpired: Boolean(
+            data.isTrialExpired ?? (data.isFarmerTrial && data.isExpired)
+          ),
+          isFarmerTrial: Boolean(data.isFarmerTrial),
+        });
       }
     } catch (error) {
       console.error('Error fetching subscription status:', error);
@@ -331,7 +342,26 @@ export default function DashboardLayout({
     );
   }
 
+  const subscriptionContextValue = {
+    plan: subscriptionStatus?.plan ?? ('free' as PlanId),
+    features,
+    unlockAllFeatures: unlockAll,
+    livestockLimit: subscriptionStatus?.livestockLimit ?? null,
+    daysLeft: subscriptionStatus?.daysLeft ?? 0,
+    isFarmerTrial: subscriptionStatus?.isFarmerTrial ?? false,
+    isTrialExpired: subscriptionStatus?.isTrialExpired ?? false,
+    loaded: subscriptionStatus !== null,
+  };
+
+  const visibleMobileNavItems = mobileNavItems.filter((item) => {
+    if (item.shortLabel === 'Reports') {
+      return hasFeatureAccess(features, 'analytics', unlockAll);
+    }
+    return true;
+  });
+
   return (
+    <SubscriptionProvider value={subscriptionContextValue}>
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Sidebar */}
       <aside
@@ -363,7 +393,7 @@ export default function DashboardLayout({
         </div>
         
         <nav className="px-4 py-2 space-y-1">
-          {getNavigationItems(t).map((item) => {
+          {visibleNavItems.map((item) => {
             const fullHref = buildFarmPath(farmId, item.href, locale);
             const farmPath = `/${farmId}${item.href}`;
             const isDashboardRoot = item.href === '/dashboard';
@@ -426,7 +456,7 @@ export default function DashboardLayout({
             </button>
             <h1 className="flex-1 text-center lg:text-left text-xl font-semibold text-gray-800 dark:text-white truncate">
               {(
-                getNavigationItems(t).find((item) => {
+                visibleNavItems.find((item) => {
                   const isDashboardRoot = item.href === '/dashboard';
                   const farmPath = `/${farmId}${item.href}`;
                   return isDashboardRoot
@@ -489,7 +519,7 @@ export default function DashboardLayout({
               <Bell className="h-[22px] w-[22px]" />
             </button>
             <Link
-              href={buildFarmPath(farmId, '/dashboard/settings/profile', locale)}
+              href={`${buildFarmPath(farmId, '/dashboard/settings', locale)}?tab=profile`}
               className="flex h-11 w-11 items-center justify-center rounded-xl text-gray-600 dark:text-gray-300 active:scale-95 transition-transform"
               aria-label="Profile"
             >
@@ -500,8 +530,45 @@ export default function DashboardLayout({
           </div>
         </header>
 
+        {subscriptionStatus &&
+          subscriptionStatus.isFarmerTrial &&
+          (subscriptionStatus.isTrialExpired || subscriptionStatus.daysLeft <= 7) && (
+            <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/40 md:px-8">
+              <div className="mx-auto flex max-w-6xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+                  {subscriptionStatus.isTrialExpired
+                    ? 'Your free Farmer trial has ended.'
+                    : `Farmer free trial: ${subscriptionStatus.daysLeft} day${subscriptionStatus.daysLeft === 1 ? '' : 's'} left.`}
+                  {' '}Subscribe from UGX 4,000/mo to keep your tools.
+                </p>
+                <Link
+                  href={buildFarmPath(farmId, '/dashboard/billing', locale)}
+                  className="inline-flex min-h-10 items-center justify-center rounded-xl bg-amber-600 px-4 text-sm font-semibold text-white active:scale-[0.98]"
+                >
+                  View plans
+                </Link>
+              </div>
+            </div>
+          )}
+
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-md:px-3 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))] max-md:pt-3">
-          {children}
+          {gatedFeature && !subscriptionStatus ? (
+            <div className="flex items-center justify-center py-24 text-gray-500 dark:text-gray-400">
+              Loading…
+            </div>
+          ) : routeBlocked && gatedFeature && subscriptionStatus ? (
+            <FeatureGate
+              farmId={farmId}
+              feature={gatedFeature}
+              subscription={{
+                plan: subscriptionStatus.plan,
+                isFarmerTrial: subscriptionStatus.isFarmerTrial,
+                isTrialExpired: subscriptionStatus.isTrialExpired,
+              }}
+            />
+          ) : (
+            children
+          )}
         </main>
 
         {/* Mobile bottom navigation */}
@@ -509,7 +576,7 @@ export default function DashboardLayout({
           className="md:hidden fixed bottom-0 left-0 right-0 z-30 flex items-stretch justify-around border-t border-gray-200/90 bg-white/95 px-1 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur-md dark:border-gray-800 dark:bg-gray-950/95 shadow-[0_-8px_30px_-12px_rgba(0,0,0,0.18)]"
           aria-label="Primary"
         >
-          {mobileNavItems.map((item) => {
+          {visibleMobileNavItems.map((item) => {
             const active = item.isActive(pathname);
             const Icon = item.icon;
             return (
@@ -531,7 +598,7 @@ export default function DashboardLayout({
         </nav>
 
         {/* FAB — dashboard home only, mobile */}
-        {isDashboardHome && (
+        {isDashboardHome && canRecordEggs && (
           <Link
             href={buildFarmPath(farmId, '/dashboard/eggs/record', locale)}
             className="md:hidden fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary-600 text-white shadow-lg shadow-primary-600/35 ring-1 ring-white/20 active:scale-95 transition-transform"
@@ -542,5 +609,6 @@ export default function DashboardLayout({
         )}
       </div>
     </div>
+    </SubscriptionProvider>
   );
 }

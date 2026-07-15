@@ -8,6 +8,9 @@ interface EggCollectionFormProps {
   farmId: string;
 }
 
+const inputClass =
+  'mt-1 block w-full min-h-11 rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-base text-gray-900 shadow-sm focus:border-amber-500 focus:outline-none focus:ring-amber-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white md:min-h-0 md:rounded-md md:py-2 md:text-sm';
+
 export default function EggCollectionForm({ farmId }: EggCollectionFormProps) {
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [quantity, setQuantity] = useState('');
@@ -19,127 +22,128 @@ export default function EggCollectionForm({ farmId }: EggCollectionFormProps) {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+
     if (!date || !quantity || !chickens) {
       setError('Please fill in all required fields');
       return;
     }
-    
+
     try {
       setIsSubmitting(true);
       setError('');
       setSuccess('');
-      
+
       const response = await apiClient.createEggCollection(farmId, {
         date,
         quantity: parseInt(quantity),
         chickens: parseInt(chickens),
-        notes
+        notes,
       });
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to save egg collection record');
       }
-      
-      // Reset form
+
       setQuantity('');
       setNotes('');
-      setSuccess('Egg collection record saved successfully!');
-      
-      // Emit an event to refresh the list
+      setSuccess('Collection saved!');
+
       window.dispatchEvent(new CustomEvent('refresh-egg-collections'));
-      
-    } catch (error: any) {
-      setError(error.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-        Record Egg Collection
+    <div className="max-md:-mx-0 max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none md:rounded-lg md:border md:border-gray-200/80 md:bg-white md:p-6 md:shadow dark:md:border-gray-700 dark:md:bg-gray-800">
+      <h2 className="text-base font-bold text-gray-900 dark:text-white md:mb-4 md:text-xl md:font-semibold">
+        Log collection
       </h2>
-      
-      <form onSubmit={handleSubmit}>
+
+      <form onSubmit={handleSubmit} className="mt-3 md:mt-0">
         {error && (
-          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
-            <p>{error}</p>
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300" role="alert">
+            {error}
           </div>
         )}
-        
+
         {success && (
-          <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
-            <p>{success}</p>
+          <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300" role="alert">
+            {success}
           </div>
         )}
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+
+        <div className="space-y-4 md:grid md:grid-cols-3 md:gap-4 md:space-y-0">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="mb-1 block text-[13px] font-semibold text-gray-700 dark:text-gray-300 md:text-sm md:font-medium">
               Date *
             </label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className={inputClass}
               required
             />
           </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Quantity (Eggs) *
-            </label>
-            <input
-              type="number"
-              min="0"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              placeholder="Number of eggs collected"
-              required
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Chickens (Count) *
-            </label>
-            <input
-              type="number"
-              min="1"
-              value={chickens}
-              onChange={(e) => setChickens(e.target.value)}
-              className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              placeholder="Number of laying hens"
-              required
-            />
+
+          <div className="grid grid-cols-2 gap-3 md:contents">
+            <div>
+              <label className="mb-1 block text-[13px] font-semibold text-gray-700 dark:text-gray-300 md:text-sm md:font-medium">
+                Eggs *
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                className={inputClass}
+                placeholder="0"
+                inputMode="numeric"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-[13px] font-semibold text-gray-700 dark:text-gray-300 md:text-sm md:font-medium">
+                Hens *
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={chickens}
+                onChange={(e) => setChickens(e.target.value)}
+                className={inputClass}
+                placeholder="0"
+                inputMode="numeric"
+                required
+              />
+            </div>
           </div>
         </div>
-        
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+
+        <div className="mt-4">
+          <label className="mb-1 block text-[13px] font-semibold text-gray-700 dark:text-gray-300 md:text-sm md:font-medium">
             Notes
           </label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            rows={3}
-            className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            placeholder="Optional notes about the collection"
+            rows={2}
+            className={inputClass}
+            placeholder="Optional notes"
           />
         </div>
-        
-        <div className="flex justify-end">
+
+        <div className="mt-4 md:flex md:justify-end">
           <button
             type="submit"
             disabled={isSubmitting}
-            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex min-h-11 w-full touch-manipulation items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 px-4 text-sm font-semibold text-white shadow-md shadow-amber-500/25 active:scale-[0.98] disabled:opacity-50 md:min-h-0 md:w-auto md:rounded-md md:from-amber-500 md:to-amber-500 md:shadow-sm md:hover:bg-amber-600"
           >
-            {isSubmitting ? 'Saving...' : 'Save Collection'}
+            {isSubmitting ? 'Saving…' : 'Save collection'}
           </button>
         </div>
       </form>
