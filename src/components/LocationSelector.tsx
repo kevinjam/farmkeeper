@@ -168,13 +168,23 @@ export function LocationSelector({
   const handleCoordinateChange = (field: 'latitude' | 'longitude', value: string) => {
     const numValue = parseFloat(value);
     if (!isNaN(numValue)) {
-      setLocation((prev) => ({
-        ...prev,
-        coordinates: {
-          ...prev.coordinates,
-          [field]: numValue,
-        },
-      }));
+      setLocation((prev) => {
+        const latitude = field === 'latitude' ? numValue : prev.coordinates?.latitude;
+        const longitude = field === 'longitude' ? numValue : prev.coordinates?.longitude;
+        if (typeof latitude !== 'number' || typeof longitude !== 'number') {
+          return {
+            ...prev,
+            coordinates:
+              field === 'latitude'
+                ? { latitude: numValue, longitude: prev.coordinates?.longitude ?? 0 }
+                : { latitude: prev.coordinates?.latitude ?? 0, longitude: numValue },
+          };
+        }
+        return {
+          ...prev,
+          coordinates: { latitude, longitude },
+        };
+      });
     }
   };
 

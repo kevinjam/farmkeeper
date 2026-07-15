@@ -21,9 +21,10 @@ export interface AuthResponse {
     email: string;
     role: string;
   };
-  farmSlug: string;
+  farmSlug?: string;
   farmName?: string;
   token?: string;
+  requiresOnboarding?: boolean;
 }
 
 export interface User {

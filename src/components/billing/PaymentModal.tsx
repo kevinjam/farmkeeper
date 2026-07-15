@@ -84,7 +84,7 @@ export default function PaymentModal({
       attempts += 1;
       try {
         const response = await apiClient.getPaymentStatus(reference);
-        if (response.success && response.data.status === 'completed') {
+        if (response.success && response.data?.status === 'completed') {
           clearPoll();
           setPaymentStep('success');
         } else if (attempts >= 40) {
@@ -188,29 +188,37 @@ export default function PaymentModal({
     sub: string;
     icon: typeof Smartphone;
     hidden?: boolean;
-  }[] = [
-    {
-      id: 'mobile_money',
-      title: 'Mobile Money',
-      sub: 'MTN or Airtel (Uganda)',
-      icon: Smartphone,
-      hidden: !availableMethods.includes('mobile_money'),
-    },
-    {
-      id: 'ussd',
-      title: 'USSD / MoMo',
-      sub: 'MTN *165* or Airtel *185*',
-      icon: Phone,
-      hidden: !availableMethods.includes('ussd'),
-    },
-    {
-      id: 'card',
-      title: 'Credit / debit card',
-      sub: isInternational ? 'Powered by Stripe' : 'Visa, Mastercard via Stripe',
-      icon: isInternational ? Globe : CreditCard,
-      hidden: !availableMethods.includes('card'),
-    },
-  ].filter((m) => !m.hidden);
+  }[] = (
+    [
+      {
+        id: 'mobile_money' as const,
+        title: 'Mobile Money',
+        sub: 'MTN or Airtel (Uganda)',
+        icon: Smartphone,
+        hidden: !availableMethods.includes('mobile_money'),
+      },
+      {
+        id: 'ussd' as const,
+        title: 'USSD / MoMo',
+        sub: 'MTN *165* or Airtel *185*',
+        icon: Phone,
+        hidden: !availableMethods.includes('ussd'),
+      },
+      {
+        id: 'card' as const,
+        title: 'Credit / debit card',
+        sub: isInternational ? 'Powered by Stripe' : 'Visa, Mastercard via Stripe',
+        icon: isInternational ? Globe : CreditCard,
+        hidden: !availableMethods.includes('card'),
+      },
+    ] as {
+      id: PaymentMethod;
+      title: string;
+      sub: string;
+      icon: typeof Smartphone;
+      hidden?: boolean;
+    }[]
+  ).filter((m) => !m.hidden);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 md:items-center md:p-4">
