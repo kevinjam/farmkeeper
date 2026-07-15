@@ -138,7 +138,7 @@ export default function LivestockEditPage({
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-4xl py-2">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">

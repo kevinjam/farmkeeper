@@ -92,6 +92,9 @@ export default function Login() {
         localStorage.setItem('auth-token', data.token);
         setAuthCookie(data.token);
       }
+      if (data.user?.email) {
+        localStorage.setItem('userEmail', data.user.email);
+      }
 
       if (data.requiresOnboarding || !data.farmSlug) {
         setDashboardUrl('/en/auth/onboarding');

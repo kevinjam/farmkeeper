@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Lock } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 import { DashboardGuard } from '@/components/auth/dashboard-guard';
 import { useFarmPaths } from '@/hooks/useFarmPaths';
@@ -13,6 +14,9 @@ import RecentActivityCard from '@/components/dashboard/RecentActivityCard';
 import FarmLocationPrompt from '@/components/dashboard/FarmLocationPrompt';
 
 type StatVariant = 'livestock' | 'eggs' | 'profit' | 'feed';
+
+const lockedCardChrome =
+  'border-amber-300/70 bg-gradient-to-br from-amber-50/90 via-white to-white dark:border-amber-800/50 dark:from-amber-950/35 dark:via-gray-900 dark:to-gray-900/95';
 
 const statVariantMobile: Record<
   StatVariant,
@@ -53,47 +57,71 @@ const StatCard = ({
   positive = true,
   loading = false,
   variant = 'livestock',
+  locked = false,
+  href,
 }: {
   title: string;
   value: string;
-  change: string;
+  change?: string;
   icon: React.ReactNode;
   positive?: boolean;
   loading?: boolean;
   variant?: StatVariant;
+  locked?: boolean;
+  href?: string;
 }) => {
   const vm = statVariantMobile[variant];
   const trendClass = positive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400';
+  const showChange = Boolean(change) && !locked;
+  const displayValue = locked ? '•••' : value;
 
-  return (
-    <div className="min-w-0">
+  const mobileCard = (
+    <div
+      className={`md:hidden relative flex h-[7.25rem] select-none flex-col rounded-xl border p-3 shadow-md transition-transform duration-150 touch-manipulation active:scale-[0.97] ${
+        locked ? lockedCardChrome : vm.card
+      }`}
+    >
       <div
-        className={`md:hidden relative flex h-[7.25rem] select-none flex-col rounded-xl border p-3 shadow-md transition-transform duration-150 touch-manipulation active:scale-[0.97] ${vm.card}`}
-      >
-        <div
-          className={`pointer-events-none absolute left-0 top-0 h-1 w-full rounded-t-xl ${vm.accentLine} opacity-80`}
-        />
-        <div className="flex items-start justify-between gap-1">
-          {loading ? (
-            <div className="h-8 w-16 animate-pulse rounded-lg bg-gray-200/80 dark:bg-gray-700/80" />
-          ) : (
-            <p
-              className={`text-[1.35rem] font-extrabold leading-none tracking-tight tabular-nums ${vm.value}`}
-            >
-              {value}
-            </p>
-          )}
-          <div
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg [&_svg]:h-[1.15rem] [&_svg]:w-[1.15rem] ${vm.iconWrap}`}
+        className={`pointer-events-none absolute left-0 top-0 h-1 w-full rounded-t-xl ${
+          locked ? 'bg-amber-400/70' : vm.accentLine
+        } opacity-80`}
+      />
+      {locked && (
+        <span className="absolute right-2 top-2.5 inline-flex items-center gap-0.5 rounded-md bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-800 dark:bg-amber-900/60 dark:text-amber-200">
+          <Lock className="h-2.5 w-2.5" aria-hidden />
+          Locked
+        </span>
+      )}
+      <div className="flex items-start justify-between gap-1">
+        {loading && !locked ? (
+          <div className="h-8 w-16 animate-pulse rounded-lg bg-gray-200/80 dark:bg-gray-700/80" />
+        ) : (
+          <p
+            className={`text-[1.35rem] font-extrabold leading-none tracking-tight tabular-nums ${
+              locked ? 'text-amber-900/50 dark:text-amber-200/40 blur-[1px]' : vm.value
+            }`}
           >
-            {icon}
-          </div>
+            {displayValue}
+          </p>
+        )}
+        <div
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg [&_svg]:h-[1.15rem] [&_svg]:w-[1.15rem] ${
+            locked
+              ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200'
+              : vm.iconWrap
+          }`}
+        >
+          {locked ? <Lock className="h-4 w-4" /> : icon}
         </div>
-        <p className="mt-1.5 line-clamp-2 text-[10px] font-semibold uppercase leading-tight tracking-wide text-gray-500 dark:text-gray-400">
-          {title}
-        </p>
-        <div className="mt-auto pt-1">
-          {loading ? (
+      </div>
+      <p className="mt-1.5 line-clamp-2 text-[10px] font-semibold uppercase leading-tight tracking-wide text-gray-500 dark:text-gray-400">
+        {title}
+      </p>
+      <div className="mt-auto pt-1">
+        {locked ? (
+          <p className="text-[10px] font-medium text-amber-700 dark:text-amber-300">Upgrade to unlock</p>
+        ) : showChange ? (
+          loading ? (
             <div className="h-2.5 w-14 animate-pulse rounded bg-gray-200/70 dark:bg-gray-700/70" />
           ) : (
             <p className={`flex items-center gap-0.5 text-[10px] font-medium leading-none ${trendClass}`}>
@@ -111,19 +139,47 @@ const StatCard = ({
                 <span className="font-normal text-gray-400 dark:text-gray-500">vs last mo.</span>
               </span>
             </p>
-          )}
-        </div>
+          )
+        ) : null}
       </div>
+    </div>
+  );
 
-      <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg shadow p-4 dark:border dark:border-gray-700/60">
-        <div className="flex justify-between items-start gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{title}</p>
-            {loading ? (
-              <div className="mt-2 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse w-20" />
-            ) : (
-              <h3 className="text-xl font-bold mt-1 text-gray-900 dark:text-white tracking-tight">{value}</h3>
-            )}
+  const desktopCard = (
+    <div
+      className={`hidden md:block relative rounded-lg shadow p-4 dark:border ${
+        locked
+          ? 'border border-amber-200/90 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/25'
+          : 'bg-white dark:bg-gray-800 dark:border-gray-700/60'
+      }`}
+    >
+      {locked && (
+        <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800 dark:bg-amber-900/60 dark:text-amber-200">
+          <Lock className="h-3 w-3" aria-hidden />
+          Locked
+        </span>
+      )}
+      <div className="flex justify-between items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{title}</p>
+          {loading && !locked ? (
+            <div className="mt-2 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse w-20" />
+          ) : (
+            <h3
+              className={`text-xl font-bold mt-1 tracking-tight ${
+                locked
+                  ? 'text-amber-900/45 dark:text-amber-200/40 blur-[1.5px] select-none'
+                  : 'text-gray-900 dark:text-white'
+              }`}
+            >
+              {displayValue}
+            </h3>
+          )}
+          {locked ? (
+            <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">
+              Upgrade to unlock this metric
+            </p>
+          ) : showChange ? (
             <p className={`text-xs mt-2 flex items-center ${positive ? 'text-green-600' : 'text-red-600'}`}>
               {positive ? (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1 shrink-0" viewBox="0 0 20 20" fill="currentColor">
@@ -136,74 +192,41 @@ const StatCard = ({
               )}
               {change} from last month
             </p>
-          </div>
-          <div className="bg-primary-100 dark:bg-primary-900 p-2 rounded-lg shrink-0">{icon}</div>
+          ) : null}
+        </div>
+        <div
+          className={`p-2 rounded-lg shrink-0 ${
+            locked
+              ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200'
+              : 'bg-primary-100 dark:bg-primary-900'
+          }`}
+        >
+          {locked ? <Lock className="h-5 w-5" /> : icon}
         </div>
       </div>
     </div>
   );
-};
 
-// Weather Widget Component
-const WeatherWidget = () => {
-  const [weather, setWeather] = useState({
-    temp: '26°C',
-    condition: 'Partly Cloudy',
-    humidity: '65%',
-    wind: '12 km/h'
-  });
-  const [isLoading, setIsLoading] = useState(true);
+  const content = (
+    <>
+      {mobileCard}
+      {desktopCard}
+    </>
+  );
 
-  useEffect(() => {
-    // Simulate fetching weather data
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-  }, []);
-
-  if (isLoading) {
+  if (href) {
     return (
-      <div className="bg-gray-200 dark:bg-gray-700 animate-pulse p-4 rounded-lg max-md:rounded-2xl shadow">
-        <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-1/2 mb-2"></div>
-        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/3 mb-4"></div>
-        <div className="h-8 bg-gray-300 dark:bg-gray-600 rounded w-1/4 mb-2"></div>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
-          <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
-        </div>
-      </div>
+      <Link
+        href={href}
+        className="min-w-0 block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 rounded-xl"
+        title={locked ? 'Upgrade to unlock' : undefined}
+      >
+        {content}
+      </Link>
     );
   }
 
-  return (
-    <div className="bg-gradient-to-br from-blue-500 to-blue-700 text-white p-4 max-md:p-5 rounded-lg max-md:rounded-2xl shadow-md max-md:shadow-lg">
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="font-bold text-lg">Today's Weather</h3>
-          <p className="text-sm opacity-90">Kampala, Uganda</p>
-        </div>
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-        </svg>
-      </div>
-      <div className="mt-4">
-        <div className="flex justify-between">
-          <h4 className="text-2xl font-bold">{weather.temp}</h4>
-          <p>{weather.condition}</p>
-        </div>
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <div>
-            <p className="text-xs opacity-80">Humidity</p>
-            <p className="text-sm">{weather.humidity}</p>
-          </div>
-          <div>
-            <p className="text-xs opacity-80">Wind</p>
-            <p className="text-sm">{weather.wind}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  return <div className="min-w-0">{content}</div>;
 };
 
 // New Quick Link Card Component
@@ -211,21 +234,43 @@ const QuickLinkCard = ({
   href,
   icon,
   label,
+  locked = false,
 }: {
   href: string;
   icon: React.ReactNode;
   label: string;
+  locked?: boolean;
 }) => (
   <Link
     href={href}
-    className="group flex min-h-[5rem] md:min-h-0 flex-col items-center justify-center gap-1 rounded-2xl border border-gray-100/80 bg-white p-3 shadow-sm transition-all duration-200 hover:shadow-md dark:border-gray-700 dark:bg-gray-800/80 dark:hover:bg-gray-700 active:scale-[0.97] md:rounded-lg md:border-0 md:bg-white md:p-4 md:shadow-md md:hover:bg-gray-50 md:dark:bg-gray-800"
+    title={locked ? 'Included on a higher plan — tap to upgrade' : undefined}
+    className={`group relative flex min-h-[5rem] md:min-h-0 flex-col items-center justify-center gap-1 rounded-2xl border p-3 shadow-sm transition-all duration-200 active:scale-[0.97] md:rounded-lg md:p-4 ${
+      locked
+        ? 'border-amber-200/80 bg-amber-50/60 dark:border-amber-900/40 dark:bg-amber-950/20'
+        : 'border-gray-100/80 bg-white hover:shadow-md dark:border-gray-700 dark:bg-gray-800/80 dark:hover:bg-gray-700 md:border-0 md:bg-white md:shadow-md md:hover:bg-gray-50 md:dark:bg-gray-800'
+    }`}
   >
-    <div className="rounded-2xl bg-primary-100 p-3 text-primary-600 transition-transform duration-200 group-hover:scale-105 dark:bg-primary-900 dark:text-primary-300 md:rounded-full">
+    <div
+      className={`rounded-2xl p-3 transition-transform duration-200 md:rounded-full ${
+        locked
+          ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
+          : 'bg-primary-100 text-primary-600 group-hover:scale-105 dark:bg-primary-900 dark:text-primary-300'
+      }`}
+    >
       {icon}
     </div>
-    <span className="text-center text-xs font-semibold leading-tight text-gray-800 dark:text-gray-100 md:text-sm md:font-medium">
+    <span
+      className={`text-center text-xs font-semibold leading-tight md:text-sm md:font-medium ${
+        locked ? 'text-amber-900/80 dark:text-amber-200/80' : 'text-gray-800 dark:text-gray-100'
+      }`}
+    >
       {label}
     </span>
+    {locked && (
+      <span className="absolute right-2 top-2 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+        Locked
+      </span>
+    )}
   </Link>
 );
 
@@ -309,93 +354,88 @@ function DashboardContent({ params }: { params: { farmId: string } }) {
             </svg>
           ),
         },
-      ].filter((link) => canUse(link.feature)),
+      ].map((link) => ({
+        ...link,
+        locked: !canUse(link.feature),
+      })),
     [farmPath, features, unlockAllFeatures]
   );
 
   const displayStats = useMemo(() => {
-    const items: Array<{
-      title: string;
-      value: string;
-      change: string;
-      positive: boolean;
-      loading: boolean;
-      variant: StatVariant;
-      icon: React.ReactNode;
-    }> = [
+    const eggsLocked = !canUse('eggs_sales');
+    const financesLocked = !canUse('finances');
+    const feedLocked = !canUse('feed_management');
+    const profitGrowth = financialAnalytics?.growth?.profitGrowth;
+
+    return [
       {
         title: 'Total Livestock',
         value: totalLivestock.toString(),
-        change: '+12.5%',
         positive: true,
         loading: statsLoading,
-        variant: 'livestock',
+        variant: 'livestock' as StatVariant,
+        locked: false,
+        href: farmPath('/dashboard/livestock'),
         icon: (
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
         ),
       },
-    ];
-
-    if (canUse('eggs_sales')) {
-      items.push({
+      {
         title: 'Eggs Today',
-        value: eggsToday.toString(),
-        change: '+5.2%',
+        value: eggsLocked ? '0' : eggsToday.toString(),
         positive: true,
-        loading: statsLoading,
-        variant: 'eggs',
+        loading: !eggsLocked && statsLoading,
+        variant: 'eggs' as StatVariant,
+        locked: eggsLocked,
+        href: farmPath('/dashboard/eggs'),
         icon: (
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
           </svg>
         ),
-      });
-    }
-
-    if (canUse('finances')) {
-      items.push({
+      },
+      {
         title: 'Net Profit',
-        value: financialAnalytics ? formatCurrency(financialAnalytics.summary.netProfit, 'UGX') : 'UGX 0',
-        change: financialAnalytics
-          ? `${financialAnalytics.growth.profitGrowth >= 0 ? '+' : ''}${financialAnalytics.growth.profitGrowth.toFixed(1)}%`
-          : '+0.0%',
-        positive: financialAnalytics ? financialAnalytics.growth.profitGrowth >= 0 : true,
-        loading: financialLoading,
-        variant: 'profit',
+        value:
+          financesLocked || !financialAnalytics
+            ? 'UGX —'
+            : formatCurrency(financialAnalytics.summary.netProfit, 'UGX'),
+        change:
+          !financesLocked && typeof profitGrowth === 'number'
+            ? `${profitGrowth >= 0 ? '+' : ''}${profitGrowth.toFixed(1)}%`
+            : undefined,
+        positive: typeof profitGrowth === 'number' ? profitGrowth >= 0 : true,
+        loading: !financesLocked && financialLoading,
+        variant: 'profit' as StatVariant,
+        locked: financesLocked,
+        href: farmPath('/dashboard/finances'),
         icon: (
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         ),
-      });
-    }
-
-    if (canUse('feed_management')) {
-      items.push({
+      },
+      {
         title: 'Feed Stock',
-        value: feedStock ? `${feedStock.stockPercentage}%` : '0%',
-        change:
-          feedStock && feedStock.totalItems > 0
-            ? `${feedStock.lowStockItems.length > 0 ? '-' : '+'}${Math.abs(feedStock.stockPercentage - 75).toFixed(1)}%`
-            : '+0.0%',
+        value: feedLocked || !feedStock ? '—%' : `${feedStock.stockPercentage}%`,
         positive: feedStock
           ? Array.isArray(feedStock.lowStockItems)
             ? feedStock.lowStockItems.length === 0
             : true
           : true,
-        loading: feedStockLoading,
-        variant: 'feed',
+        loading: !feedLocked && feedStockLoading,
+        variant: 'feed' as StatVariant,
+        locked: feedLocked,
+        href: farmPath('/dashboard/feed'),
         icon: (
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
           </svg>
         ),
-      });
-    }
-
-    return items;
+      },
+    ];
   }, [
     totalLivestock,
     eggsToday,
@@ -406,15 +446,8 @@ function DashboardContent({ params }: { params: { farmId: string } }) {
     feedStockLoading,
     features,
     unlockAllFeatures,
+    farmPath,
   ]);
-  
-  
-  const [weather, setWeather] = useState({
-    temp: '26°C',
-    condition: 'Partly Cloudy',
-    humidity: '65%',
-    wind: '12 km/h'
-  });
 
   // Fetch feed stock data when plan includes feed management
   useEffect(() => {
@@ -572,18 +605,18 @@ const fetchFinancialAnalytics = async () => {
             loading={stat.loading}
             icon={stat.icon}
             variant={stat.variant}
+            locked={stat.locked}
+            href={stat.href}
           />
         ))}
       </div>
       
       {/* Main dashboard content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-md:gap-4">
-        <UpcomingTasksCard farmId={farmSlug} limit={5} />
+        <UpcomingTasksCard farmId={farmSlug} limit={3} />
 
-        {/* Weather and Quick Links */}
+        {/* Quick Links */}
         <div className="space-y-6 max-md:space-y-4">
-          <WeatherWidget />
-
           <div className="bg-white dark:bg-gray-800 rounded-lg max-md:rounded-2xl shadow max-md:shadow-md border border-transparent max-md:border-gray-100/90 dark:max-md:border-gray-700/80 overflow-hidden">
             <div className="px-4 py-3 max-md:py-3.5 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg max-md:text-base font-bold text-gray-900 dark:text-white">Quick Actions</h3>
@@ -595,13 +628,26 @@ const fetchFinancialAnalytics = async () => {
                   href={link.href}
                   icon={link.icon}
                   label={link.label}
+                  locked={link.locked}
                 />
               ))}
             </div>
           </div>
+          <Link
+            href={farmPath('/dashboard/weather')}
+            className="flex items-center justify-between rounded-lg max-md:rounded-2xl border border-sky-200/80 bg-sky-50 px-4 py-3.5 text-sky-900 shadow-sm transition-colors hover:bg-sky-100 dark:border-sky-900/50 dark:bg-sky-950/40 dark:text-sky-100 dark:hover:bg-sky-950/70"
+          >
+            <div>
+              <p className="text-sm font-semibold">Farm weather</p>
+              <p className="text-xs text-sky-800/80 dark:text-sky-200/70">Live forecast for your location</p>
+            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
         </div>
         
-        <RecentActivityCard farmId={farmSlug} limit={6} />
+        <RecentActivityCard farmId={farmSlug} limit={3} />
       </div>
       
       {/* Call to Action Section */}

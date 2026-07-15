@@ -219,8 +219,8 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
 
   if (isLoading) {
     return (
-      <div className="space-y-4 max-md:px-0 md:space-y-6 max-md:pb-[calc(6rem+env(safe-area-inset-bottom))]">
-        <div className="bg-white dark:bg-gray-800 max-md:mx-3 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:p-4 max-md:shadow-md md:rounded-lg md:shadow md:p-6">
+      <div className="space-y-4 md:space-y-6 max-md:pb-[calc(6rem+env(safe-area-inset-bottom))]">
+        <div className="bg-white dark:bg-gray-800 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:p-4 max-md:shadow-md md:rounded-lg md:shadow md:p-6">
           <div className="flex items-start gap-3 md:flex-col md:gap-0">
             <div className="h-11 w-11 shrink-0 rounded-2xl bg-gray-200 animate-pulse md:hidden" />
             <div className="min-w-0 flex-1">
@@ -250,7 +250,7 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
           ))}
         </div>
 
-        <div className="bg-white dark:bg-gray-800 max-md:mx-3 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:p-4 md:rounded-lg md:shadow md:p-6">
+        <div className="bg-white dark:bg-gray-800 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:p-4 md:rounded-lg md:shadow md:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
               <div key={i}>
@@ -302,7 +302,7 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
 
   if (error) {
     return (
-      <div className="max-md:mx-3 max-md:mt-2 rounded-2xl border border-red-200/80 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-950/40 md:rounded-md">
+      <div className=" max-md:mt-2 rounded-2xl border border-red-200/80 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-950/40 md:rounded-md">
         <p className="text-sm font-medium text-red-700 dark:text-red-200">{error}</p>
       </div>
     );
@@ -333,9 +333,9 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
   );
 
   return (
-    <div className="space-y-4 max-md:px-0 md:space-y-6 max-md:pb-[calc(9rem+env(safe-area-inset-bottom))]">
+    <div className="space-y-4 md:space-y-6 max-md:pb-[calc(9rem+env(safe-area-inset-bottom))]">
       {/* Page header */}
-      <div className="overflow-hidden bg-white shadow-md dark:bg-gray-800 md:rounded-lg md:shadow max-md:mx-3 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:shadow-lg dark:max-md:border-gray-700/80">
+      <div className="overflow-hidden bg-white shadow-md dark:bg-gray-800 md:rounded-lg md:shadow max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:shadow-lg dark:max-md:border-gray-700/80">
         <div className="max-md:bg-gradient-to-br max-md:from-emerald-500/12 max-md:via-white max-md:to-white max-md:p-4 max-md:dark:from-emerald-500/12 max-md:dark:via-gray-800 max-md:dark:to-gray-800 md:p-6">
           <div className="flex max-md:flex-col md:flex-row md:items-center md:justify-between md:gap-4">
             <div className="flex max-md:items-start max-md:gap-3">
@@ -430,7 +430,7 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
       </div>
 
       {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 max-md:mx-3 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:p-4 max-md:shadow-md dark:max-md:border-gray-700/80 md:rounded-lg md:shadow md:p-6">
+      <div className="bg-white dark:bg-gray-800 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:p-4 max-md:shadow-md dark:max-md:border-gray-700/80 md:rounded-lg md:shadow md:p-6">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-200 md:hidden">
           <SlidersHorizontal className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" strokeWidth={2} />
           Filters &amp; sort

@@ -10,9 +10,9 @@ export default function FinancesDashboard({ params }: { params: { farmId: string
   const { farmPath } = useFarmPaths(params.farmId);
 
   return (
-    <div className="space-y-3 max-md:px-0 md:max-w-7xl md:mx-auto md:space-y-8 md:py-8 md:px-6 lg:px-8 max-md:pb-[calc(9rem+env(safe-area-inset-bottom))]">
+    <div className="space-y-3 max-md:pb-[calc(9rem+env(safe-area-inset-bottom))] md:space-y-6 md:py-2">
       {/* Hero + quick actions */}
-      <div className="overflow-hidden bg-white shadow-md dark:bg-gray-800 md:rounded-xl md:shadow-lg max-md:mx-3 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:shadow-lg dark:max-md:border-gray-700/80">
+      <div className="overflow-hidden bg-white shadow-md dark:bg-gray-800 md:rounded-xl md:shadow-lg max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:shadow-lg dark:max-md:border-gray-700/80">
         <div className="max-md:bg-gradient-to-br max-md:from-sky-500/14 max-md:via-white max-md:to-white max-md:p-4 max-md:dark:from-sky-500/12 max-md:dark:via-gray-800 max-md:dark:to-gray-800 md:p-6">
           <div className="flex max-md:flex-col md:flex-row md:items-center md:justify-between md:gap-6">
             <div className="flex max-md:items-start max-md:gap-3">
@@ -47,11 +47,11 @@ export default function FinancesDashboard({ params }: { params: { farmId: string
         </div>
       </div>
 
-      <div className="max-md:mx-3 max-md:overflow-hidden max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:bg-white max-md:shadow-md dark:max-md:border-gray-700/80 dark:max-md:bg-gray-800/95 md:rounded-xl md:border md:border-gray-200/80 md:bg-white md:shadow-lg dark:md:border-gray-700 dark:md:bg-gray-800">
+      <div className=" max-md:overflow-hidden max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:bg-white max-md:shadow-md dark:max-md:border-gray-700/80 dark:max-md:bg-gray-800/95 md:rounded-xl md:border md:border-gray-200/80 md:bg-white md:shadow-lg dark:md:border-gray-700 dark:md:bg-gray-800">
         <FinancialAnalyticsWidget />
       </div>
 
-      <div className="max-md:mx-3 max-md:overflow-hidden max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:bg-white max-md:shadow-md dark:max-md:border-gray-700/80 dark:max-md:bg-gray-800/95 md:rounded-xl md:border md:border-gray-200/80 md:bg-white md:shadow-lg dark:md:border-gray-700 dark:md:bg-gray-800">
+      <div className=" max-md:overflow-hidden max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:bg-white max-md:shadow-md dark:max-md:border-gray-700/80 dark:max-md:bg-gray-800/95 md:rounded-xl md:border md:border-gray-200/80 md:bg-white md:shadow-lg dark:md:border-gray-700 dark:md:bg-gray-800">
         <FinancialRecordsManager />
       </div>
     </div>

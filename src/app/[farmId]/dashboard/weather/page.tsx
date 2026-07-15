@@ -69,7 +69,7 @@ type WeatherData = {
 type TemperatureUnit = 'celsius' | 'fahrenheit';
 
 const shellCard =
-  'overflow-hidden border border-gray-200/90 bg-white shadow-md dark:border-gray-700/80 dark:bg-gray-800 max-md:mx-3 max-md:rounded-2xl md:rounded-xl md:shadow-lg';
+  'overflow-hidden border border-gray-200/90 bg-white shadow-md dark:border-gray-700/80 dark:bg-gray-800 max-md:rounded-2xl md:rounded-xl md:shadow-lg';
 
 export default function WeatherPage({ params }: { params: { farmId: string } }) {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
@@ -159,7 +159,7 @@ export default function WeatherPage({ params }: { params: { farmId: string } }) 
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 px-3 md:grid-cols-2 md:gap-4 lg:grid-cols-4 lg:px-0">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-2 md:gap-4 lg:grid-cols-4">
           <div className="col-span-2 rounded-2xl bg-gradient-to-br from-blue-100/90 to-sky-50 p-4 dark:from-blue-900/40 dark:to-sky-900/20 md:col-span-1 lg:col-span-1 md:rounded-xl md:p-6">
             <div className="mb-4 flex items-center justify-between">
               <div className="h-12 w-12 animate-pulse rounded-full bg-gray-200/80 dark:bg-gray-600" />
@@ -189,7 +189,7 @@ export default function WeatherPage({ params }: { params: { farmId: string } }) 
           <div className="h-56 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-700 md:h-64" />
         </div>
 
-        <div className="max-md:mx-3 max-md:rounded-2xl max-md:border max-md:border-primary-200/80 max-md:bg-primary-50/90 p-4 dark:border-primary-900/50 dark:bg-primary-950/30 md:rounded-xl md:p-6">
+        <div className=" max-md:rounded-2xl max-md:border max-md:border-primary-200/80 max-md:bg-primary-50/90 p-4 dark:border-primary-900/50 dark:bg-primary-950/30 md:rounded-xl md:p-6">
           <div className="mb-4 flex items-center gap-2">
             <div className="h-6 w-6 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
             <div className="h-6 w-40 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
@@ -232,7 +232,7 @@ export default function WeatherPage({ params }: { params: { farmId: string } }) 
 
   if (error) {
     return (
-      <div className="max-md:mx-3 max-md:pb-[calc(9rem+env(safe-area-inset-bottom))] space-y-4 md:space-y-6">
+      <div className=" max-md:pb-[calc(9rem+env(safe-area-inset-bottom))] space-y-4 md:space-y-6">
         <div className={shellCard}>
           <div className="p-4 md:p-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -326,7 +326,7 @@ export default function WeatherPage({ params }: { params: { farmId: string } }) 
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-2 md:gap-4 lg:grid-cols-4 lg:px-0 px-3">
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-2 md:gap-4 lg:grid-cols-4">
         <div className="col-span-2 rounded-2xl border border-sky-200/80 bg-gradient-to-br from-sky-50 via-blue-50/80 to-white p-4 shadow-md dark:border-sky-900/40 dark:from-sky-950/50 dark:via-blue-950/30 dark:to-gray-900/80 md:col-span-1 lg:col-span-1 md:rounded-xl md:p-6">
           <div className="mb-3 flex items-start justify-between gap-3 md:mb-4">
             <OpenMeteoWeatherIcon weatherCode={weatherData.hourly[0]?.weather_code || 0} size={52} />
@@ -395,7 +395,7 @@ export default function WeatherPage({ params }: { params: { farmId: string } }) 
       </div>
 
       {weatherData.suggestions && weatherData.suggestions.length > 0 && (
-        <div className="max-md:mx-3 max-md:rounded-2xl max-md:border max-md:border-primary-200/80 max-md:bg-gradient-to-br max-md:from-primary-500/10 max-md:to-white max-md:shadow-md dark:max-md:border-primary-900/40 dark:max-md:from-primary-950/40 dark:max-md:to-gray-900/90 md:rounded-xl md:border md:border-primary-200/60 md:bg-primary-50/90 md:p-6 dark:md:border-primary-900/30 dark:md:bg-primary-950/20">
+        <div className=" max-md:rounded-2xl max-md:border max-md:border-primary-200/80 max-md:bg-gradient-to-br max-md:from-primary-500/10 max-md:to-white max-md:shadow-md dark:max-md:border-primary-900/40 dark:max-md:from-primary-950/40 dark:max-md:to-gray-900/90 md:rounded-xl md:border md:border-primary-200/60 md:bg-primary-50/90 md:p-6 dark:md:border-primary-900/30 dark:md:bg-primary-950/20">
           <div className="p-4 md:p-0">
             <div className="mb-4 flex items-center gap-2">
               <svg

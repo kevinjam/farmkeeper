@@ -38,11 +38,12 @@ export default function FeatureGate({ farmId, feature, subscription }: FeatureGa
         <Lock className="h-8 w-8" />
       </div>
       <h2 className="text-xl font-bold text-gray-900 dark:text-white md:text-2xl">
-        {featureLabel} is not on your plan
+        Unlock {featureLabel}
       </h2>
       <p className="mt-3 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
-        You are on the <strong>{getPlanLabel(subscription.plan)}</strong> plan. Upgrade to{' '}
-        <strong>{getPlanLabel(requiredPlan)}</strong> to unlock {featureLabel.toLowerCase()}.
+        You are on the <strong>{getPlanLabel(subscription.plan)}</strong> plan.
+        Upgrade to <strong>{getPlanLabel(requiredPlan)}</strong> to use{' '}
+        {featureLabel.toLowerCase()}.
       </p>
       <div className="mt-8 flex w-full max-w-xs flex-col gap-3">
         <Button asChild className="w-full gap-2">

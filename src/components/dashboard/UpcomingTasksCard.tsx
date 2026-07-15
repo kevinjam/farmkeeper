@@ -138,7 +138,7 @@ interface UpcomingTasksCardProps {
 
 export default function UpcomingTasksCard({
   farmId,
-  limit = 5,
+  limit = 3,
   showViewAll = true,
   className = '',
 }: UpcomingTasksCardProps) {
@@ -221,7 +221,7 @@ export default function UpcomingTasksCard({
                 href={farmPath('/dashboard/tasks')}
                 className="shrink-0 text-sm font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400"
               >
-                View all
+                View more
               </Link>
             )}
           </div>
@@ -274,7 +274,15 @@ export default function UpcomingTasksCard({
         </div>
 
         {!loading && tasks.length > 0 && (
-          <div className="border-t border-gray-100 p-4 dark:border-gray-700 max-md:p-3">
+          <div className="border-t border-gray-100 p-4 dark:border-gray-700 max-md:p-3 space-y-2">
+            {showViewAll && tasks.length >= limit && (
+              <Link
+                href={farmPath('/dashboard/tasks')}
+                className="flex min-h-10 w-full items-center justify-center rounded-xl text-sm font-semibold text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-950/30"
+              >
+                View more tasks
+              </Link>
+            )}
             <Button
               type="button"
               variant="outline"

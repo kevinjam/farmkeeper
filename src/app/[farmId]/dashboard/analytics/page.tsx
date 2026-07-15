@@ -175,12 +175,12 @@ export default function AnalyticsPage() {
 
     if (loading) {
         return (
-            <div className="max-w-7xl mx-auto max-md:px-0 max-md:pb-[calc(9rem+env(safe-area-inset-bottom))] py-8 px-4 sm:px-6 lg:px-8">
+            <div className="max-md:pb-[calc(9rem+env(safe-area-inset-bottom))]">
                 <div className="space-y-4 max-md:space-y-3 md:space-y-8">
-                    <div className="max-md:mx-3 h-28 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800 md:hidden" />
+                    <div className=" h-28 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800 md:hidden" />
 
                     {/* KPI Cards Skeleton */}
-                    <div className="max-md:mx-3 md:grid md:grid-cols-2 md:gap-6 lg:grid-cols-4">
+                    <div className=" md:grid md:grid-cols-2 md:gap-6 lg:grid-cols-4">
                         <div className="mb-2 h-28 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800 md:hidden" />
                         <div className="grid grid-cols-2 gap-2 md:contents">
                             {[...Array(4)].map((_, i) => (
@@ -196,7 +196,7 @@ export default function AnalyticsPage() {
                     </div>
 
                     {/* Charts Grid Skeleton */}
-                    <div className="grid grid-cols-1 gap-4 max-md:mx-3 lg:grid-cols-2 lg:gap-8">
+                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-8">
                         {/* Income vs Expenses Chart Skeleton */}
                         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
                             <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-4 animate-pulse"></div>
@@ -277,7 +277,7 @@ export default function AnalyticsPage() {
 
     if (error) {
         return (
-            <div className="max-w-7xl mx-auto max-md:mx-3 max-md:pb-[calc(6rem+env(safe-area-inset-bottom))] py-8 px-4 sm:px-6 lg:px-8">
+            <div className="max-md:pb-[calc(6rem+env(safe-area-inset-bottom))]">
                 <div className="rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950/40 md:rounded-md">
                     <div className="flex">
                         <div className="ml-3">
@@ -298,7 +298,7 @@ export default function AnalyticsPage() {
 
     if (!analyticsData) {
         return (
-            <div className="max-w-7xl mx-auto max-md:mx-3 max-md:pb-[calc(6rem+env(safe-area-inset-bottom))] py-8 px-4 sm:px-6 lg:px-8">
+            <div className="max-md:pb-[calc(6rem+env(safe-area-inset-bottom))]">
                 <div className="rounded-2xl border border-dashed border-gray-200 py-12 text-center dark:border-gray-600">
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">No analytics data available</h3>
                     <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Start adding financial records and egg collections to see analytics.</p>
@@ -346,8 +346,8 @@ export default function AnalyticsPage() {
     const chartHeight = isMobile ? CHART_HEIGHT_MOBILE : CHART_HEIGHT_DESKTOP;
 
     return (
-        <div className="max-w-7xl mx-auto max-md:px-0 max-md:pb-[calc(9rem+env(safe-area-inset-bottom))] md:space-y-0 md:py-8 md:px-4 sm:px-6 lg:px-8">
-            <div className="mb-3 overflow-hidden bg-white shadow-md dark:bg-gray-800 max-md:mx-3 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:shadow-lg dark:max-md:border-gray-700/80 md:mb-6 md:rounded-xl md:shadow-lg">
+        <div className="max-md:pb-[calc(9rem+env(safe-area-inset-bottom))] md:space-y-0">
+            <div className="mb-3 overflow-hidden bg-white shadow-md dark:bg-gray-800 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:shadow-lg dark:max-md:border-gray-700/80 md:mb-6 md:rounded-xl md:shadow-lg">
                 <div className="max-md:bg-gradient-to-br max-md:from-violet-500/12 max-md:via-white max-md:to-white max-md:p-4 max-md:dark:from-violet-500/12 max-md:dark:via-gray-800 max-md:dark:to-gray-800 md:p-6">
                     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                         <div className="flex items-start gap-3">
@@ -377,7 +377,7 @@ export default function AnalyticsPage() {
                 </div>
             </div>
 
-            <div className="mb-3 max-md:mx-3 flex flex-col gap-3 rounded-2xl border border-gray-200/90 bg-white p-4 shadow-md dark:border-gray-700 dark:bg-gray-800 md:mb-6 md:flex-row md:gap-4 md:rounded-xl md:p-6">
+            <div className="mb-3 flex flex-col gap-3 rounded-2xl border border-gray-200/90 bg-white p-4 shadow-md dark:border-gray-700 dark:bg-gray-800 md:mb-6 md:flex-row md:gap-4 md:rounded-xl md:p-6">
                 <div className="min-w-0 flex-1">
                     <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300 max-md:text-[13px] max-md:font-semibold">Period</label>
                     <select
@@ -406,7 +406,7 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Mobile: hero + compact 2×2 tiles */}
-            <div className="mb-3 max-md:mx-3 md:hidden">
+            <div className="mb-3 md:hidden">
                 <div
                     className={`relative overflow-hidden rounded-2xl border p-4 shadow-md ${
                         profitPositive
@@ -471,7 +471,7 @@ export default function AnalyticsPage() {
                 ))}
             </div>
 
-            <div className="mb-3 grid grid-cols-1 gap-3 max-md:mx-3 md:mb-6 md:gap-4 lg:grid-cols-2 lg:gap-8">
+            <div className="mb-3 grid grid-cols-1 gap-3 md:mb-6 md:gap-4 lg:grid-cols-2 lg:gap-8">
                 <div className="rounded-2xl border border-gray-200/90 bg-white p-4 shadow-md dark:border-gray-700 dark:bg-gray-800 md:rounded-lg md:p-6 md:shadow">
                     <h3 className="mb-3 text-base font-semibold text-gray-900 dark:text-white md:mb-4 md:text-lg">Income vs. Expenses</h3>
                     {analyticsData.incomeExpenses.length > 0 ? (
@@ -516,7 +516,7 @@ export default function AnalyticsPage() {
                     )}
                 </div>
             </div>
-            <div className="max-md:mx-3 overflow-hidden rounded-2xl border border-gray-200/90 bg-white shadow-md dark:border-gray-700 dark:bg-gray-800 md:rounded-lg md:shadow">
+            <div className=" overflow-hidden rounded-2xl border border-gray-200/90 bg-white shadow-md dark:border-gray-700 dark:bg-gray-800 md:rounded-lg md:shadow">
                 <div className="p-4 md:p-6">
                     <h3 className="text-base font-semibold text-gray-900 dark:text-white md:text-xl">Top performing flocks</h3>
                     <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400 md:hidden">

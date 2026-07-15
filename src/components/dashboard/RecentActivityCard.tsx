@@ -86,7 +86,7 @@ interface RecentActivityCardProps {
 
 export default function RecentActivityCard({
   farmId,
-  limit = 6,
+  limit = 3,
   showViewAll = true,
   className = '',
 }: RecentActivityCardProps) {
@@ -144,7 +144,7 @@ export default function RecentActivityCard({
               href={farmPath('/dashboard/activity')}
               className="shrink-0 text-sm font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400"
             >
-              View all
+              View more
             </Link>
           )}
         </div>
@@ -181,20 +181,32 @@ export default function RecentActivityCard({
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-100 dark:divide-gray-800">
-            {groups.map((group) => (
-              <div key={group.key}>
-                <p className="bg-gray-50 px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:bg-gray-900/50 dark:text-gray-400 md:px-5">
-                  {group.label}
-                </p>
-                <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                  {group.items.map((item) => (
-                    <ActivityRow key={item._id} item={item} />
-                  ))}
+          <>
+            <div className="divide-y divide-gray-100 dark:divide-gray-800">
+              {groups.map((group) => (
+                <div key={group.key}>
+                  <p className="bg-gray-50 px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:bg-gray-900/50 dark:text-gray-400 md:px-5">
+                    {group.label}
+                  </p>
+                  <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                    {group.items.map((item) => (
+                      <ActivityRow key={item._id} item={item} />
+                    ))}
+                  </div>
                 </div>
+              ))}
+            </div>
+            {showViewAll && activities.length >= limit && (
+              <div className="border-t border-gray-100 p-3 dark:border-gray-700 md:p-4">
+                <Link
+                  href={farmPath('/dashboard/activity')}
+                  className="flex min-h-10 w-full items-center justify-center rounded-xl text-sm font-semibold text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-950/30"
+                >
+                  View more activity
+                </Link>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
     </div>

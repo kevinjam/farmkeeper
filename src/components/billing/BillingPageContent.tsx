@@ -198,7 +198,7 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
   return (
     <div className="max-md:pb-[calc(9rem+env(safe-area-inset-bottom))] md:mx-auto md:max-w-6xl md:px-6 md:py-8 lg:px-8">
       {/* Hero */}
-      <div className="overflow-hidden bg-white shadow-md dark:bg-gray-800 md:rounded-2xl md:shadow-lg max-md:mx-3 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 dark:max-md:border-gray-700/80">
+      <div className="overflow-hidden bg-white shadow-md dark:bg-gray-800 md:rounded-2xl md:shadow-lg max-md:rounded-2xl max-md:border max-md:border-gray-200/90 dark:max-md:border-gray-700/80">
         <div className="max-md:bg-gradient-to-br max-md:from-emerald-500/12 max-md:via-white max-md:to-white max-md:p-4 max-md:dark:from-emerald-500/12 max-md:dark:via-gray-800 max-md:dark:to-gray-800 md:p-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex items-start gap-3">
@@ -231,7 +231,7 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
       )}
 
       {/* Tabs */}
-      <div className="sticky top-0 z-10 mt-4 border-b border-gray-200 bg-gray-50/95 backdrop-blur dark:border-gray-800 dark:bg-gray-900/95 max-md:mx-3 max-md:rounded-t-2xl max-md:border max-md:border-b-0 md:mt-6 md:rounded-t-2xl md:border md:border-b-0 md:bg-white md:dark:bg-gray-800">
+      <div className="sticky top-0 z-10 mt-4 border-b border-gray-200 bg-gray-50/95 backdrop-blur dark:border-gray-800 dark:bg-gray-900/95 max-md:rounded-t-2xl max-md:border max-md:border-b-0 md:mt-6 md:rounded-t-2xl md:border md:border-b-0 md:bg-white md:dark:bg-gray-800">
         <nav className="flex gap-1 overflow-x-auto p-2 scrollbar-hide" aria-label="Billing sections">
           {TABS.map((item) => {
             const Icon = item.icon;
@@ -256,7 +256,7 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
         </nav>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 max-md:mx-3 max-md:rounded-b-2xl max-md:border max-md:border-t-0 max-md:shadow-md dark:max-md:border-gray-700/80 md:rounded-b-2xl md:border md:border-t-0 md:p-6 md:shadow-lg">
+      <div className="bg-white dark:bg-gray-800 max-md:rounded-b-2xl max-md:border max-md:border-t-0 max-md:shadow-md dark:max-md:border-gray-700/80 md:rounded-b-2xl md:border md:border-t-0 md:p-6 md:shadow-lg">
         {/* Overview */}
         {tab === 'overview' && status && plans && (
           <div className="space-y-4 p-4 md:space-y-6 md:p-0">

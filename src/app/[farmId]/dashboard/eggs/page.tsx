@@ -52,8 +52,8 @@ export default function EggsAndSalesPage({ params }: { params: { farmId: string 
   }, [farmId]);
 
   return (
-    <div className="max-md:px-0 max-md:pb-[calc(9rem+env(safe-area-inset-bottom))] md:container md:mx-auto">
-      <div className="overflow-hidden bg-white shadow-md dark:bg-gray-800 md:rounded-xl md:shadow-lg max-md:mx-3 max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:shadow-lg dark:max-md:border-gray-700/80">
+    <div className="max-md:pb-[calc(9rem+env(safe-area-inset-bottom))]">
+      <div className="overflow-hidden bg-white shadow-md dark:bg-gray-800 md:rounded-xl md:shadow-lg max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:shadow-lg dark:max-md:border-gray-700/80">
         <div className="max-md:bg-gradient-to-br max-md:from-amber-400/14 max-md:via-white max-md:to-white max-md:p-4 max-md:dark:from-amber-500/12 max-md:dark:via-gray-800 max-md:dark:to-gray-800 md:p-6">
           <div className="flex max-md:items-start max-md:gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-400/20 text-amber-800 dark:bg-amber-500/18 dark:text-amber-200 md:hidden">
@@ -72,7 +72,7 @@ export default function EggsAndSalesPage({ params }: { params: { farmId: string 
         </div>
       </div>
 
-      <div className="mt-4 max-md:mx-3 max-md:overflow-hidden max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:bg-white max-md:shadow-md dark:max-md:border-gray-700/80 dark:max-md:bg-gray-800 md:mt-6 md:rounded-xl md:border md:border-gray-200/80 md:bg-white md:shadow-lg dark:md:border-gray-700 dark:md:bg-gray-800">
+      <div className="mt-4 max-md:overflow-hidden max-md:rounded-2xl max-md:border max-md:border-gray-200/90 max-md:bg-white max-md:shadow-md dark:max-md:border-gray-700/80 dark:max-md:bg-gray-800 md:mt-6 md:rounded-xl md:border md:border-gray-200/80 md:bg-white md:shadow-lg dark:md:border-gray-700 dark:md:bg-gray-800">
         <div className="max-md:border-b max-md:border-gray-100 max-md:p-2 dark:max-md:border-gray-700 md:border-b md:border-gray-200 md:dark:border-gray-700">
           <nav className="flex max-md:gap-1 md:px-2" aria-label="Eggs sections">
             <button

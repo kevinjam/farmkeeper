@@ -109,8 +109,8 @@ export function getStatusBadge(
   const normalized = normalizePlanId(plan);
   if (normalized === 'farmer' && isFarmerTrial) {
     return isExpired
-      ? { label: 'Free trial ended', tone: 'warning' as const }
-      : { label: 'Free trial', tone: 'info' as const };
+      ? { label: 'Farmer trial ended', tone: 'warning' as const }
+      : { label: 'Farmer trial', tone: 'info' as const };
   }
   if (normalized === 'farmer') {
     if (status === 'canceled') return { label: 'Canceled', tone: 'neutral' as const };
