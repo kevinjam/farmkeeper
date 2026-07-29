@@ -562,8 +562,8 @@ class ApiClient {
     return this.request('/billing/payment-config');
   }
 
-  async verifyStripeSession(sessionId: string): Promise<ApiResponse<any>> {
-    return this.request(`/billing/stripe/session/${sessionId}`);
+  async verifyPaddleTransaction(transactionId: string): Promise<ApiResponse<any>> {
+    return this.request(`/billing/paddle/transaction/${transactionId}`);
   }
 
   async getSubscriptionStatus(): Promise<ApiResponse<any>> {
@@ -574,6 +574,7 @@ class ApiClient {
     plan: 'farmer' | 'premium';
     paymentMethod?: string;
     phoneNumber?: string;
+    billingCycle?: 'month' | 'year';
   }): Promise<ApiResponse<any>> {
     return this.request('/billing/subscribe', {
       method: 'POST',

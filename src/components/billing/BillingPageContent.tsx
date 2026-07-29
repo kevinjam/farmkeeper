@@ -115,15 +115,15 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
   const paymentMethodsDisplay = useMemo(() => {
     if (billingMeta?.region === 'international') {
       return [
-        { title: 'Card (Stripe)', sub: 'Visa, Mastercard, Amex' },
-        { title: 'Secure checkout', sub: 'Encrypted by Stripe' },
+        { title: 'Card (Paddle)', sub: 'Visa, Mastercard, Amex' },
+        { title: 'Secure checkout', sub: 'Encrypted by Paddle' },
         { title: 'Global billing', sub: getCountryByCode(countryCode).name },
       ];
     }
     return [
       { title: 'MTN Mobile Money', sub: '*165*99#' },
       { title: 'Airtel Money', sub: '*185*99#' },
-      { title: 'Card (Stripe)', sub: 'Visa, Mastercard' },
+      { title: 'Card (Paddle)', sub: 'Visa, Mastercard' },
     ];
   }, [billingMeta?.region, countryCode]);
 
@@ -401,8 +401,8 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
                 </CardTitle>
                 <CardDescription>
                   {billingMeta?.region === 'international'
-                    ? 'International card payments via Stripe'
-                    : 'Uganda mobile money + card via Flutterwave & Stripe'}
+                    ? 'International card payments via Paddle'
+                    : 'Uganda mobile money + card via Flutterwave & Paddle'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-3 md:grid-cols-3">

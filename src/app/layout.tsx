@@ -7,13 +7,25 @@ import { LanguageProvider } from '@/contexts/LanguageContext';
 import '@/lib/suppress-warnings';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://farmkeeper.vercel.app'),
-  title: 'FarmKeeper - Farm Management System for Uganda',
-  description: 'Complete farm management solution for Ugandan farmers to manage their livestock, crops, finances, and resources. Track analytics, manage livestock, monitor crops, and handle finances all in one place.',
+  metadataBase: new URL('https://app.farmkeeper.co'),
+  title: 'FarmKeeper — Farm Management Platform',
+  description:
+    'FarmKeeper is a modern farm management platform for livestock producers, crop growers, and agribusinesses worldwide. Track livestock, crops, finances, and reports in one place.',
   manifest: '/manifest.json',
   applicationName: 'FarmKeeper',
   authors: [{ name: 'FarmKeeper Team' }],
-  keywords: ['farm management', 'agriculture', 'Uganda', 'livestock', 'crops', 'farming', 'analytics', 'financial management', 'crop tracking', 'livestock tracking'],
+  keywords: [
+    'farm management',
+    'agriculture',
+    'livestock',
+    'crops',
+    'farming',
+    'analytics',
+    'financial management',
+    'crop tracking',
+    'livestock tracking',
+    'agribusiness',
+  ],
   robots: {
     index: true,
     follow: true,
@@ -26,18 +38,19 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: 'FarmKeeper - Farm Management System for Uganda',
-    description: 'Complete farm management solution for Ugandan farmers to manage their livestock, crops, finances, and resources. Track analytics, manage livestock, monitor crops, and handle finances all in one place.',
+    title: 'FarmKeeper — Farm Management Platform',
+    description:
+      'Manage livestock, crops, finances, and teams from anywhere. Built for farms of every size.',
     type: 'website',
     locale: 'en_US',
     siteName: 'FarmKeeper',
-    url: 'https://farmkeeper.vercel.app',
+    url: 'https://app.farmkeeper.co',
     images: [
       {
         url: '/social-preview.png',
         width: 1200,
         height: 630,
-        alt: 'FarmKeeper - Farm Management System for Uganda',
+        alt: 'FarmKeeper — Farm Management Platform',
         type: 'image/png',
       },
       {
@@ -51,8 +64,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'FarmKeeper - Farm Management System for Uganda',
-    description: 'Complete farm management solution for Ugandan farmers to manage their livestock, crops, finances, and resources. Track analytics, manage livestock, monitor crops, and handle finances all in one place.',
+    title: 'FarmKeeper — Farm Management Platform',
+    description:
+      'Manage livestock, crops, finances, and teams from anywhere. Built for farms of every size.',
     images: ['/social-preview.png'],
     creator: '@farmkeeper',
     site: '@farmkeeper',
@@ -123,12 +137,12 @@ export default function RootLayout({
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:image:type" content="image/png" />
-        <meta property="og:image:alt" content="FarmKeeper - Farm Management System for Uganda" />
+        <meta property="og:image:alt" content="FarmKeeper — Farm Management Platform" />
         
         {/* Twitter Card additional meta tags */}
-        <meta name="twitter:image:alt" content="FarmKeeper - Farm Management System for Uganda" />
-        <meta name="twitter:domain" content="farmkeeper.vercel.app" />
-        <meta name="twitter:url" content="https://farmkeeper.vercel.app" />
+        <meta name="twitter:image:alt" content="FarmKeeper — Farm Management Platform" />
+        <meta name="twitter:domain" content="app.farmkeeper.co" />
+        <meta name="twitter:url" content="https://app.farmkeeper.co" />
         
         {/* Additional SEO meta tags */}
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
@@ -138,14 +152,10 @@ export default function RootLayout({
         {/* App-specific meta tags */}
         <meta name="application-name" content="FarmKeeper" />
         <meta name="apple-mobile-web-app-title" content="FarmKeeper" />
-        <meta name="msapplication-tooltip" content="FarmKeeper - Farm Management System" />
+        <meta name="msapplication-tooltip" content="FarmKeeper — Farm Management Platform" />
         <meta name="msapplication-starturl" content="/" />
         
-        {/* Geographic and language meta tags */}
-        <meta name="geo.region" content="UG" />
-        <meta name="geo.country" content="Uganda" />
         <meta name="language" content="en" />
-        <meta name="geo.placename" content="Uganda" />
         
         {/* Structured Data for better SEO */}
         <script
@@ -155,8 +165,8 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "WebApplication",
               "name": "FarmKeeper",
-              "description": "Complete farm management solution for Ugandan farmers to manage their livestock, crops, finances, and resources.",
-              "url": "https://farmkeeper.vercel.app",
+              "description": "Modern farm management platform for livestock, crops, finances, and teams worldwide.",
+              "url": "https://app.farmkeeper.co",
               "applicationCategory": "BusinessApplication",
               "operatingSystem": "Web Browser",
               "offers": {
@@ -170,7 +180,7 @@ export default function RootLayout({
               },
               "inLanguage": "en-US",
               "isAccessibleForFree": true,
-              "screenshot": "https://farmkeeper.vercel.app/social-preview.png",
+              "screenshot": "https://app.farmkeeper.co/social-preview.png",
               "featureList": [
                 "Livestock Management",
                 "Crop Tracking",

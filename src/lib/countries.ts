@@ -1,5 +1,5 @@
 export type PaymentRegion = 'uganda' | 'international';
-export type PaymentProvider = 'flutterwave' | 'stripe';
+export type PaymentProvider = 'flutterwave' | 'paddle';
 
 export interface CountryOption {
   code: string;
@@ -17,10 +17,12 @@ export const SUPPORTED_COUNTRIES: CountryOption[] = [
   { code: 'GH', name: 'Ghana', paymentRegion: 'international', currency: 'USD' },
   { code: 'ZA', name: 'South Africa', paymentRegion: 'international', currency: 'USD' },
   { code: 'US', name: 'United States', paymentRegion: 'international', currency: 'USD' },
-  { code: 'GB', name: 'United Kingdom', paymentRegion: 'international', currency: 'USD' },
   { code: 'CA', name: 'Canada', paymentRegion: 'international', currency: 'USD' },
-  { code: 'AU', name: 'Australia', paymentRegion: 'international', currency: 'USD' },
+  { code: 'BR', name: 'Brazil', paymentRegion: 'international', currency: 'USD' },
+  { code: 'GB', name: 'United Kingdom', paymentRegion: 'international', currency: 'USD' },
+  { code: 'DE', name: 'Germany', paymentRegion: 'international', currency: 'USD' },
   { code: 'IN', name: 'India', paymentRegion: 'international', currency: 'USD' },
+  { code: 'AU', name: 'Australia', paymentRegion: 'international', currency: 'USD' },
   { code: 'OTHER', name: 'Other country', paymentRegion: 'international', currency: 'USD' },
 ];
 
@@ -34,11 +36,13 @@ const COUNTRY_NAME_TO_CODE: Record<string, string> = {
   'south africa': 'ZA',
   'united states': 'US',
   usa: 'US',
+  canada: 'CA',
+  brazil: 'BR',
   'united kingdom': 'GB',
   uk: 'GB',
-  canada: 'CA',
-  australia: 'AU',
+  germany: 'DE',
   india: 'IN',
+  australia: 'AU',
 };
 
 export function normalizeCountryCode(input?: string | null): string {

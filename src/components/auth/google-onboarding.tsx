@@ -71,7 +71,7 @@ function getOnboardingPlans(countryCode: string) {
   const prices = isUganda ? PRICES.UG : PRICES.INT;
   const payNote = isUganda
     ? 'Pay with MTN, Airtel Money, or card.'
-    : 'Pay securely with card via Stripe (USD).';
+    : 'Pay securely with card via Paddle (USD).';
 
   return [
     {

@@ -6,6 +6,8 @@ export interface Plan {
   name: string;
   price: string;
   priceAmount?: number;
+  priceYearly?: string | null;
+  priceYearlyAmount?: number | null;
   period: string;
   livestockLimit: number | null;
   features: string[];
@@ -27,7 +29,8 @@ export interface BillingMeta {
   region: 'uganda' | 'international';
   currency: string;
   paymentMethods: string[];
-  paymentProvider: 'flutterwave' | 'stripe';
+  paymentProvider: 'flutterwave' | 'paddle';
+  supportsYearly?: boolean;
 }
 
 export interface SubscriptionStatus {
