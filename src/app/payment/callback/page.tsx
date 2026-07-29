@@ -28,7 +28,7 @@ function PaymentCallbackContent() {
     setContinueHref(resolveContinueHref());
 
     const provider = searchParams.get('provider');
-    const sessionId = searchParams.get('session_id');
+    const transactionId = searchParams.get('transaction_id') || searchParams.get('_ptxn');
     const txStatus = searchParams.get('status');
 
     if (txStatus === 'cancelled' || txStatus === 'failed') {
@@ -36,9 +36,9 @@ function PaymentCallbackContent() {
       return;
     }
 
-    if (provider === 'stripe' && sessionId) {
+    if (provider === 'paddle' && transactionId) {
       apiClient
-        .verifyStripeSession(sessionId)
+        .verifyPaddleTransaction(transactionId)
         .then((res) => {
           if (res.success) {
             setStatus('success');

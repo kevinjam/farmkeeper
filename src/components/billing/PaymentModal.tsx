@@ -19,6 +19,29 @@ import { BillingMeta, PaidPlanId, Plan, Plans } from '@/lib/billing';
 
 type PaymentMethod = 'mobile_money' | 'ussd' | 'card';
 type PaymentStep = 'method' | 'details' | 'processing' | 'pending' | 'success' | 'error';
+type BillingCycle = 'month' | 'year';
+
+declare global {
+  interface Window {
+    Paddle?: {
+      Environment: { set: (env: string) => void };
+      Initialize: (opts: {
+        token: string;
+        eventCallback?: (event: { name?: string; data?: { id?: string } }) => void;
+      }) => void;
+      Checkout: {
+        open: (opts: {
+          transactionId: string;
+          settings?: {
+            successUrl?: string;
+            displayMode?: string;
+            theme?: string;
+          };
+        }) => void;
+      };
+    };
+  }
+}
 
 interface PaymentModalProps {
   open: boolean;
@@ -27,6 +50,58 @@ interface PaymentModalProps {
   billingMeta?: BillingMeta | null;
   onClose: () => void;
   onSuccess: () => void;
+}
+
+function loadPaddleScript(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.reject(new Error('No window'));
+  if (window.Paddle) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>('script[data-paddle-js]');
+    if (existing) {
+      existing.addEventListener('load', () => resolve());
+      existing.addEventListener('error', () => reject(new Error('Failed to load Paddle.js')));
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://cdn.paddle.com/paddle/v2/paddle.js';
+    script.async = true;
+    script.dataset.paddleJs = 'true';
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load Paddle.js'));
+    document.body.appendChild(script);
+  });
+}
+
+async function openPaddleOverlay(opts: {
+  transactionId: string;
+  clientToken: string;
+  environment: 'sandbox' | 'production';
+}): Promise<void> {
+  await loadPaddleScript();
+  if (!window.Paddle) throw new Error('Paddle.js failed to initialize');
+
+  window.Paddle.Environment.set(opts.environment);
+  window.Paddle.Initialize({
+    token: opts.clientToken,
+    eventCallback: (event) => {
+      if (event.name === 'checkout.completed') {
+        const txn = event.data?.id || opts.transactionId;
+        window.location.href = `/payment/callback?provider=paddle&transaction_id=${encodeURIComponent(txn)}`;
+      }
+      if (event.name === 'checkout.closed') {
+        // Stay on billing; user can retry
+      }
+    },
+  });
+
+  window.Paddle.Checkout.open({
+    transactionId: opts.transactionId,
+    settings: {
+      displayMode: 'overlay',
+      theme: 'light',
+      successUrl: `${window.location.origin}/payment/callback?provider=paddle&transaction_id=${encodeURIComponent(opts.transactionId)}`,
+    },
+  });
 }
 
 export default function PaymentModal({
@@ -46,10 +121,13 @@ export default function PaymentModal({
         'ussd',
         'card',
       ]);
+  const supportsYearly = Boolean(billingMeta?.supportsYearly) || isInternational;
+  const selectedPlan: Plan = plans[plan];
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
     isInternational ? 'card' : 'mobile_money'
   );
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>('month');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [paymentStep, setPaymentStep] = useState<PaymentStep>('method');
   const [errorMessage, setErrorMessage] = useState('');
@@ -70,12 +148,19 @@ export default function PaymentModal({
       setPaymentStep('method');
       setPhoneNumber('');
       setPaymentMethod(isInternational ? 'card' : 'mobile_money');
+      setBillingCycle('month');
       setErrorMessage('');
       setUssdCode('');
       paymentReference.current = null;
     }
     return clearPoll;
   }, [open, isInternational]);
+
+  const displayPrice =
+    billingCycle === 'year' && selectedPlan.priceYearly
+      ? selectedPlan.priceYearly
+      : selectedPlan.price;
+  const displayPeriod = billingCycle === 'year' ? 'year' : selectedPlan.period;
 
   const pollPaymentStatus = (reference: string) => {
     clearPoll();
@@ -102,7 +187,7 @@ export default function PaymentModal({
     }, 3000);
   };
 
-  const handleSubmitWithMethod = async (method: PaymentMethod) => {
+  const startCheckout = async (method: PaymentMethod) => {
     setPaymentMethod(method);
     setErrorMessage('');
     setPaymentStep('processing');
@@ -111,50 +196,33 @@ export default function PaymentModal({
         plan,
         paymentMethod: method,
         phoneNumber: phoneNumber || undefined,
+        billingCycle: method === 'card' && supportsYearly ? billingCycle : 'month',
       });
-      if (!response.success) {
-        throw new Error(response.error || response.message || 'Payment failed to start');
-      }
-      if (response.data.paymentUrl) {
-        window.location.href = response.data.paymentUrl;
-      }
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : 'Payment failed');
-      setPaymentStep('error');
-    }
-  };
-
-  const handleSubmit = async () => {
-    setErrorMessage('');
-    setPaymentStep('processing');
-
-    try {
-      const response = await apiClient.initiateSubscription({
-        plan,
-        paymentMethod,
-        phoneNumber: phoneNumber || undefined,
-      });
-
       if (!response.success) {
         throw new Error(response.error || response.message || 'Payment failed to start');
       }
 
       paymentReference.current = response.data.reference;
 
-      if (response.data.provider === 'stripe' && response.data.paymentUrl) {
-        window.location.href = response.data.paymentUrl;
+      // Paddle: open overlay on this page (no ngrok / approved-domain redirect required)
+      if (response.data.provider === 'paddle' && response.data.transactionId) {
+        const token = response.data.paddleClientToken as string | undefined;
+        const env =
+          response.data.paddleEnvironment === 'production' ? 'production' : 'sandbox';
+        if (!token) {
+          throw new Error('Paddle client token missing. Set PADDLE_CLIENT_TOKEN in backend .env');
+        }
+        await openPaddleOverlay({
+          transactionId: response.data.transactionId,
+          clientToken: token,
+          environment: env,
+        });
+        setPaymentStep('pending');
         return;
       }
 
       if (response.data.paymentUrl) {
-        const paymentWindow = window.open(response.data.paymentUrl, '_blank', 'width=480,height=720');
-        setPaymentStep('pending');
-        const checkClosed = setInterval(() => {
-          if (paymentWindow?.closed) {
-            clearInterval(checkClosed);
-            pollPaymentStatus(response.data.reference);
-          }
-        }, 1000);
+        window.location.href = response.data.paymentUrl;
         return;
       }
 
@@ -165,7 +233,7 @@ export default function PaymentModal({
         return;
       }
 
-      if (paymentMethod === 'mobile_money') {
+      if (method === 'mobile_money') {
         setPaymentStep('pending');
         pollPaymentStatus(response.data.reference);
         return;
@@ -179,8 +247,6 @@ export default function PaymentModal({
   };
 
   if (!open) return null;
-
-  const selectedPlan: Plan = plans[plan];
 
   const methodOptions: {
     id: PaymentMethod;
@@ -207,7 +273,7 @@ export default function PaymentModal({
       {
         id: 'card' as const,
         title: 'Credit / debit card',
-        sub: isInternational ? 'Powered by Stripe' : 'Visa, Mastercard via Stripe',
+        sub: isInternational ? 'Powered by Paddle' : 'Visa, Mastercard via Paddle',
         icon: isInternational ? Globe : CreditCard,
         hidden: !availableMethods.includes('card'),
       },
@@ -238,23 +304,51 @@ export default function PaymentModal({
               <p className="text-sm text-gray-500 dark:text-gray-400">{selectedPlan.description}</p>
             </div>
             <div className="text-right">
-              <p className="text-xl font-bold text-primary-600">{selectedPlan.price}</p>
-              <p className="text-xs text-gray-500">/{selectedPlan.period}</p>
+              <p className="text-xl font-bold text-primary-600">{displayPrice}</p>
+              <p className="text-xs text-gray-500">/{displayPeriod}</p>
             </div>
           </div>
+
+          {supportsYearly && paymentStep === 'method' && (
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setBillingCycle('month')}
+                className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                  billingCycle === 'month'
+                    ? 'border-primary-500 bg-primary-50 text-primary-700'
+                    : 'border-gray-200 text-gray-600'
+                }`}
+              >
+                Monthly · {selectedPlan.price}
+              </button>
+              <button
+                type="button"
+                onClick={() => setBillingCycle('year')}
+                className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                  billingCycle === 'year'
+                    ? 'border-primary-500 bg-primary-50 text-primary-700'
+                    : 'border-gray-200 text-gray-600'
+                }`}
+              >
+                Yearly · {selectedPlan.priceYearly || selectedPlan.price}
+              </button>
+            </div>
+          )}
         </div>
 
         {paymentStep === 'method' && (
           <div className="space-y-3">
             {isInternational ? (
               <>
-                <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 dark:border-violet-900 dark:bg-violet-950/30">
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30">
                   <div className="flex items-center gap-3">
-                    <Globe className="h-5 w-5 text-violet-600" />
+                    <Globe className="h-5 w-5 text-emerald-700" />
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">Card payment</p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        International billing is in USD via Stripe. Mobile money is not available for your country.
+                        International billing is in USD via Paddle. Mobile money is not available for
+                        your country.
                       </p>
                     </div>
                   </div>
@@ -262,10 +356,10 @@ export default function PaymentModal({
                 <Button
                   type="button"
                   className="h-12 w-full rounded-xl text-base font-semibold"
-                  onClick={() => void handleSubmitWithMethod('card')}
+                  onClick={() => void startCheckout('card')}
                 >
                   <CreditCard className="mr-2 h-4 w-4" />
-                  Pay {selectedPlan.price} with card
+                  Pay {displayPrice}/{displayPeriod} with card
                 </Button>
               </>
             ) : (
@@ -281,7 +375,7 @@ export default function PaymentModal({
                       onClick={() => {
                         setPaymentMethod(item.id);
                         if (item.id === 'card') {
-                          void handleSubmitWithMethod(item.id);
+                          void startCheckout(item.id);
                         } else {
                           setPaymentStep('details');
                         }
@@ -332,7 +426,7 @@ export default function PaymentModal({
                 disabled={
                   (paymentMethod === 'mobile_money' || paymentMethod === 'ussd') && !phoneNumber.trim()
                 }
-                onClick={handleSubmit}
+                onClick={() => void startCheckout(paymentMethod)}
               >
                 Continue
               </Button>
@@ -350,11 +444,15 @@ export default function PaymentModal({
         {paymentStep === 'pending' && (
           <div className="py-8 text-center">
             <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-primary-600" />
-            <p className="font-semibold text-gray-900 dark:text-white">Waiting for payment</p>
+            <p className="font-semibold text-gray-900 dark:text-white">
+              {paymentMethod === 'card' ? 'Complete checkout in the Paddle window' : 'Waiting for payment'}
+            </p>
             <p className="mt-2 text-sm text-gray-500">
-              {paymentMethod === 'mobile_money'
-                ? 'Approve the payment on your phone. We&apos;ll confirm automatically.'
-                : 'Complete the USSD steps on your phone.'}
+              {paymentMethod === 'card'
+                ? 'If the checkout closed, use Try again.'
+                : paymentMethod === 'mobile_money'
+                  ? 'Check your phone for an MTN/Airtel prompt and approve the payment. We will confirm automatically.'
+                  : 'Complete the USSD steps on your phone.'}
             </p>
             {ussdCode && <p className="mt-3 font-mono text-lg font-bold text-primary-600">{ussdCode}</p>}
             <Button variant="outline" className="mt-6 w-full rounded-xl" onClick={onClose}>
@@ -367,7 +465,7 @@ export default function PaymentModal({
           <div className="py-8 text-center">
             <CheckCircle className="mx-auto mb-4 h-12 w-12 text-emerald-600" />
             <p className="font-semibold text-gray-900 dark:text-white">
-              {plan === 'premium' ? 'You&apos;re on Premium' : 'Farmer plan activated'}
+              {plan === 'premium' ? "You're on Premium" : 'Farmer plan activated'}
             </p>
             <p className="mt-2 text-sm text-gray-500">
               {plan === 'premium'

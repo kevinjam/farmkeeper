@@ -1,7 +1,7 @@
 {
-  "name": "FarmKeeper - Farm Management for Uganda",
+  "name": "FarmKeeper — Farm Management Platform",
   "short_name": "FarmKeeper",
-  "description": "Complete farm management solution for Ugandan farmers to manage their livestock, crops, finances, and resources.",
+  "description": "Modern farm management for livestock, crops, finances, and teams worldwide.",
   "start_url": "/",
   "display": "browser",
   "display_override": ["browser", "standalone", "minimal-ui"],

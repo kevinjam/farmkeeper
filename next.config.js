@@ -43,12 +43,15 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://www.gstatic.com",
-              "style-src 'self' 'unsafe-inline' https://accounts.google.com https://www.gstatic.com",
+              // Paddle.js CDN + Google OAuth
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.paddle.com https://sandbox-cdn.paddle.com https://accounts.google.com https://www.gstatic.com",
+              "style-src 'self' 'unsafe-inline' https://cdn.paddle.com https://sandbox-cdn.paddle.com https://fonts.googleapis.com https://accounts.google.com https://www.gstatic.com",
               "img-src 'self' data: https: blob:",
-              "connect-src 'self' https://accounts.google.com https://www.googleapis.com http://localhost:5001 https://localhost:5001 https://farmkeep-backend.onrender.com",
-              "frame-src 'self' https://accounts.google.com",
-              "font-src 'self' https://fonts.gstatic.com",
+              // API + Paddle checkout APIs (sandbox + live)
+              "connect-src 'self' http://localhost:5001 https://localhost:5001 https://api.farmkeeper.co https://accounts.google.com https://www.googleapis.com https://*.paddle.com wss://*.paddle.com",
+              // Overlay checkout iframes
+              "frame-src 'self' https://buy.paddle.com https://sandbox-buy.paddle.com https://*.paddle.com https://accounts.google.com",
+              "font-src 'self' data: https://fonts.gstatic.com https://cdn.paddle.com https://sandbox-cdn.paddle.com",
             ].join('; '),
           },
           {

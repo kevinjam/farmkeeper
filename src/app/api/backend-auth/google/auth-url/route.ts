@@ -10,7 +10,7 @@ function getBackendBase(): string {
 
 /**
  * Same-origin proxy for Google OAuth URL generation.
- * Avoids browser CORS when the Render backend returns 503/HTML error pages without CORS headers.
+ * Avoids browser CORS when the API returns 503/HTML error pages without CORS headers.
  */
 export async function GET() {
   const url = `${getBackendBase()}/api/auth/google/auth-url`;
@@ -31,7 +31,7 @@ export async function GET() {
             success: false,
             message:
               res.status === 503
-                ? 'API is temporarily unavailable (503). On Render: wait for cold start, check logs, or upgrade from free tier sleep.'
+                ? 'API is temporarily unavailable (503). Check PM2 (`pm2 logs farmkeeper-api`) and Nginx on the EC2 host.'
                 : `Backend error (${res.status}).`,
             ...data,
           },
@@ -47,7 +47,7 @@ export async function GET() {
         success: false,
         message:
           res.status === 503
-            ? 'API is temporarily unavailable. Render may be starting up or the service is down—check Render dashboard / logs.'
+            ? 'API is temporarily unavailable. Check that farmkeeper-api is online on EC2.'
             : `Backend returned ${res.status} (non-JSON).`,
       },
       { status: res.status >= 500 ? 503 : 502 }
@@ -57,7 +57,7 @@ export async function GET() {
       {
         success: false,
         message:
-          'Could not reach the backend API. Confirm NEXT_PUBLIC_BACKEND_URL / BACKEND_URL and that Render is running.',
+          'Could not reach the backend API. Confirm NEXT_PUBLIC_BACKEND_URL / BACKEND_URL and that https://api.farmkeeper.co is healthy.',
       },
       { status: 502 }
     );

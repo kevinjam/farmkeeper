@@ -9,10 +9,10 @@ interface SocialMetaTagsProps {
 }
 
 export default function SocialMetaTags({
-  title = 'FarmKeeper - Farm Management System for Uganda',
-  description = 'Complete farm management solution for Ugandan farmers to manage their livestock, crops, finances, and resources.',
+  title = 'FarmKeeper — Farm Management Platform',
+  description = 'Manage livestock, crops, finances, and teams from anywhere. Built for farms of every size.',
   image = '/social-preview.png',
-  url = 'https://farmkeeper.vercel.app',
+  url = 'https://app.farmkeeper.co',
   type = 'website'
 }: SocialMetaTagsProps) {
   return (
