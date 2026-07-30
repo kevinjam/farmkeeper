@@ -62,8 +62,8 @@ const SIGNUP_COUNTRY_KEY = 'signup-country';
 const SIGNUP_PLAN_KEY = 'signup-plan';
 
 const PRICES = {
-  UG: { farmerMonthly: 'UGX 4,000', premium: 'UGX 26,000', free: 'UGX 0', farmerTrial: 'UGX 0' },
-  INT: { farmerMonthly: '$5', premium: '$20', free: '$0', farmerTrial: '$0' },
+  UG: { farmerMonthly: 'UGX 3,500', premium: 'UGX 15,000', free: 'UGX 0', farmerTrial: 'UGX 0' },
+  INT: { farmerMonthly: '$1', premium: '$4', free: '$0', farmerTrial: '$0' },
 } as const;
 
 function getOnboardingPlans(countryCode: string) {
