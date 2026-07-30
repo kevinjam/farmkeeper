@@ -48,6 +48,7 @@ interface PaymentModalProps {
   plan: PaidPlanId;
   plans: Plans;
   billingMeta?: BillingMeta | null;
+  initialBillingCycle?: BillingCycle;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -109,6 +110,7 @@ export default function PaymentModal({
   plan,
   plans,
   billingMeta,
+  initialBillingCycle = 'month',
   onClose,
   onSuccess,
 }: PaymentModalProps) {
@@ -121,13 +123,16 @@ export default function PaymentModal({
         'ussd',
         'card',
       ]);
-  const supportsYearly = Boolean(billingMeta?.supportsYearly) || isInternational;
+  const supportsYearly =
+    Boolean(billingMeta?.supportsYearly) ||
+    Boolean(plans.farmer?.priceYearly) ||
+    isInternational;
   const selectedPlan: Plan = plans[plan];
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
     isInternational ? 'card' : 'mobile_money'
   );
-  const [billingCycle, setBillingCycle] = useState<BillingCycle>('month');
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>(initialBillingCycle);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [paymentStep, setPaymentStep] = useState<PaymentStep>('method');
   const [errorMessage, setErrorMessage] = useState('');
@@ -148,13 +153,15 @@ export default function PaymentModal({
       setPaymentStep('method');
       setPhoneNumber('');
       setPaymentMethod(isInternational ? 'card' : 'mobile_money');
-      setBillingCycle('month');
+      setBillingCycle(initialBillingCycle);
       setErrorMessage('');
       setUssdCode('');
       paymentReference.current = null;
+    } else {
+      setBillingCycle(initialBillingCycle);
     }
     return clearPoll;
-  }, [open, isInternational]);
+  }, [open, isInternational, initialBillingCycle]);
 
   const displayPrice =
     billingCycle === 'year' && selectedPlan.priceYearly
@@ -196,7 +203,7 @@ export default function PaymentModal({
         plan,
         paymentMethod: method,
         phoneNumber: phoneNumber || undefined,
-        billingCycle: method === 'card' && supportsYearly ? billingCycle : 'month',
+        billingCycle: supportsYearly ? billingCycle : 'month',
       });
       if (!response.success) {
         throw new Error(response.error || response.message || 'Payment failed to start');
