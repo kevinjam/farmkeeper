@@ -703,7 +703,7 @@ export default function DashboardLayout({
                   {subscriptionStatus.isTrialExpired
                     ? 'Your free Farmer trial has ended.'
                     : `Farmer free trial: ${subscriptionStatus.daysLeft} day${subscriptionStatus.daysLeft === 1 ? '' : 's'} left.`}
-                  {' '}Subscribe from UGX 4,000/mo to keep your tools.
+                  {' '}Subscribe from UGX 3,500/mo to keep your tools.
                 </p>
                 <Link
                   href={buildFarmPath(farmId, '/dashboard/billing', locale)}
