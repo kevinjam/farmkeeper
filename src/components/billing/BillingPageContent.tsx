@@ -35,6 +35,8 @@ import {
   PlanId,
 } from '@/lib/billing';
 
+type BillingCycle = 'month' | 'year';
+
 const TABS: { id: BillingTab; label: string; icon: typeof LayoutGrid }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutGrid },
   { id: 'plans', label: 'Plans', icon: Sparkles },
@@ -57,6 +59,7 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
   const [tab, setTab] = useState<BillingTab>(initialTab);
   const [showPayment, setShowPayment] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<PaidPlanId>('farmer');
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>('month');
   const [canceling, setCanceling] = useState(false);
   const [farmCountry, setFarmCountry] = useState<string | undefined>();
   const [downloadingRef, setDownloadingRef] = useState<string | null>(null);
@@ -452,9 +455,51 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
               </div>
             </div>
 
+            <div className="flex justify-center">
+              <div
+                role="group"
+                aria-label="Billing period"
+                className="inline-flex rounded-full border border-gray-200 bg-gray-100/80 p-1 dark:border-gray-700 dark:bg-gray-800/80"
+              >
+                <button
+                  type="button"
+                  onClick={() => setBillingCycle('month')}
+                  className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
+                    billingCycle === 'month'
+                      ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
+                      : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBillingCycle('year')}
+                  className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
+                    billingCycle === 'year'
+                      ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
+                      : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+                  }`}
+                >
+                  Yearly
+                </button>
+              </div>
+            </div>
+
             <div className="grid gap-4 md:grid-cols-3 md:gap-6">
             {(['free', 'farmer', 'premium'] as PlanId[]).map((planId) => {
               const plan = plans[planId];
+              const isFree = planId === 'free';
+              const displayPrice =
+                !isFree && billingCycle === 'year' && plan.priceYearly
+                  ? plan.priceYearly
+                  : plan.price;
+              const displayPeriod = isFree
+                ? plan.period
+                : billingCycle === 'year'
+                  ? 'year'
+                  : plan.period;
+              const periodShort = billingCycle === 'year' ? 'yr' : 'mo';
               const isCurrent = planId === status.plan;
               const isFarmerTrialCurrent = planId === 'farmer' && status.isFarmerTrial;
               return (
@@ -479,8 +524,8 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
                     <CardTitle>{plan.name}</CardTitle>
                     <CardDescription>{plan.description}</CardDescription>
                     <p className="pt-2 text-3xl font-bold text-gray-900 dark:text-white">
-                      {plan.price}
-                      <span className="text-base font-normal text-gray-500"> /{plan.period}</span>
+                      {displayPrice}
+                      <span className="text-base font-normal text-gray-500"> /{displayPeriod}</span>
                     </p>
                   </CardHeader>
                   <CardContent className="flex flex-1 flex-col">
@@ -510,10 +555,10 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
                         onClick={() => (isFarmerTrialCurrent || !isCurrent) && openCheckout('farmer')}
                       >
                         {isFarmerTrialCurrent
-                          ? `Subscribe — ${plan.price}/mo`
+                          ? `Subscribe — ${displayPrice}/${periodShort}`
                           : isCurrent
                             ? 'Your current plan'
-                            : `Get Farmer — ${plan.price}/mo`}
+                            : `Get Farmer — ${displayPrice}/${periodShort}`}
                       </Button>
                     ) : (
                       <Button
@@ -522,7 +567,7 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
                         variant={isCurrent ? 'outline' : 'default'}
                         onClick={() => !isCurrent && openCheckout('premium')}
                       >
-                        {isCurrent ? 'Your current plan' : `Get Premium — ${plan.price}/mo`}
+                        {isCurrent ? 'Your current plan' : `Get Premium — ${displayPrice}/${periodShort}`}
                       </Button>
                     )}
                   </CardContent>
@@ -660,6 +705,7 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
           plan={checkoutPlan}
           plans={plans}
           billingMeta={billingMeta}
+          initialBillingCycle={billingCycle}
           onClose={() => setShowPayment(false)}
           onSuccess={handlePaymentSuccess}
         />
