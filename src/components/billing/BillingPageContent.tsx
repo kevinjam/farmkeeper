@@ -273,13 +273,13 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
                     : `${status.daysLeft} day${status.daysLeft === 1 ? '' : 's'} left on Farmer (free trial)`}
                 </p>
                 <p className="mt-1 text-sm text-amber-800 dark:text-amber-300/90">
-                  Subscribe to Farmer (UGX 3,500/mo) or Premium (UGX 15,000/mo) to keep your records and tools.
+                  Subscribe to Farmer ({plans.farmer.price}/{plans.farmer.period}) or Premium ({plans.premium.price}/{plans.premium.period}) to keep your records and tools.
                 </p>
                 {upgradeTarget && (
                   <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                     {(upgradeTarget === 'farmer' || status.plan === 'free') && (
                       <Button className="min-h-11 rounded-xl" onClick={() => openCheckout('farmer')}>
-                        Farmer — UGX 3,500/mo
+                        Farmer — {plans.farmer.price}/{plans.farmer.period}
                       </Button>
                     )}
                     <Button
@@ -287,7 +287,7 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
                       className="min-h-11 rounded-xl"
                       onClick={() => openCheckout('premium')}
                     >
-                      Premium — UGX 15,000/mo
+                      Premium — {plans.premium.price}/{plans.premium.period}
                     </Button>
                   </div>
                 )}
@@ -351,13 +351,13 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
                   <div className="flex flex-col gap-2 sm:flex-row">
                     {upgradeTarget === 'farmer' && (
                       <Button className="min-h-11 flex-1 rounded-xl" onClick={() => openCheckout('farmer')}>
-                        Subscribe — Farmer UGX 3,500
+                        Subscribe — Farmer {plans.farmer.price}
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
                     )}
                     {upgradeTarget === 'premium' && (
                       <Button className="min-h-11 flex-1 rounded-xl" onClick={() => openCheckout('premium')}>
-                        Upgrade — Premium UGX 15,000
+                        Upgrade — Premium {plans.premium.price}
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
                     )}
@@ -592,7 +592,7 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
                 <p className="mt-1 text-sm text-gray-500">Your invoices and receipts will appear here.</p>
                 {upgradeTarget && (
                   <Button className="mt-4 rounded-xl" onClick={() => openCheckout(upgradeTarget)}>
-                    Subscribe — {upgradeTarget === 'farmer' ? 'Farmer UGX 3,500' : 'Premium UGX 15,000'}
+                    Subscribe — {upgradeTarget === 'farmer' ? `Farmer ${plans.farmer.price}` : `Premium ${plans.premium.price}`}
                   </Button>
                 )}
               </div>

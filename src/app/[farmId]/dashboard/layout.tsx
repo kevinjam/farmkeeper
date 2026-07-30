@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useTranslations } from '@/hooks/useTranslations';
 import { apiClient } from '@/lib/api';
+import { getCountryByCode, normalizeCountryCode } from '@/lib/countries';
 import { hasFeatureAccess, canAccessDashboardPath, getGatedFeatureForDashboardPath } from '@/lib/features';
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 import FeatureGate from '@/components/billing/FeatureGate';
@@ -261,6 +262,7 @@ export default function DashboardLayout({
   });
   const [userImage, setUserImage] = useState('');
   const [farmName, setFarmName] = useState('');
+  const [farmCountryCode, setFarmCountryCode] = useState('UG');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(true); // Assume authenticated until proven otherwise
@@ -303,6 +305,8 @@ export default function DashboardLayout({
     subscriptionStatus !== null &&
     subscriptionStatus.plan !== 'premium' &&
     !unlockAll;
+  const isUgandaFarm = getCountryByCode(farmCountryCode).paymentRegion === 'uganda';
+  const farmerStartPrice = isUgandaFarm ? 'UGX 3,500' : '$1';
   const profileHref = `${buildFarmPath(farmId, '/dashboard/settings', locale)}?tab=profile`;
   const billingPlansHref = `${buildFarmPath(farmId, '/dashboard/billing', locale)}?tab=plans`;
 
@@ -420,6 +424,7 @@ export default function DashboardLayout({
         
         // Set farm and user data from API response
         setFarmName(data.farm?.name || farmId.charAt(0).toUpperCase() + farmId.slice(1) + ' Farm');
+        setFarmCountryCode(normalizeCountryCode(data.farm?.location?.country));
         setUserName(data.user?.name || 'Farm Owner');
         const resolvedEmail =
           (typeof data.user?.email === 'string' && data.user.email.trim()) ||
@@ -703,7 +708,7 @@ export default function DashboardLayout({
                   {subscriptionStatus.isTrialExpired
                     ? 'Your free Farmer trial has ended.'
                     : `Farmer free trial: ${subscriptionStatus.daysLeft} day${subscriptionStatus.daysLeft === 1 ? '' : 's'} left.`}
-                  {' '}Subscribe from UGX 3,500/mo to keep your tools.
+                  {' '}Subscribe from {farmerStartPrice}/mo to keep your tools.
                 </p>
                 <Link
                   href={buildFarmPath(farmId, '/dashboard/billing', locale)}
