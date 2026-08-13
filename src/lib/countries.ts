@@ -26,6 +26,79 @@ export const SUPPORTED_COUNTRIES: CountryOption[] = [
   { code: 'OTHER', name: 'Other country', paymentRegion: 'international', currency: 'USD' },
 ];
 
+const PRICES_UGX = { free: 0, farmer: 3500, premium: 15000 };
+const PRICES_USD = { free: 0, farmer: 1, premium: 4 };
+const PRICES_UGX_YEARLY = {
+  farmer: PRICES_UGX.farmer * 12,
+  premium: PRICES_UGX.premium * 12,
+};
+const PRICES_USD_YEARLY = {
+  farmer: PRICES_USD.farmer * 12,
+  premium: PRICES_USD.premium * 12,
+};
+
+export function formatPrice(amount: number, currency: string) {
+  if (currency === 'UGX') return `UGX ${amount.toLocaleString()}`;
+  if (Number.isInteger(amount)) return `$${amount}`;
+  return `$${amount.toFixed(2)}`;
+}
+
+export function formatAmountOnly(amount: number, currency: string) {
+  if (currency === 'UGX') return amount.toLocaleString();
+  if (Number.isInteger(amount)) return String(amount);
+  return amount.toFixed(2);
+}
+
+export function getPricingForCountry(countryCode: string) {
+  const country =
+    SUPPORTED_COUNTRIES.find((c) => c.code === countryCode) ??
+    SUPPORTED_COUNTRIES.find((c) => c.code === 'OTHER')!;
+  const isUganda = country.paymentRegion === 'uganda';
+  const prices = isUganda ? PRICES_UGX : PRICES_USD;
+  const yearly = isUganda ? PRICES_UGX_YEARLY : PRICES_USD_YEARLY;
+  const currency = country.currency;
+
+  return {
+    country,
+    currency,
+    paymentNote: isUganda
+      ? 'Pay with MTN Mobile Money, Airtel Money, or card.'
+      : 'Pay securely with Visa, Mastercard, or Amex via Paddle.',
+    plans: [
+      {
+        name: 'Free',
+        monthlyAmount: 0,
+        yearlyAmount: 0,
+        period: 'forever',
+        features: ['Up to 5 livestock records', 'Crops & weather', '1 user account', 'Mobile & web access'],
+        cta: 'Get Started',
+        popular: false,
+        planId: 'free' as const,
+      },
+      {
+        name: 'Farmer',
+        monthlyAmount: prices.farmer,
+        yearlyAmount: yearly.farmer,
+        period: '/month',
+        features: ['Up to 50 livestock records', 'Finances, eggs & feed', 'Weather integration', 'Mobile & web access', 'Email support'],
+        cta: 'Get Farmer',
+        popular: true,
+        planId: 'farmer' as const,
+      },
+      {
+        name: 'Premium',
+        monthlyAmount: prices.premium,
+        yearlyAmount: yearly.premium,
+        period: '/month',
+        features: ['Unlimited livestock records', 'Advanced analytics', 'All Farmer features', 'Priority support', 'Billing history'],
+        cta: 'Get Premium',
+        popular: false,
+        planId: 'premium' as const,
+      },
+    ],
+  };
+}
+
 const COUNTRY_NAME_TO_CODE: Record<string, string> = {
   uganda: 'UG',
   kenya: 'KE',

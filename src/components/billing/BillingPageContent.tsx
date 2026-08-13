@@ -149,6 +149,10 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
   }, [status]);
 
   const upgradeTarget = status ? getUpgradeTarget(status) : null;
+  const fallbackFarmerPrice = billingMeta?.currency === 'USD' ? '$1' : 'UGX 3,500';
+  const fallbackPremiumPrice = billingMeta?.currency === 'USD' ? '$4' : 'UGX 15,000';
+  const farmerPriceLabel = plans?.farmer?.price ?? fallbackFarmerPrice;
+  const premiumPriceLabel = plans?.premium?.price ?? fallbackPremiumPrice;
 
   const openCheckout = (plan: PaidPlanId) => {
     setCheckoutPlan(plan);
@@ -592,7 +596,7 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
                 <p className="mt-1 text-sm text-gray-500">Your invoices and receipts will appear here.</p>
                 {upgradeTarget && (
                   <Button className="mt-4 rounded-xl" onClick={() => openCheckout(upgradeTarget)}>
-                    Subscribe — {upgradeTarget === 'farmer' ? `Farmer ${plans.farmer.price}` : `Premium ${plans.premium.price}`}
+                    Subscribe — {upgradeTarget === 'farmer' ? `Farmer ${farmerPriceLabel}` : `Premium ${premiumPriceLabel}`}
                   </Button>
                 )}
               </div>

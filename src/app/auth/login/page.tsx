@@ -439,11 +439,17 @@ export default function Login() {
         </motion.div>
       </main>
 
-      <footer className="hidden sm:flex px-4 py-4 sm:px-6 border-t border-gray-200 dark:border-gray-800 flex-col sm:flex-row items-center justify-between gap-3">
-        <nav className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-          <Link href="/en/privacy" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Privacy</Link>
-          <Link href="/en/terms" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Terms</Link>
-          <Link href="/en/security" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Security</Link>
+      <footer className="flex px-4 py-4 sm:px-6 border-t border-gray-200 dark:border-gray-800 flex-col sm:flex-row items-center justify-between gap-3">
+        <nav className="flex flex-wrap items-center justify-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+          <Link href="/en/privacy" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+            Privacy Policy
+          </Link>
+          <Link href="/en/terms" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+            Terms &amp; Conditions
+          </Link>
+          <Link href="/en/refund" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+            Refund Policy
+          </Link>
         </nav>
         <p className="text-xs text-gray-500 dark:text-gray-400">
           © {new Date().getFullYear()} FarmKeeper

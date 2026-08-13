@@ -16,18 +16,20 @@ import { setAuthCookie } from '@/lib/cookies';
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // Plan/country from landing-page links — carried into onboarding
+  // Plan/country/billing cycle from landing-page links — carried into onboarding
   const selectedPlan = searchParams.get('plan') || 'farmer';
   const selectedCountryCode = normalizeCountryCode(searchParams.get('country') || 'UG');
+  const selectedBillingCycle = searchParams.get('billingCycle') === 'year' ? 'year' : 'month';
 
   useEffect(() => {
     try {
       localStorage.setItem('signup-country', selectedCountryCode);
       localStorage.setItem('signup-plan', selectedPlan);
+      localStorage.setItem('signup-billing-cycle', selectedBillingCycle);
     } catch {
       /* ignore */
     }
-  }, [selectedCountryCode, selectedPlan]);
+  }, [selectedCountryCode, selectedPlan, selectedBillingCycle]);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -93,11 +95,13 @@ function RegisterForm() {
       const onboardingParams = new URLSearchParams({
         plan: selectedPlan,
         country: selectedCountryCode,
+        billingCycle: selectedBillingCycle,
       });
 
       try {
         localStorage.setItem('signup-country', selectedCountryCode);
         localStorage.setItem('signup-plan', selectedPlan);
+        localStorage.setItem('signup-billing-cycle', selectedBillingCycle);
       } catch {
         /* ignore */
       }
