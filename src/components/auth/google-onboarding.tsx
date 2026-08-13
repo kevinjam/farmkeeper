@@ -17,15 +17,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { SUPPORTED_COUNTRIES, getCountryByCode, normalizeCountryCode } from '@/lib/countries';
+import { SUPPORTED_COUNTRIES, getCountryByCode, getPricingForCountry, normalizeCountryCode } from '@/lib/countries';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
+
+type BillingCycle = 'month' | 'year';
 
 interface OnboardingData {
   farmName: string;
   name: string;
   plan: string;
   countryCode: string;
+  billingCycle: BillingCycle;
 }
 
 interface GoogleOnboardingProps {
@@ -60,52 +63,53 @@ const STEPS = [
 
 const SIGNUP_COUNTRY_KEY = 'signup-country';
 const SIGNUP_PLAN_KEY = 'signup-plan';
+const SIGNUP_BILLING_CYCLE_KEY = 'signup-billing-cycle';
 
-const PRICES = {
-  UG: { farmerMonthly: 'UGX 3,500', premium: 'UGX 15,000', free: 'UGX 0', farmerTrial: 'UGX 0' },
-  INT: { farmerMonthly: '$1', premium: '$4', free: '$0', farmerTrial: '$0' },
-} as const;
-
-function getOnboardingPlans(countryCode: string) {
-  const isUganda = getCountryByCode(countryCode).paymentRegion === 'uganda';
-  const prices = isUganda ? PRICES.UG : PRICES.INT;
-  const payNote = isUganda
-    ? 'Pay with MTN, Airtel Money, or card.'
-    : 'Pay securely with card via Paddle (USD).';
+function getOnboardingPlans(countryCode: string, billingCycle: BillingCycle) {
+  const pricing = getPricingForCountry(countryCode);
+  const country = getCountryByCode(countryCode);
+  const payNote = pricing.paymentNote;
+  const currencyLabel = pricing.currency;
 
   return [
     {
+      id: 'free',
+      name: 'Free',
+      price: pricing.plans[0].monthlyAmount,
+      pricePeriod: 'forever',
+      priceDisplay: 'Free',
+      description: 'Basic records only. No finances, eggs, or feed until you upgrade.',
+      buttonLabel: 'Get Started',
+      featuresHeading: 'INCLUDES:',
+      features: pricing.plans[0].features,
+      mostPopular: false,
+      currencyLabel,
+    },
+    {
       id: 'farmer',
-      name: 'Farmer (free trial)',
-      price: prices.farmerTrial,
-      pricePeriod: ' for 30 days',
-      description: `Full smallholder tools — finances, eggs, feed & more. Then ${prices.farmerMonthly}/mo. ${payNote}`,
-      buttonLabel: 'Start 30-day Farmer trial',
-      featuresHeading: 'INCLUDES DURING TRIAL:',
-      features: ['Up to 50 livestock', 'Finances & receipts', 'Eggs & sales', 'Feed management', 'Weather'],
+      name: 'Farmer',
+      price: billingCycle === 'year' ? pricing.plans[1].yearlyAmount : pricing.plans[1].monthlyAmount,
+      pricePeriod: billingCycle === 'year' ? 'per year' : 'per month',
+      priceDisplay: pricing.currency === 'UGX' ? `UGX ${Number(billingCycle === 'year' ? pricing.plans[1].yearlyAmount : pricing.plans[1].monthlyAmount).toLocaleString()}` : `$${billingCycle === 'year' ? pricing.plans[1].yearlyAmount : pricing.plans[1].monthlyAmount}`,
+      description: `Full smallholder tools — finances, eggs, feed & more. ${payNote}`,
+      buttonLabel: 'Get Farmer',
+      featuresHeading: 'INCLUDES:',
+      features: pricing.plans[1].features,
       mostPopular: true,
+      currencyLabel,
     },
     {
       id: 'premium',
       name: 'Premium',
-      price: prices.premium,
-      pricePeriod: '/month',
+      price: billingCycle === 'year' ? pricing.plans[2].yearlyAmount : pricing.plans[2].monthlyAmount,
+      pricePeriod: billingCycle === 'year' ? 'per year' : 'per month',
+      priceDisplay: pricing.currency === 'UGX' ? `UGX ${Number(billingCycle === 'year' ? pricing.plans[2].yearlyAmount : pricing.plans[2].monthlyAmount).toLocaleString()}` : `$${billingCycle === 'year' ? pricing.plans[2].yearlyAmount : pricing.plans[2].monthlyAmount}`,
       description: `Unlimited livestock and advanced analytics. ${payNote}`,
-      buttonLabel: 'Choose Premium',
-      featuresHeading: 'EVERYTHING IN FARMER, PLUS:',
-      features: ['Unlimited livestock', 'Advanced analytics', 'Priority support', 'Full billing history'],
-      mostPopular: false,
-    },
-    {
-      id: 'free',
-      name: 'Free forever',
-      price: prices.free,
-      pricePeriod: ' — no trial',
-      description: 'Basic records only. No finances, eggs, or feed until you upgrade.',
-      buttonLabel: 'Stay on Free',
+      buttonLabel: 'Get Premium',
       featuresHeading: 'INCLUDES:',
-      features: ['Up to 5 livestock', 'Crops & weather', 'Farm settings'],
+      features: pricing.plans[2].features,
       mostPopular: false,
+      currencyLabel,
     },
   ];
 }
@@ -129,11 +133,23 @@ function resolveInitialCountry(countryParam: string | null): string {
   return 'UG';
 }
 
+function resolveInitialBillingCycle(billingCycleParam: string | null): BillingCycle {
+  if (billingCycleParam === 'month' || billingCycleParam === 'year') {
+    return billingCycleParam;
+  }
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem(SIGNUP_BILLING_CYCLE_KEY);
+    if (stored === 'month' || stored === 'year') return stored;
+  }
+  return 'month';
+}
+
 export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboardingProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialPlan = resolveInitialPlan(searchParams.get('plan'));
   const initialCountry = resolveInitialCountry(searchParams.get('country'));
+  const initialBillingCycle = resolveInitialBillingCycle(searchParams.get('billingCycle'));
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -144,14 +160,16 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
     name: userName || '',
     plan: initialPlan,
     countryCode: initialCountry,
+    billingCycle: initialBillingCycle,
   });
   const farmNameInputRef = useRef<HTMLInputElement>(null);
-  const plans = getOnboardingPlans(onboardingData.countryCode);
+  const plans = getOnboardingPlans(onboardingData.countryCode, onboardingData.billingCycle);
 
-  const syncUrlParams = (next: { plan?: string; country?: string }) => {
+  const syncUrlParams = (next: { plan?: string; country?: string; billingCycle?: BillingCycle }) => {
     const params = new URLSearchParams(searchParams.toString());
     if (next.plan) params.set('plan', next.plan);
     if (next.country) params.set('country', next.country);
+    if (next.billingCycle) params.set('billingCycle', next.billingCycle);
     router.replace(`/en/auth/onboarding?${params.toString()}`, { scroll: false });
   };
 
@@ -163,7 +181,7 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
     } catch {
       /* ignore */
     }
-    syncUrlParams({ country: code, plan: onboardingData.plan });
+    syncUrlParams({ country: code, plan: onboardingData.plan, billingCycle: onboardingData.billingCycle });
   };
 
   const setPlanId = (plan: string) => {
@@ -173,18 +191,33 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
     } catch {
       /* ignore */
     }
-    syncUrlParams({ plan, country: onboardingData.countryCode });
+    syncUrlParams({ plan, country: onboardingData.countryCode, billingCycle: onboardingData.billingCycle });
+  };
+
+  const setBillingCycle = (billingCycle: BillingCycle) => {
+    setOnboardingData((prev) => ({ ...prev, billingCycle }));
+    try {
+      localStorage.setItem(SIGNUP_BILLING_CYCLE_KEY, billingCycle);
+    } catch {
+      /* ignore */
+    }
+    syncUrlParams({ plan: onboardingData.plan, country: onboardingData.countryCode, billingCycle });
   };
 
   useEffect(() => {
     // Keep URL in sync on first paint when country came from localStorage
     const urlCountry = searchParams.get('country');
     if (!urlCountry || normalizeCountryCode(urlCountry) !== onboardingData.countryCode) {
-      syncUrlParams({ country: onboardingData.countryCode, plan: onboardingData.plan });
+      syncUrlParams({
+        country: onboardingData.countryCode,
+        plan: onboardingData.plan,
+        billingCycle: onboardingData.billingCycle,
+      });
     }
     try {
       localStorage.setItem(SIGNUP_COUNTRY_KEY, onboardingData.countryCode);
       localStorage.setItem(SIGNUP_PLAN_KEY, onboardingData.plan);
+      localStorage.setItem(SIGNUP_BILLING_CYCLE_KEY, onboardingData.billingCycle);
     } catch {
       /* ignore */
     }
@@ -244,6 +277,7 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
           image: userImage,
           farmName: onboardingData.farmName.trim(),
           plan: onboardingData.plan,
+          billingCycle: onboardingData.billingCycle,
           location: { country: getCountryByCode(onboardingData.countryCode).name },
         }),
       });
@@ -531,86 +565,123 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
                   )}
 
                   {currentStep === 3 && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                      {plans.map((plan) => {
-                        const isSelected = onboardingData.plan === plan.id;
-                        const isPro = plan.mostPopular;
-                        return (
-                          <div
-                            key={plan.id}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => setPlanId(plan.id)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                setPlanId(plan.id);
-                              }
-                            }}
-                            className={`relative flex flex-col rounded-2xl p-5 md:p-6 cursor-pointer transition-all duration-200 border-2 active:scale-[0.99] max-md:min-h-0 md:bg-gray-800/80 md:dark:bg-gray-800/90 max-md:bg-white max-md:dark:bg-gray-900 max-md:shadow-sm ${
-                              isPro
-                                ? 'border-primary-500 ring-2 ring-primary-500/25 shadow-md shadow-primary-500/10'
-                                : isSelected
-                                  ? 'border-primary-600 md:border-green-500 dark:border-green-500'
-                                  : 'border-gray-200 dark:border-gray-700 md:border-gray-700 hover:border-gray-300 md:hover:border-gray-600 dark:hover:border-gray-600'
+                    <div className="space-y-6">
+                      <div className="flex justify-center">
+                        <div
+                          role="group"
+                          aria-label="Billing period"
+                          className="inline-flex rounded-full border border-gray-200 bg-gray-100/80 p-1 dark:border-gray-700 dark:bg-gray-800/80"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => setBillingCycle('month')}
+                            className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
+                              onboardingData.billingCycle === 'month'
+                                ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
+                                : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
                             }`}
                           >
-                            {plan.mostPopular && (
-                              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
-                                <span className="inline-block px-3 py-0.5 rounded-full bg-primary-600 text-white text-[10px] font-bold uppercase tracking-wide">
-                                  Most popular
-                                </span>
-                              </div>
-                            )}
-                            <div className="mb-3 md:mb-4">
-                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white md:text-white">
-                                {plan.name}
-                              </h3>
-                              <p className="mt-2 flex items-baseline gap-1">
-                                <span className="text-2xl md:text-3xl font-bold text-primary-700 dark:text-primary-400 md:text-white">
-                                  {plan.price}
-                                </span>
-                                <span className="text-gray-500 md:text-gray-400 text-sm">{plan.pricePeriod}</span>
-                              </p>
-                              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 md:text-gray-400">
-                                {plan.description}
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setPlanId(plan.id);
+                            Monthly
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setBillingCycle('year')}
+                            className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
+                              onboardingData.billingCycle === 'year'
+                                ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
+                                : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+                            }`}
+                          >
+                            Yearly
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                        {plans.map((plan) => {
+                          const isSelected = onboardingData.plan === plan.id;
+                          const isPro = plan.mostPopular;
+                          return (
+                            <div
+                              key={plan.id}
+                              role="button"
+                              tabIndex={0}
+                              onClick={() => setPlanId(plan.id)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  setPlanId(plan.id);
+                                }
                               }}
-                              className={`mt-auto w-full min-h-11 py-2.5 px-4 rounded-xl font-semibold text-sm transition-colors active:scale-[0.99] ${
+                              className={`relative flex flex-col rounded-2xl p-5 md:p-6 cursor-pointer transition-all duration-200 border-2 active:scale-[0.99] max-md:min-h-0 md:bg-gray-800/80 md:dark:bg-gray-800/90 max-md:bg-white max-md:dark:bg-gray-900 max-md:shadow-sm ${
                                 isPro
-                                  ? 'bg-primary-600 text-white hover:bg-primary-700 md:bg-green-500 md:text-gray-900 md:hover:bg-green-400'
-                                  : plan.id === 'enterprise'
-                                    ? 'border-2 border-primary-600 text-primary-700 dark:text-primary-400 bg-transparent hover:bg-primary-500/10 md:border-green-500 md:text-green-500'
-                                    : 'border-2 border-primary-500/80 text-primary-700 dark:text-primary-300 bg-transparent hover:bg-primary-500/10 md:border-green-600 md:text-green-600 dark:md:border-green-500 dark:md:text-green-500'
+                                  ? 'border-primary-500 ring-2 ring-primary-500/25 shadow-md shadow-primary-500/10'
+                                  : isSelected
+                                    ? 'border-primary-600 md:border-green-500 dark:border-green-500'
+                                    : 'border-gray-200 dark:border-gray-700 md:border-gray-700 hover:border-gray-300 md:hover:border-gray-600 dark:hover:border-gray-600'
                               }`}
                             >
-                              {plan.buttonLabel}
-                            </button>
-                            <div className="mt-4 md:mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 md:border-gray-700">
-                              <p className="text-[10px] md:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 md:mb-3">
-                                {plan.featuresHeading}
-                              </p>
-                              <ul className="space-y-2">
-                                {plan.features.map((f, i) => (
-                                  <li
-                                    key={i}
-                                    className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300 md:text-gray-300"
-                                  >
-                                    <Check className="h-4 w-4 text-primary-600 md:text-green-500 shrink-0 mt-0.5" />
-                                    <span>{f}</span>
-                                  </li>
-                                ))}
-                              </ul>
+                              {plan.mostPopular && (
+                                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
+                                  <span className="inline-block px-3 py-0.5 rounded-full bg-primary-600 text-white text-[10px] font-bold uppercase tracking-wide">
+                                    Most popular
+                                  </span>
+                                </div>
+                              )}
+                              <div className="mb-3 md:mb-4">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white md:text-white">
+                                  {plan.name}
+                                </h3>
+                                <p className="mt-2 flex items-baseline gap-1">
+                                  <span className="text-2xl md:text-3xl font-bold text-primary-700 dark:text-primary-400 md:text-white">
+                                    {plan.priceDisplay}
+                                  </span>
+                                  <span className="text-gray-500 md:text-gray-400 text-sm">{plan.pricePeriod}</span>
+                                </p>
+                                {plan.id !== 'free' && (
+                                  <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary-600 dark:text-primary-400 md:text-primary-400">
+                                    {plan.currencyLabel}
+                                  </p>
+                                )}
+                                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 md:text-gray-400">
+                                  {plan.description}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPlanId(plan.id);
+                                }}
+                                className={`mt-auto w-full min-h-11 py-2.5 px-4 rounded-xl font-semibold text-sm transition-colors active:scale-[0.99] ${
+                                  isPro
+                                    ? 'bg-primary-600 text-white hover:bg-primary-700 md:bg-green-500 md:text-gray-900 md:hover:bg-green-400'
+                                    : plan.id === 'enterprise'
+                                      ? 'border-2 border-primary-600 text-primary-700 dark:text-primary-400 bg-transparent hover:bg-primary-500/10 md:border-green-500 md:text-green-500'
+                                      : 'border-2 border-primary-500/80 text-primary-700 dark:text-primary-300 bg-transparent hover:bg-primary-500/10 md:border-green-600 md:text-green-600 dark:md:border-green-500 dark:md:text-green-500'
+                                }`}
+                              >
+                                {plan.buttonLabel}
+                              </button>
+                              <div className="mt-4 md:mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 md:border-gray-700">
+                                <p className="text-[10px] md:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 md:mb-3">
+                                  {plan.featuresHeading}
+                                </p>
+                                <ul className="space-y-2">
+                                  {plan.features.map((f, i) => (
+                                    <li
+                                      key={i}
+                                      className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300 md:text-gray-300"
+                                    >
+                                      <Check className="h-4 w-4 text-primary-600 md:text-green-500 shrink-0 mt-0.5" />
+                                      <span>{f}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </motion.div>
