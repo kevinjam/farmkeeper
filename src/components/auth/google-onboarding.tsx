@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { SUPPORTED_COUNTRIES, getCountryByCode, getPricingForCountry, normalizeCountryCode } from '@/lib/countries';
+import { PhoneNumberInput, phoneForSubmit } from '@/components/ui/phone-input';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
 
@@ -26,6 +27,7 @@ type BillingCycle = 'month' | 'year';
 interface OnboardingData {
   farmName: string;
   name: string;
+  phone: string;
   plan: string;
   countryCode: string;
   billingCycle: BillingCycle;
@@ -48,7 +50,7 @@ const STEPS = [
   {
     id: 2,
     title: 'Farm & your name',
-    description: 'Tell us your farm name and display name',
+    description: 'Farm name, your name, and optional WhatsApp',
     icon: Building,
     color: 'text-blue-600',
   },
@@ -158,6 +160,7 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     farmName: '',
     name: userName || '',
+    phone: '',
     plan: initialPlan,
     countryCode: initialCountry,
     billingCycle: initialBillingCycle,
@@ -276,6 +279,7 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
           name: onboardingData.name.trim(),
           image: userImage,
           farmName: onboardingData.farmName.trim(),
+          phone: phoneForSubmit(onboardingData.phone),
           plan: onboardingData.plan,
           billingCycle: onboardingData.billingCycle,
           location: { country: getCountryByCode(onboardingData.countryCode).name },
@@ -441,7 +445,9 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
           }`}
         >
           <Card
-            className={`flex-1 flex flex-col min-h-0 overflow-hidden md:overflow-visible shadow-xl border-0 md:rounded-xl max-md:rounded-2xl max-md:bg-white/80 max-md:dark:bg-gray-900/50 max-md:backdrop-blur-sm max-md:border max-md:border-gray-200/80 max-md:dark:border-gray-700/80 max-md:shadow-lg ${
+            className={`flex-1 flex flex-col min-h-0 shadow-xl border-0 md:rounded-xl max-md:rounded-2xl max-md:bg-white/80 max-md:dark:bg-gray-900/50 max-md:backdrop-blur-sm max-md:border max-md:border-gray-200/80 max-md:dark:border-gray-700/80 max-md:shadow-lg ${
+              currentStep === 2 ? 'overflow-visible' : 'overflow-hidden md:overflow-visible'
+            } ${
               currentStep === 3 ? 'md:bg-gray-900 md:dark:bg-gray-900 md:border md:border-gray-800' : ''
             }`}
           >
@@ -560,6 +566,23 @@ export function GoogleOnboarding({ userEmail, userName, userImage }: GoogleOnboa
                             </option>
                           ))}
                         </select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="whatsapp" className="text-sm font-medium">
+                          WhatsApp number{' '}
+                          <span className="font-normal text-gray-500">(optional)</span>
+                        </Label>
+                        <PhoneNumberInput
+                          id="whatsapp"
+                          defaultCountry={onboardingData.countryCode}
+                          value={onboardingData.phone}
+                          onChange={(phone) =>
+                            setOnboardingData((prev) => ({ ...prev, phone }))
+                          }
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Pick your country code, then enter the number. You can skip this.
+                        </p>
                       </div>
                     </div>
                   )}

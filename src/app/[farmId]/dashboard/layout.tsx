@@ -422,6 +422,17 @@ export default function DashboardLayout({
           router.replace('/en/auth/register');
           return;
         }
+
+        if (typeof data.token === 'string' && data.token) {
+          apiClient.setToken(data.token);
+        }
+
+        if (data.farm?.slug && data.farm.slug !== farmId) {
+          const locale = getLocaleFromPathname(pathname) || 'en';
+          const rest = stripLocaleFromPathname(pathname).replace(/^\/[^/]+/, '') || '/dashboard';
+          router.replace(buildFarmPath(data.farm.slug, rest, locale));
+          return;
+        }
         
         // Set farm and user data from API response
         setFarmName(data.farm?.name || farmId.charAt(0).toUpperCase() + farmId.slice(1) + ' Farm');

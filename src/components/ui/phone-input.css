@@ -1,0 +1,80 @@
+.fk-phone-input {
+  --react-international-phone-height: 48px;
+  --react-international-phone-font-size: 16px;
+  --react-international-phone-border-radius: 12px;
+  --react-international-phone-border-color: rgb(209 213 219);
+  --react-international-phone-background-color: #fff;
+  --react-international-phone-text-color: rgb(17 24 39);
+  --react-international-phone-selected-dropdown-item-background-color: rgb(236 253 245);
+  --react-international-phone-dropdown-item-dial-code-color: rgb(107 114 128);
+  --react-international-phone-country-selector-border-color: rgb(209 213 219);
+  --react-international-phone-country-selector-background-color: #fff;
+  --react-international-phone-country-selector-background-color-hover: rgb(249 250 251);
+  --react-international-phone-dropdown-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
+  width: 100%;
+}
+
+.dark .fk-phone-input {
+  --react-international-phone-border-color: rgb(75 85 99);
+  --react-international-phone-background-color: rgb(17 24 39);
+  --react-international-phone-text-color: rgb(243 244 246);
+  --react-international-phone-selected-dropdown-item-background-color: rgb(6 78 59);
+  --react-international-phone-dropdown-item-dial-code-color: rgb(156 163 175);
+  --react-international-phone-country-selector-border-color: rgb(75 85 99);
+  --react-international-phone-country-selector-background-color: rgb(17 24 39);
+  --react-international-phone-country-selector-background-color-hover: rgb(31 41 55);
+  --react-international-phone-dropdown-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+.fk-phone-input .react-international-phone-input-container {
+  width: 100%;
+}
+
+.fk-phone-input .react-international-phone-country-selector-button {
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
+  padding: 0 10px 0 12px;
+  min-width: 4.75rem;
+}
+
+.fk-phone-input .react-international-phone-input {
+  width: 100%;
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
+  padding-left: 12px;
+  font-size: 16px;
+}
+
+.fk-phone-input .react-international-phone-input:focus {
+  outline: none;
+  border-color: rgb(16 185 129);
+  box-shadow: 0 0 0 3px rgb(16 185 129 / 0.25);
+  z-index: 1;
+}
+
+.fk-phone-input .react-international-phone-country-selector-dropdown {
+  z-index: 70;
+  width: min(22rem, 86vw);
+  max-height: 17.5rem;
+  overflow-y: auto;
+  border-radius: 12px;
+  border: 1px solid var(--react-international-phone-border-color);
+  margin-top: 6px;
+  padding: 6px;
+}
+
+.fk-phone-input .react-international-phone-country-selector-dropdown__list-item {
+  border-radius: 8px;
+  padding: 8px 10px;
+  gap: 8px;
+}
+
+.fk-phone-input .react-international-phone-country-selector-dropdown__list-item-country-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.fk-phone-input .react-international-phone-country-selector-dropdown__list-item-dial-code {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}

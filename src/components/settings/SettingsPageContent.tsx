@@ -20,6 +20,8 @@ import { apiClient } from '@/lib/api';
 import { setAuthCookie } from '@/lib/cookies';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { normalizeCountryCode } from '@/lib/countries';
+import { PhoneNumberInput, phoneForSubmit } from '@/components/ui/phone-input';
 
 const LocationSelector = dynamic(
   () => import('@/components/LocationSelector').then((m) => m.LocationSelector),
@@ -52,6 +54,7 @@ interface UserProfile {
   name: string;
   email: string;
   image?: string | null;
+  phone?: string | null;
 }
 
 const TABS: { id: SettingsTab; label: string; icon: typeof Building2 }[] = [
@@ -153,6 +156,7 @@ export default function SettingsPageContent({ farmSlug }: { farmSlug: string }) 
             name: profile.name || '',
             email: profile.email || '',
             image: profile.image,
+            phone: profile.phone || '',
           });
         }
       } catch (err) {
@@ -171,6 +175,48 @@ export default function SettingsPageContent({ farmSlug }: { farmSlug: string }) 
   const handleLocationChange = useCallback((location: FarmSettings['location']) => {
     setSettings((prev) => (prev ? { ...prev, location } : prev));
   }, []);
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+
+    try {
+      setIsSaving(true);
+      setError('');
+      setSuccess('');
+
+      const response = await apiClient.updateProfile({
+        phone: phoneForSubmit(user.phone) || '',
+        countryCode: settings?.location?.country
+          ? normalizeCountryCode(settings.location.country)
+          : undefined,
+      });
+
+      if (!response.success) {
+        throw new Error(response.error || 'Could not save profile');
+      }
+
+      const saved = response.data?.user;
+      if (saved) {
+        setUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                name: saved.name || prev.name,
+                phone: saved.phone || '',
+              }
+            : prev
+        );
+      }
+
+      setSuccess('Profile updated');
+      setTimeout(() => setSuccess(''), 4000);
+    } catch (err) {
+      console.error('Error saving profile:', err);
+      setError(err instanceof Error && err.message ? err.message : 'Could not save profile');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleSaveSettings = async () => {
     if (!settings) return;
@@ -298,7 +344,11 @@ export default function SettingsPageContent({ farmSlug }: { farmSlug: string }) 
         </div>
 
         {/* Content — grows to fill remaining space */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-white dark:bg-gray-900/40">
+        <div
+          className={`flex min-h-0 flex-1 flex-col bg-white dark:bg-gray-900/40 ${
+            tab === 'profile' ? 'overflow-visible' : 'overflow-y-auto'
+          }`}
+        >
           <div className="flex w-full flex-1 flex-col p-4 sm:p-6 md:p-8">
         {/* Farm */}
         {tab === 'farm' && (
@@ -408,6 +458,25 @@ export default function SettingsPageContent({ farmSlug }: { farmSlug: string }) 
                     <p className="truncate text-sm text-gray-500 dark:text-gray-400">{user?.email || '—'}</p>
                   </div>
                 </div>
+
+                <div>
+                  <label htmlFor="profile-phone" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    WhatsApp number
+                  </label>
+                  <PhoneNumberInput
+                    id="profile-phone"
+                    defaultCountry={settings?.location?.country}
+                    value={user?.phone || ''}
+                    onChange={(phone) =>
+                      setUser((prev) => (prev ? { ...prev, phone } : prev))
+                    }
+                  />
+                  <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    Optional. We use this to reach you on WhatsApp if you need help.
+                  </p>
+                </div>
+
+                <SaveBar isSaving={isSaving} onSave={handleSaveProfile} label="Save profile" savingLabel="Saving…" />
 
                 <div className="grid gap-4 md:grid-cols-2">
                 <div className="rounded-xl border border-gray-200 p-4 dark:border-gray-700 md:p-5">

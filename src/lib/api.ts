@@ -33,6 +33,7 @@ export interface User {
   name: string;
   email: string;
   role: string;
+  phone?: string | null;
 }
 
 export interface Farm {
@@ -220,6 +221,17 @@ class ApiClient {
     farm?: Farm;
   }>> {
     return this.request('/auth/status');
+  }
+
+  async updateProfile(data: {
+    name?: string;
+    phone?: string;
+    countryCode?: string;
+  }): Promise<ApiResponse<{ user: User }>> {
+    return this.request('/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
   }
 
   // Livestock endpoints

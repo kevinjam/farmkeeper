@@ -12,6 +12,7 @@ import { hasFeatureAccess } from '@/lib/features';
 import UpcomingTasksCard from '@/components/dashboard/UpcomingTasksCard';
 import RecentActivityCard from '@/components/dashboard/RecentActivityCard';
 import FarmLocationPrompt from '@/components/dashboard/FarmLocationPrompt';
+import PhonePrompt from '@/components/dashboard/PhonePrompt';
 
 type StatVariant = 'livestock' | 'eggs' | 'profit' | 'feed';
 
@@ -592,6 +593,7 @@ const fetchFinancialAnalytics = async () => {
       </div>
 
       <FarmLocationPrompt farmId={farmSlug} />
+      <PhonePrompt farmId={farmSlug} />
 
       {/* Stats section — mobile: 2×2 compact tiles; md+: responsive row */}
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
