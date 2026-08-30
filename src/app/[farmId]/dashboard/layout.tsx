@@ -306,7 +306,7 @@ export default function DashboardLayout({
     subscriptionStatus.plan !== 'premium' &&
     !unlockAll;
   const isUgandaFarm = getCountryByCode(farmCountryCode).paymentRegion === 'uganda';
-  const farmerStartPrice = isUgandaFarm ? 'UGX 3,500' : '$1';
+  const farmerStartPrice = isUgandaFarm ? 'UGX 3,500' : '$2';
   const profileHref = `${buildFarmPath(farmId, '/dashboard/settings', locale)}?tab=profile`;
   const billingPlansHref = `${buildFarmPath(farmId, '/dashboard/billing', locale)}?tab=plans`;
 

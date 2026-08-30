@@ -21,6 +21,8 @@
     "farmName": "Elinnya lya Farm",
     "farmNamePlaceholder": "Wandiika elinnya lya farm yo",
     "farmUrl": "Ekifo Farm yo ku Internet",
+    "farmUrlHint": "Kino kye kifo kya farm yo mu FarmKeeper. Okutereka URL empya kikyusa akakwate ka dashboard.",
+    "farmUrlInvalid": "URL ya farm erina okuba n'ennukuta ezitari wansi wa 3, n'okukozesa ennukuta, namba, n'obugwa.",
     "locationSettings": "Eby'okukola ku Kifo",
     "locationDescription": "Leka kifo kya farm yo okusobola okulaba embeera y'obudde n'ebikugamba ku kulima.",
     "locationTroubleshooting": "Okukola ku Kifo",

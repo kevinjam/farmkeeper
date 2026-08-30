@@ -11,6 +11,7 @@ export interface ApiResponse<T = any> {
   data?: T;
   message?: string;
   error?: string;
+  code?: string;
 }
 
 export interface AuthResponse {
@@ -107,7 +108,8 @@ class ApiClient {
       return {
         success: false,
         error: data.message || data.error || `HTTP ${response.status}: ${response.statusText}`,
-        data: data
+        data: data,
+        code: typeof data?.code === 'string' ? data.code : undefined,
       };
     }
 
@@ -352,6 +354,10 @@ class ApiClient {
   // Crops endpoints
   async getCrops(farmSlug: string): Promise<ApiResponse<any[]>> {
     return this.request(`/farms/${farmSlug}/crops`);
+  }
+
+  async getCrop(farmSlug: string, cropId: string): Promise<ApiResponse> {
+    return this.request(`/farms/${farmSlug}/crops/${cropId}`);
   }
 
   async createCrop(farmSlug: string, data: any): Promise<ApiResponse> {

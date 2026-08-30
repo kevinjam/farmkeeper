@@ -27,14 +27,14 @@ export const SUPPORTED_COUNTRIES: CountryOption[] = [
 ];
 
 const PRICES_UGX = { free: 0, farmer: 3500, premium: 15000 };
-const PRICES_USD = { free: 0, farmer: 1, premium: 4 };
+const PRICES_USD = { free: 0, farmer: 2, premium: 5 };
 const PRICES_UGX_YEARLY = {
   farmer: PRICES_UGX.farmer * 12,
   premium: PRICES_UGX.premium * 12,
 };
 const PRICES_USD_YEARLY = {
-  farmer: PRICES_USD.farmer * 12,
-  premium: PRICES_USD.premium * 12,
+  farmer: 20,
+  premium: 50,
 };
 
 export function formatPrice(amount: number, currency: string) {

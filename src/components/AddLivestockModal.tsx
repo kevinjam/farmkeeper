@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { apiClient } from '@/lib/api';
+import LivestockLimitDialog from '@/components/billing/LivestockLimitDialog';
+import { parseLivestockLimitError } from '@/lib/livestockLimit';
 
 interface AddLivestockModalProps {
   isOpen: boolean;
@@ -15,6 +17,9 @@ export function AddLivestockModal({ isOpen, onClose, farmId, onSuccess }: AddLiv
   const [type, setType] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [limitDialog, setLimitDialog] = useState<{ limit: number; currentCount: number } | null>(
+    null
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +40,12 @@ export function AddLivestockModal({ isOpen, onClose, farmId, onSuccess }: AddLiv
       const response = await apiClient.createLivestock(farmId, livestockData);
 
       if (!response.success) {
+        const limit = parseLivestockLimitError(response);
+        if (limit) {
+          setLimitDialog(limit);
+          onClose();
+          return;
+        }
         throw new Error(response.error || 'Failed to create livestock');
       }
 
@@ -56,9 +67,20 @@ export function AddLivestockModal({ isOpen, onClose, farmId, onSuccess }: AddLiv
     onClose();
   };
 
-  if (!isOpen) return null;
+  if (!isOpen && !limitDialog) return null;
 
   return (
+    <>
+    {limitDialog ? (
+      <LivestockLimitDialog
+        open
+        onClose={() => setLimitDialog(null)}
+        farmId={farmId}
+        limit={limitDialog.limit}
+        currentCount={limitDialog.currentCount}
+      />
+    ) : null}
+    {isOpen ? (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
       <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
         {/* Header */}
@@ -142,5 +164,7 @@ export function AddLivestockModal({ isOpen, onClose, farmId, onSuccess }: AddLiv
         </form>
       </div>
     </div>
+    ) : null}
+    </>
   );
 }

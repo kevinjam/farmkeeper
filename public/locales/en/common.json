@@ -21,6 +21,8 @@
     "farmName": "Farm Name",
     "farmNamePlaceholder": "Enter your farm name",
     "farmUrl": "Farm URL",
+    "farmUrlHint": "This is your farm’s address in FarmKeeper. Saving a new URL updates your dashboard link.",
+    "farmUrlInvalid": "Farm URL must be at least 3 characters and use only letters, numbers, and hyphens.",
     "locationSettings": "Location Settings",
     "locationDescription": "Set your farm's location to enable weather forecasts and local farming recommendations.",
     "locationTroubleshooting": "Location Troubleshooting",
