@@ -27,6 +27,7 @@ import { getCountryByCode, normalizeCountryCode } from '@/lib/countries';
 import { hasFeatureAccess, canAccessDashboardPath, getGatedFeatureForDashboardPath } from '@/lib/features';
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 import FeatureGate from '@/components/billing/FeatureGate';
+import { PresenceHeartbeat } from '@/components/presence-heartbeat';
 import { normalizePlanId, PlanId } from '@/lib/billing';
 import {
   DropdownMenu,
@@ -492,6 +493,7 @@ export default function DashboardLayout({
 
   return (
     <SubscriptionProvider value={subscriptionContextValue}>
+    <PresenceHeartbeat />
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Sidebar */}
       <aside
