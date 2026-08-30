@@ -149,8 +149,8 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
   }, [status]);
 
   const upgradeTarget = status ? getUpgradeTarget(status) : null;
-  const fallbackFarmerPrice = billingMeta?.currency === 'USD' ? '$1' : 'UGX 3,500';
-  const fallbackPremiumPrice = billingMeta?.currency === 'USD' ? '$4' : 'UGX 15,000';
+  const fallbackFarmerPrice = billingMeta?.currency === 'USD' ? '$2' : 'UGX 3,500';
+  const fallbackPremiumPrice = billingMeta?.currency === 'USD' ? '$5' : 'UGX 15,000';
   const farmerPriceLabel = plans?.farmer?.price ?? fallbackFarmerPrice;
   const premiumPriceLabel = plans?.premium?.price ?? fallbackPremiumPrice;
 

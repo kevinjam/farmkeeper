@@ -21,6 +21,8 @@
     "farmName": "Jina la Shamba",
     "farmNamePlaceholder": "Ingiza jina la shamba lako",
     "farmUrl": "Anwani ya Shamba",
+    "farmUrlHint": "Hii ni anwani ya shamba lako kwenye FarmKeeper. Kuhifadhi URL mpya husasisha kiungo cha dashibodi.",
+    "farmUrlInvalid": "Anwani ya shamba lazima iwe na angalau herufi 3 na itumie herufi, nambari, na viungo pekee.",
     "locationSettings": "Mipangilio ya Eneo",
     "locationDescription": "Weka eneo la shamba lako ili kuweza kupata utabiri wa hali ya hewa na mapendekezo ya kilimo.",
     "locationTroubleshooting": "Kutatua Matatizo ya Eneo",

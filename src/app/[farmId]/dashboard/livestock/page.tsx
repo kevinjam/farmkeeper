@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type MouseEvent } from 'react';
 import Link from 'next/link';
 import { useFarmPaths } from '@/hooks/useFarmPaths';
 import {
@@ -14,7 +14,10 @@ import {
   Trash2,
 } from 'lucide-react';
 import { AddLivestockModal } from '@/components/AddLivestockModal';
+import LivestockLimitDialog from '@/components/billing/LivestockLimitDialog';
 import { apiClient } from '@/lib/api';
+import { useSubscriptionContext } from '@/contexts/SubscriptionContext';
+import { isAtLivestockLimit } from '@/lib/livestockLimit';
 
 // Define type for livestock data
 type Livestock = {
@@ -83,13 +86,10 @@ function healthStatusBadgeClass(status: Livestock['healthStatus']) {
   }
 }
 
-function shortId(id: string) {
-  if (id.length <= 14) return id;
-  return `…${id.slice(-8)}`;
-}
-
 export default function LivestockPage({ params }: { params: { farmId: string } }) {
   const { farmId, farmPath } = useFarmPaths(params.farmId);
+  const subscription = useSubscriptionContext();
+  const [limitDialogOpen, setLimitDialogOpen] = useState(false);
   
   // State for livestock data
   const [livestock, setLivestock] = useState<Livestock[]>([]);
@@ -213,6 +213,16 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
 
   // Calculate summary statistics
   const totalAnimals = livestock.length;
+  const atLimit = isAtLivestockLimit(
+    totalAnimals,
+    subscription.livestockLimit,
+    subscription.unlockAllFeatures
+  );
+  const handleAddLivestock = (e?: MouseEvent) => {
+    if (!atLimit) return;
+    e?.preventDefault();
+    setLimitDialogOpen(true);
+  };
   const healthyCount = livestock.filter(item => item.healthStatus === 'healthy').length;
   const sickCount = livestock.filter(item => item.healthStatus === 'sick').length;
   const quarantinedCount = livestock.filter(item => item.healthStatus === 'quarantine').length;
@@ -324,6 +334,7 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
       </p>
       <Link
         href={farmPath('/dashboard/livestock/add')}
+        onClick={handleAddLivestock}
         className="btn btn-primary mt-5 inline-flex items-center justify-center gap-2 max-md:min-h-12 max-md:w-full max-md:rounded-xl"
       >
         <Plus className="h-5 w-5" strokeWidth={2} />
@@ -351,6 +362,7 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
             </div>
             <Link
               href={farmPath('/dashboard/livestock/add')}
+              onClick={handleAddLivestock}
               className="btn btn-primary mt-4 inline-flex w-full shrink-0 items-center justify-center gap-2 max-md:min-h-12 max-md:rounded-xl md:mt-0 md:w-auto"
             >
               <Plus className="h-5 w-5 md:h-4 md:w-4" strokeWidth={2} />
@@ -502,7 +514,7 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
               <input
                 type="text"
                 id="search"
-                placeholder="Name, breed, ID, notes…"
+                placeholder="Name, breed, notes…"
                 className={`${filterInputClass} max-md:pl-10 md:pl-10`}
                 value={searchQuery}
                 onChange={(e) => {
@@ -518,7 +530,7 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
       {/* Mobile: card list */}
       <div className="space-y-3 px-3 md:hidden">
         {paginatedLivestock.length > 0 ? (
-          paginatedLivestock.map((item) => (
+          paginatedLivestock.map((item, index) => (
             <div
               key={item._id}
               className="rounded-2xl border border-gray-200/90 bg-white p-4 shadow-md dark:border-gray-700/80 dark:bg-gray-800"
@@ -540,8 +552,10 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
               </div>
               <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs text-gray-600 dark:text-gray-400">
                 <div>
-                  <dt className="font-medium text-gray-500 dark:text-gray-500">ID</dt>
-                  <dd className="mt-0.5 font-mono text-[11px] text-gray-800 dark:text-gray-200">{shortId(item._id)}</dd>
+                  <dt className="font-medium text-gray-500 dark:text-gray-500">#</dt>
+                  <dd className="mt-0.5 text-gray-900 dark:text-white">
+                    {(currentPage - 1) * itemsPerPage + index + 1}
+                  </dd>
                 </div>
                 <div>
                   <dt className="font-medium text-gray-500 dark:text-gray-500">Age</dt>
@@ -628,7 +642,7 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
                   scope="col"
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                 >
-                  ID
+                  #
                 </th>
                 <th
                   scope="col"
@@ -670,10 +684,10 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {paginatedLivestock.length > 0 ? (
-                paginatedLivestock.map((item) => (
+                paginatedLivestock.map((item, index) => (
                   <tr key={item._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                      {item._id}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium tabular-nums text-gray-900 dark:text-white">
+                      {(currentPage - 1) * itemsPerPage + index + 1}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       <div>{getLivestockTypeLabel(item.type)}</div>
@@ -832,6 +846,13 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
         )}
       </div>
 
+      <LivestockLimitDialog
+        open={limitDialogOpen}
+        onClose={() => setLimitDialogOpen(false)}
+        farmId={farmId}
+        limit={subscription.livestockLimit ?? 5}
+        currentCount={totalAnimals}
+      />
       <AddLivestockModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}

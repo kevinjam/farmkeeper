@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Beef, Loader2 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 import { useFarmPaths } from '@/hooks/useFarmPaths';
+import LivestockLimitDialog from '@/components/billing/LivestockLimitDialog';
+import { parseLivestockLimitError } from '@/lib/livestockLimit';
 
 const inputClass =
   'mt-1.5 block w-full border border-gray-300 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white max-md:min-h-12 max-md:rounded-xl max-md:px-3.5 max-md:text-base md:rounded-lg md:py-2 md:pl-3 md:pr-3 md:text-sm [font-size:16px]';
@@ -17,10 +19,15 @@ export default function AddLivestockPage({ params }: { params: { farmId: string 
   const router = useRouter();
   const { farmId, farmPath } = useFarmPaths(params.farmId);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [limitDialog, setLimitDialog] = useState<{ limit: number; currentCount: number } | null>(
+    null
+  );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setFormError('');
 
     try {
       const formData = new FormData(e.currentTarget);
@@ -39,13 +46,20 @@ export default function AddLivestockPage({ params }: { params: { farmId: string 
       const response = await apiClient.createLivestock(farmId, data);
 
       if (!response.success) {
+        const limit = parseLivestockLimitError(response);
+        if (limit) {
+          setLimitDialog(limit);
+          return;
+        }
         throw new Error(response.error || 'Failed to add livestock');
       }
 
       router.push(farmPath('/dashboard/livestock'));
     } catch (error) {
       console.error('Error adding livestock:', error);
-      alert('Failed to add livestock. Please try again.');
+      setFormError(
+        error instanceof Error ? error.message : 'Failed to add livestock. Please try again.'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -72,6 +86,11 @@ export default function AddLivestockPage({ params }: { params: { farmId: string 
 
         <form onSubmit={handleSubmit}>
           <div className="space-y-6 p-6 max-md:space-y-5 max-md:p-4">
+            {formError ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
+                {formError}
+              </div>
+            ) : null}
             <div className="max-md:rounded-2xl max-md:border max-md:border-gray-200/80 max-md:bg-gray-50/80 max-md:p-4 dark:max-md:border-gray-700/60 dark:max-md:bg-gray-900/40">
               <h3 className={sectionTitleClass}>Animal details</h3>
               <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">
@@ -234,6 +253,13 @@ export default function AddLivestockPage({ params }: { params: { farmId: string 
           </div>
         </form>
       </div>
+      <LivestockLimitDialog
+        open={Boolean(limitDialog)}
+        onClose={() => setLimitDialog(null)}
+        farmId={farmId}
+        limit={limitDialog?.limit ?? 5}
+        currentCount={limitDialog?.currentCount ?? 5}
+      />
     </div>
   );
 }

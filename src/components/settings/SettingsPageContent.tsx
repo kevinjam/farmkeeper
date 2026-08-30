@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Building2,
   ChevronRight,
@@ -17,6 +17,7 @@ import {
 import { useTranslations } from '@/hooks/useTranslations';
 import { useFarmPaths } from '@/hooks/useFarmPaths';
 import { apiClient } from '@/lib/api';
+import { setAuthCookie } from '@/lib/cookies';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -63,9 +64,23 @@ function FieldSkeleton() {
   return <div className="h-11 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />;
 }
 
+function sanitizeFarmSlugInput(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .slice(0, 50);
+}
+
+function finalizeFarmSlug(value: string): string {
+  return sanitizeFarmSlugInput(value).replace(/^-|-$/g, '');
+}
+
 export default function SettingsPageContent({ farmSlug }: { farmSlug: string }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const { farmPath } = useFarmPaths(farmSlug);
+  const { farmPath, locale } = useFarmPaths(farmSlug);
   const { t, raw } = useTranslations('common');
 
   const initialTab = (searchParams.get('tab') as SettingsTab) || 'farm';
@@ -160,6 +175,13 @@ export default function SettingsPageContent({ farmSlug }: { farmSlug: string }) 
   const handleSaveSettings = async () => {
     if (!settings) return;
 
+    const nextSlug = finalizeFarmSlug(settings.slug);
+    if (nextSlug.length < 3) {
+      setError(t('settings.farmUrlInvalid'));
+      setSuccess('');
+      return;
+    }
+
     try {
       setIsSaving(true);
       setError('');
@@ -167,19 +189,45 @@ export default function SettingsPageContent({ farmSlug }: { farmSlug: string }) 
 
       const response = await apiClient.updateFarmSettings(farmSlug, {
         name: settings.name,
+        slug: nextSlug,
         location: settings.location,
         settings: settings.settings,
       });
 
       if (!response.success) {
-        throw new Error(response.error || 'Failed to update farm settings');
+        throw new Error(response.error || t('settings.settingsError'));
+      }
+
+      const saved = response.data as FarmSettings & { token?: string; slugChanged?: boolean };
+      if (saved?.token) {
+        apiClient.setToken(saved.token);
+        setAuthCookie(saved.token);
+      }
+      if (saved?.slug) {
+        localStorage.setItem('farmSlug', saved.slug);
+        setSettings((prev) =>
+          prev
+            ? {
+                ...prev,
+                name: saved.name ?? prev.name,
+                slug: saved.slug,
+                location: saved.location ?? prev.location,
+                settings: saved.settings ?? prev.settings,
+              }
+            : prev
+        );
+      }
+
+      if (saved?.slugChanged && saved.slug && saved.slug !== farmSlug) {
+        router.replace(`/${locale}/${saved.slug}/dashboard/settings`);
+        return;
       }
 
       setSuccess(t('settings.settingsUpdated'));
       setTimeout(() => setSuccess(''), 4000);
     } catch (err) {
       console.error('Error saving settings:', err);
-      setError(t('settings.settingsError'));
+      setError(err instanceof Error && err.message ? err.message : t('settings.settingsError'));
     } finally {
       setIsSaving(false);
     }
@@ -289,11 +337,20 @@ export default function SettingsPageContent({ farmSlug }: { farmSlug: string }) 
                       <input
                         type="text"
                         value={settings.slug}
-                        onChange={(e) => setSettings((prev) => (prev ? { ...prev, slug: e.target.value } : prev))}
+                        onChange={(e) =>
+                          setSettings((prev) =>
+                            prev ? { ...prev, slug: sanitizeFarmSlugInput(e.target.value) } : prev
+                          )
+                        }
                         className={`min-w-0 flex-1 ${inputClass}`}
                         placeholder="your-farm"
+                        autoComplete="off"
+                        spellCheck={false}
                       />
                     </div>
+                    <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      {t('settings.farmUrlHint')}
+                    </p>
                   </div>
                 </div>
 
