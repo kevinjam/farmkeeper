@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2, X } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import BottomSheet from '@/components/ui/BottomSheet';
 import { apiClient } from '@/lib/api';
-import { TASK_PRESETS, TaskPriority } from '@/lib/tasks';
+import { TASK_PRESET_GROUPS, TASK_PRESETS, TaskPriority } from '@/lib/tasks';
 
 interface AddTaskModalProps {
   isOpen: boolean;
@@ -44,7 +45,7 @@ export default function AddTaskModal({ isOpen, onClose, farmId, onSuccess }: Add
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
-      setError('Give your task a short name — e.g. "Feed chickens".');
+      setError('Give your task a short name — e.g. "Weed maize" or "Feed chickens".');
       return;
     }
 
@@ -72,30 +73,32 @@ export default function AddTaskModal({ isOpen, onClose, farmId, onSuccess }: Add
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
-      <div className="relative flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl dark:bg-gray-900 sm:rounded-2xl">
-        <div className="flex items-start justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-700">
-          <div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Add farm task</h3>
-            <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-              Plan feeding, health checks, and daily chores
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" />
-          </button>
+    <BottomSheet
+      open={isOpen}
+      onClose={handleClose}
+      title="New task"
+      subtitle="Crops, animals, or farm work"
+      labelledBy="add-task-title"
+      footer={
+        <div className="flex gap-2 border-t border-gray-200 px-5 py-4 dark:border-gray-700">
+          <Button type="button" variant="outline" className="flex-1" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button type="submit" form="add-task-form" className="flex-1" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving…
+              </>
+            ) : (
+              'Save task'
+            )}
+          </Button>
         </div>
-
-        <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-y-auto">
-          <div className="space-y-4 px-5 py-4">
+      }
+    >
+      <form id="add-task-form" onSubmit={handleSubmit} className="space-y-4 px-5 py-4">
             {error && (
               <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
                 {error}
@@ -104,22 +107,34 @@ export default function AddTaskModal({ isOpen, onClose, farmId, onSuccess }: Add
 
             <div>
               <Label className="mb-2 block text-sm font-medium">Quick picks</Label>
-              <div className="flex flex-wrap gap-2">
-                {TASK_PRESETS.map((preset) => {
-                  const selected = title === preset.title;
+              <div className="space-y-3">
+                {TASK_PRESET_GROUPS.map((group) => {
+                  const presets = TASK_PRESETS.filter((preset) => preset.area === group.id);
                   return (
-                    <button
-                      key={preset.title}
-                      type="button"
-                      onClick={() => applyPreset(preset)}
-                      className={`rounded-lg border px-3 py-2 text-xs font-semibold shadow-sm transition ${
-                        selected
-                          ? 'border-primary-600 bg-primary-600 text-white dark:border-primary-500 dark:bg-primary-600'
-                          : 'border-gray-300 bg-white text-gray-800 hover:border-primary-500 hover:bg-primary-50 hover:text-primary-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:border-primary-500 dark:hover:bg-gray-700 dark:hover:text-white'
-                      }`}
-                    >
-                      {preset.title}
-                    </button>
+                    <div key={group.id}>
+                      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                        {group.label}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {presets.map((preset) => {
+                          const selected = title === preset.title;
+                          return (
+                            <button
+                              key={preset.title}
+                              type="button"
+                              onClick={() => applyPreset(preset)}
+                              className={`rounded-lg border px-3 py-2 text-xs font-semibold shadow-sm transition ${
+                                selected
+                                  ? 'border-primary-600 bg-primary-600 text-white dark:border-primary-500 dark:bg-primary-600'
+                                  : 'border-gray-300 bg-white text-gray-800 hover:border-primary-500 hover:bg-primary-50 hover:text-primary-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:border-primary-500 dark:hover:bg-gray-700 dark:hover:text-white'
+                              }`}
+                            >
+                              {preset.title}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   );
                 })}
               </div>
@@ -131,7 +146,7 @@ export default function AddTaskModal({ isOpen, onClose, farmId, onSuccess }: Add
                 id="task-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Feed layer chickens"
+                placeholder="e.g. Fertilize Coffee Garden A"
                 className="mt-1.5 h-11"
               />
             </div>
@@ -179,25 +194,7 @@ export default function AddTaskModal({ isOpen, onClose, farmId, onSuccess }: Add
                 </div>
               </div>
             </div>
-          </div>
-
-          <div className="mt-auto flex gap-2 border-t border-gray-200 px-5 py-4 dark:border-gray-700">
-            <Button type="button" variant="outline" className="flex-1" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button type="submit" className="flex-1" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving…
-                </>
-              ) : (
-                'Save task'
-              )}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </BottomSheet>
   );
 }

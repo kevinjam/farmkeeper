@@ -239,8 +239,8 @@ class ApiClient {
     return this.request(`/farms/${farmSlug}/livestock`);
   }
 
-  async getTotalLivestock(): Promise<ApiResponse<{ totalLivestock: number }>> {
-    return this.request('/livestock/total');
+  async getTotalLivestock(farmSlug?: string): Promise<ApiResponse<{ totalLivestock: number }>> {
+    return this.request(farmSlug ? `/farms/${farmSlug}/livestock/total` : '/livestock/total');
   }
 
   async createLivestock(farmSlug: string, data: any): Promise<ApiResponse> {
@@ -364,8 +364,18 @@ class ApiClient {
   }
 
   // Crops endpoints
-  async getCrops(farmSlug: string): Promise<ApiResponse<any[]>> {
-    return this.request(`/farms/${farmSlug}/crops`);
+  async getCrops(
+    farmSlug: string,
+    options?: { archived?: 'all' | 'true' | 'false' }
+  ): Promise<ApiResponse<any[]>> {
+    const params = new URLSearchParams();
+    if (options?.archived) params.set('archived', options.archived);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return this.request(`/farms/${farmSlug}/crops${qs}`);
+  }
+
+  async getTotalCrops(farmSlug: string): Promise<ApiResponse<{ totalCrops: number }>> {
+    return this.request(`/farms/${farmSlug}/crops/total`);
   }
 
   async getCrop(farmSlug: string, cropId: string): Promise<ApiResponse> {
@@ -392,9 +402,164 @@ class ApiClient {
     });
   }
 
+  async getFarmInsights(farmSlug: string, cropId?: string): Promise<ApiResponse<any[]>> {
+    const params = cropId ? `?cropId=${encodeURIComponent(cropId)}` : '';
+    return this.request(`/farms/${farmSlug}/insights${params}`);
+  }
+
+  async getRecentCropActivities(farmSlug: string, limit?: number): Promise<ApiResponse<any[]>> {
+    const params = limit ? `?limit=${limit}` : '';
+    return this.request(`/farms/${farmSlug}/crops/recent-activities${params}`);
+  }
+
+  async getCropActivities(farmSlug: string, cropId: string): Promise<ApiResponse<any[]>> {
+    return this.request(`/farms/${farmSlug}/crops/${cropId}/activities`);
+  }
+
+  async getCropActivity(farmSlug: string, cropId: string, activityId: string): Promise<ApiResponse> {
+    return this.request(`/farms/${farmSlug}/crops/${cropId}/activities/${activityId}`);
+  }
+
+  async createCropActivity(farmSlug: string, cropId: string, data: any): Promise<ApiResponse> {
+    return this.request(`/farms/${farmSlug}/crops/${cropId}/activities`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateCropActivity(
+    farmSlug: string,
+    cropId: string,
+    activityId: string,
+    data: any
+  ): Promise<ApiResponse> {
+    return this.request(`/farms/${farmSlug}/crops/${cropId}/activities/${activityId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteCropActivity(farmSlug: string, cropId: string, activityId: string): Promise<ApiResponse> {
+    return this.request(`/farms/${farmSlug}/crops/${cropId}/activities/${activityId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getFields(farmSlug: string): Promise<ApiResponse<any[]>> {
+    return this.request(`/farms/${farmSlug}/fields`);
+  }
+
+  async createField(farmSlug: string, data: {
+    name: string;
+    area?: number;
+    areaUnit?: string;
+    notes?: string;
+  }): Promise<ApiResponse> {
+    return this.request(`/farms/${farmSlug}/fields`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateField(farmSlug: string, fieldId: string, data: any): Promise<ApiResponse> {
+    return this.request(`/farms/${farmSlug}/fields/${fieldId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteField(farmSlug: string, fieldId: string): Promise<ApiResponse> {
+    return this.request(`/farms/${farmSlug}/fields/${fieldId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getHarvests(farmSlug: string, cropId?: string): Promise<ApiResponse<any[]>> {
+    const params = cropId ? `?cropId=${encodeURIComponent(cropId)}` : '';
+    return this.request(`/farms/${farmSlug}/harvests${params}`);
+  }
+
+  async getHarvestSummary(farmSlug: string, cropId?: string): Promise<ApiResponse<any>> {
+    const params = cropId ? `?cropId=${encodeURIComponent(cropId)}` : '';
+    return this.request(`/farms/${farmSlug}/harvests/summary${params}`);
+  }
+
+  async getHarvest(farmSlug: string, harvestId: string): Promise<ApiResponse> {
+    return this.request(`/farms/${farmSlug}/harvests/${harvestId}`);
+  }
+
+  async createHarvest(farmSlug: string, data: any): Promise<ApiResponse> {
+    return this.request(`/farms/${farmSlug}/harvests`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateHarvest(farmSlug: string, harvestId: string, data: any): Promise<ApiResponse> {
+    return this.request(`/farms/${farmSlug}/harvests/${harvestId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteHarvest(farmSlug: string, harvestId: string): Promise<ApiResponse> {
+    return this.request(`/farms/${farmSlug}/harvests/${harvestId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getCropSales(farmSlug: string, options?: { cropId?: string; harvestId?: string }): Promise<ApiResponse<any[]>> {
+    const params = new URLSearchParams();
+    if (options?.cropId) params.set('cropId', options.cropId);
+    if (options?.harvestId) params.set('harvestId', options.harvestId);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return this.request(`/farms/${farmSlug}/crop-sales${qs}`);
+  }
+
+  async getCropSale(farmSlug: string, saleId: string): Promise<ApiResponse> {
+    return this.request(`/farms/${farmSlug}/crop-sales/${saleId}`);
+  }
+
+  async createCropSale(farmSlug: string, data: any): Promise<ApiResponse> {
+    return this.request(`/farms/${farmSlug}/crop-sales`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateCropSale(farmSlug: string, saleId: string, data: any): Promise<ApiResponse> {
+    return this.request(`/farms/${farmSlug}/crop-sales/${saleId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteCropSale(farmSlug: string, saleId: string): Promise<ApiResponse> {
+    return this.request(`/farms/${farmSlug}/crop-sales/${saleId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getProfitability(
+    farmSlug: string,
+    options?: { period?: string; startDate?: string; endDate?: string; cropId?: string }
+  ): Promise<ApiResponse<any>> {
+    const params = new URLSearchParams();
+    if (options?.period) params.set('period', options.period);
+    if (options?.startDate) params.set('startDate', options.startDate);
+    if (options?.endDate) params.set('endDate', options.endDate);
+    if (options?.cropId) params.set('cropId', options.cropId);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return this.request(`/farms/${farmSlug}/profitability${qs}`);
+  }
+
   // Feedstock endpoints
   async getFeedstock(farmSlug: string): Promise<ApiResponse<any[]>> {
     return this.request(`/farms/${farmSlug}/feedstock`);
+  }
+
+  async getFeedstockById(farmSlug: string, feedId: string): Promise<ApiResponse<any>> {
+    return this.request(`/farms/${farmSlug}/feedstock/${feedId}`);
   }
 
   async getFeedstockSummary(farmSlug: string): Promise<ApiResponse<{
@@ -433,8 +598,37 @@ class ApiClient {
     return this.request('/finances/analytics');
   }
 
-  async getFinancialTransactions(farmSlug: string): Promise<ApiResponse<any[]>> {
-    return this.request(`/farms/${farmSlug}/finances`);
+  async getFinancialTransactions(
+    farmSlug: string,
+    options?: {
+      type?: string;
+      category?: string;
+      cropId?: string;
+      startDate?: string;
+      endDate?: string;
+      page?: number;
+      limit?: number;
+    }
+  ): Promise<ApiResponse<any[]>> {
+    const params = new URLSearchParams();
+    if (options?.type) params.set('type', options.type);
+    if (options?.category && options.category !== 'all') params.set('category', options.category);
+    if (options?.cropId && options.cropId !== 'all') params.set('cropId', options.cropId);
+    if (options?.startDate) params.set('startDate', options.startDate);
+    if (options?.endDate) params.set('endDate', options.endDate);
+    if (options?.page) params.set('page', String(options.page));
+    if (options?.limit) params.set('limit', String(options.limit));
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return this.request(`/farms/${farmSlug}/finances${qs}`);
+  }
+
+  async getFinancialSummary(farmSlug: string, cropId?: string): Promise<ApiResponse<any>> {
+    const params = cropId ? `?cropId=${encodeURIComponent(cropId)}` : '';
+    return this.request(`/farms/${farmSlug}/finances/summary${params}`);
+  }
+
+  async getFinancialTransaction(farmSlug: string, transactionId: string): Promise<ApiResponse> {
+    return this.request(`/farms/${farmSlug}/finances/${transactionId}`);
   }
 
   async createFinancialTransaction(farmSlug: string, data: any): Promise<ApiResponse> {
@@ -655,6 +849,75 @@ class ApiClient {
       method: 'PUT',
       body: JSON.stringify({ language }),
     });
+  }
+
+  async getSupportTickets(farmSlug: string): Promise<ApiResponse<any[]>> {
+    return this.request(`/farms/${farmSlug}/support`);
+  }
+
+  async createSupportTicket(
+    farmSlug: string,
+    data: {
+      category: string;
+      message: string;
+      subject?: string;
+      currentPage?: string;
+      deviceInfo?: string;
+      screenshotUrl?: string;
+    }
+  ): Promise<ApiResponse<any>> {
+    return this.request(`/farms/${farmSlug}/support`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getSupportTicket(farmSlug: string, ticketNumber: string): Promise<ApiResponse<any>> {
+    return this.request(`/farms/${farmSlug}/support/${encodeURIComponent(ticketNumber)}`);
+  }
+
+  async replySupportTicket(
+    farmSlug: string,
+    ticketNumber: string,
+    message: string
+  ): Promise<ApiResponse<any>> {
+    return this.request(`/farms/${farmSlug}/support/${encodeURIComponent(ticketNumber)}/replies`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    });
+  }
+
+  async uploadSupportScreenshot(
+    farmSlug: string,
+    file: File
+  ): Promise<ApiResponse<{ url: string; publicId: string; format: string }>> {
+    try {
+      const url = `${this.baseURL}/farms/${farmSlug}/uploads/support-screenshot`;
+      const authHeaders = (await this.getHeaders()) as Record<string, string>;
+      const headers: Record<string, string> = { Accept: 'application/json' };
+      Object.entries(authHeaders).forEach(([key, value]) => {
+        if (key.toLowerCase() !== 'content-type' && value) {
+          headers[key] = value;
+        }
+      });
+
+      const formData = new FormData();
+      formData.append('screenshot', file);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: formData,
+        credentials: 'include',
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to upload screenshot',
+      };
+    }
   }
 
   // Generic request method for custom endpoints

@@ -69,13 +69,21 @@ const FinancialRecordsManager = () => {
       { value: 'other', label: 'Other Income' }
     ],
     expense: [
-      { value: 'feed_purchase', label: 'Feed Purchase' },
-      { value: 'veterinary', label: 'Veterinary' },
+      { value: 'seeds', label: 'Seeds' },
+      { value: 'fertilizer', label: 'Fertilizer' },
+      { value: 'pesticides', label: 'Pesticides' },
+      { value: 'herbicides', label: 'Herbicides' },
+      { value: 'labour', label: 'Labour' },
+      { value: 'feed', label: 'Feed' },
+      { value: 'medicine', label: 'Medicine' },
+      { value: 'fuel', label: 'Fuel' },
+      { value: 'transport', label: 'Transport' },
       { value: 'equipment', label: 'Equipment' },
-      { value: 'labor', label: 'Labor' },
+      { value: 'repairs', label: 'Repairs' },
+      { value: 'irrigation', label: 'Irrigation' },
+      { value: 'land', label: 'Land' },
       { value: 'utilities', label: 'Utilities' },
-      { value: 'maintenance', label: 'Maintenance' },
-      { value: 'other', label: 'Other Expense' }
+      { value: 'other', label: 'Other Expense' },
     ]
   };
 

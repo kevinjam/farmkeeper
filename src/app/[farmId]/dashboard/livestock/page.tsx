@@ -13,7 +13,7 @@ import {
   Stethoscope,
   Trash2,
 } from 'lucide-react';
-import { AddLivestockModal } from '@/components/AddLivestockModal';
+import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
 import LivestockLimitDialog from '@/components/billing/LivestockLimitDialog';
 import { apiClient } from '@/lib/api';
 import { useSubscriptionContext } from '@/contexts/SubscriptionContext';
@@ -110,9 +110,7 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
   
   // State for delete confirmation
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  
-  // State for add livestock modal
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Fetch livestock data
   useEffect(() => {
@@ -148,18 +146,20 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
   // Delete livestock function
   const handleDeleteLivestock = async (livestockId: string) => {
     try {
+      setIsDeleting(true);
       const response = await apiClient.deleteLivestock(farmId, livestockId);
 
       if (!response.success) {
         throw new Error(response.error || 'Failed to delete livestock');
       }
 
-      // Remove from local state
       setLivestock(prev => prev.filter(item => item._id !== livestockId));
       setDeleteConfirm(null);
     } catch (err) {
       console.error('Error deleting livestock:', err);
       setError('Failed to delete livestock. Please try again.');
+    } finally {
+      setIsDeleting(false);
     }
   };
   
@@ -323,14 +323,19 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
   const filterInputClass =
     'input w-full max-md:min-h-12 max-md:rounded-xl max-md:text-base [font-size:16px]';
 
+  const noLivestockYet = livestock.length === 0;
   const emptyListMessage = (
     <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50/80 px-4 py-12 text-center dark:border-gray-600 dark:bg-gray-900/40">
       <div className="text-5xl mb-3" aria-hidden>
         🐄
       </div>
-      <h3 className="text-base font-semibold text-gray-900 dark:text-white">No livestock found</h3>
+      <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+        {noLivestockYet ? 'No livestock yet' : 'No livestock match your filters'}
+      </h3>
       <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-        Try adjusting your filters or add animals to get started.
+        {noLivestockYet
+          ? 'Add your first animals to start tracking your herd.'
+          : 'Try adjusting your filters or search.'}
       </p>
       <Link
         href={farmPath('/dashboard/livestock/add')}
@@ -737,8 +742,22 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
                   <td colSpan={7} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                     <div className="text-center text-gray-500 py-12">
                       <div className="text-6xl mb-4">🐄</div>
-                      <h3 className="text-lg font-medium mb-2">No livestock found</h3>
-                      <p className="text-gray-400">Try adjusting your filters or add some livestock to get started.</p>
+                      <h3 className="text-lg font-medium mb-2">
+                        {noLivestockYet ? 'No livestock yet' : 'No livestock match your filters'}
+                      </h3>
+                      <p className="text-gray-400">
+                        {noLivestockYet
+                          ? 'Add your first animals to start tracking your herd.'
+                          : 'Try adjusting your filters or search.'}
+                      </p>
+                      <Link
+                        href={farmPath('/dashboard/livestock/add')}
+                        onClick={handleAddLivestock}
+                        className="btn btn-primary mt-4 inline-flex items-center justify-center gap-2"
+                      >
+                        <Plus className="h-4 w-4" strokeWidth={2} />
+                        Add livestock
+                      </Link>
                     </div>
                   </td>
                 </tr>
@@ -853,59 +872,15 @@ export default function LivestockPage({ params }: { params: { farmId: string } }
         limit={subscription.livestockLimit ?? 5}
         currentCount={totalAnimals}
       />
-      <AddLivestockModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        farmId={farmId}
-        onSuccess={async () => {
-          try {
-            const response = await apiClient.getLivestock(farmId);
-            if (response.success) {
-              setLivestock(response.data || []);
-            }
-          } catch (err) {
-            console.error('Error refreshing livestock:', err);
-          }
-        }}
-      />
-
-      {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-4" role="dialog" aria-modal="true" aria-labelledby="delete-livestock-title">
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/50 dark:bg-black/60"
-            aria-label="Dismiss"
-            onClick={() => setDeleteConfirm(null)}
-          />
-          <div className="relative w-full max-w-md rounded-t-3xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-800 md:rounded-2xl">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/70">
-              <Trash2 className="h-6 w-6 text-red-600 dark:text-red-400" strokeWidth={2} />
-            </div>
-            <h3 id="delete-livestock-title" className="mt-4 text-center text-lg font-semibold text-gray-900 dark:text-white">
-              Delete livestock?
-            </h3>
-            <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-              This cannot be undone. The animal record will be removed from your farm.
-            </p>
-            <div className="mt-6 flex flex-col gap-2 sm:flex-row-reverse sm:justify-center">
-              <button
-                type="button"
-                onClick={() => handleDeleteLivestock(deleteConfirm)}
-                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-red-600 px-4 text-sm font-semibold text-white active:scale-[0.98] dark:bg-red-500 sm:w-auto sm:min-w-[8rem]"
-              >
-                Delete
-              </button>
-              <button
-                type="button"
-                onClick={() => setDeleteConfirm(null)}
-                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-gray-300 bg-white px-4 text-sm font-semibold text-gray-800 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 sm:w-auto sm:min-w-[8rem]"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {deleteConfirm ? (
+        <ConfirmDeleteDialog
+          title={`Delete ${livestock.find((item) => item._id === deleteConfirm)?.name || 'livestock'}?`}
+          body="This cannot be undone. The animal record will be removed from your farm."
+          isWorking={isDeleting}
+          onClose={() => setDeleteConfirm(null)}
+          onDelete={() => void handleDeleteLivestock(deleteConfirm)}
+        />
+      ) : null}
     </div>
   );
 }

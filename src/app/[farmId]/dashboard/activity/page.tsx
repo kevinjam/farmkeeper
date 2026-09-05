@@ -30,6 +30,7 @@ import {
   filterActivities,
   formatRelativeTime,
   getActivityCategory,
+  getActivityHref,
   getActivityLabel,
   groupActivitiesByDate,
 } from '@/lib/activity';
@@ -71,7 +72,7 @@ function getTimelineTone(type: ActivityType): {
       Icon: TrendingDown,
     };
   }
-  if (type === 'income_recorded' || type === 'egg_sale') {
+  if (type === 'income_recorded' || type === 'egg_sale' || type === 'crop_sale') {
     return {
       node: 'bg-sky-500 text-white ring-sky-500/30',
       badge: 'bg-sky-500/15 text-sky-700 dark:text-sky-300',
@@ -287,6 +288,7 @@ export default function ActivityPage({ params }: { params: { farmId: string } })
                   {group.items.map((item) => {
                     const tone = getTimelineTone(item.activityType);
                     const NodeIcon = tone.Icon;
+                    const href = getActivityHref(item);
                     return (
                       <li key={item._id} className="relative flex gap-3 sm:gap-4">
                         <div
@@ -308,9 +310,18 @@ export default function ActivityPage({ params }: { params: { farmId: string } })
                                   {formatRelativeTime(item.createdAt)}
                                 </time>
                               </div>
-                              <p className="mt-2 text-[15px] font-semibold leading-snug text-gray-900 dark:text-white">
-                                {item.description}
-                              </p>
+                              {href ? (
+                                <Link
+                                  href={farmPath(href)}
+                                  className="mt-2 block text-[15px] font-semibold leading-snug text-gray-900 hover:text-primary-700 dark:text-white"
+                                >
+                                  {item.description}
+                                </Link>
+                              ) : (
+                                <p className="mt-2 text-[15px] font-semibold leading-snug text-gray-900 dark:text-white">
+                                  {item.description}
+                                </p>
+                              )}
                               <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
                                 <span className="inline-flex h-1.5 w-1.5 rounded-full bg-primary-500" />
                                 <span>{item.user?.name || 'Farm team'}</span>

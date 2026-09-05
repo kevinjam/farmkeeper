@@ -42,7 +42,7 @@ function PaddleCheckoutContent() {
         const token = res.data?.paddleClientToken;
         const env = res.data?.paddleEnvironment === 'production' ? 'production' : 'sandbox';
         if (!token) {
-          setError('Paddle checkout is not configured.');
+          setError('Card checkout is not available right now.');
           return;
         }
         setConfig({ token, env });
@@ -76,7 +76,7 @@ function PaddleCheckoutContent() {
         },
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to open Paddle checkout');
+      setError(err instanceof Error && !/paddle/i.test(err.message) ? err.message : 'Could not open checkout. Return to billing and try again.');
     }
   }, [ready, config, transactionId]);
 

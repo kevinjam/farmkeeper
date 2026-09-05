@@ -1,3 +1,5 @@
+import { BASELINE_FEATURES } from '@/lib/features';
+
 export type PlanId = 'free' | 'farmer' | 'premium';
 export type PaidPlanId = 'farmer' | 'premium';
 export type SubscriptionStatusValue = 'active' | 'expired' | 'canceled' | 'trial';
@@ -141,6 +143,23 @@ export function formatAmount(amount: number, currency = 'UGX') {
   return `${currency} ${amount.toLocaleString()}`;
 }
 
+export function formatPaymentMethod(method?: string) {
+  switch ((method || '').toLowerCase()) {
+    case 'card':
+      return 'Card';
+    case 'mobile_money':
+      return 'Mobile money';
+    case 'ussd':
+      return 'USSD';
+    case 'paddle':
+      return 'Card';
+    case 'flutterwave':
+      return 'Mobile money';
+    default:
+      return method ? method.replace(/_/g, ' ') : '—';
+  }
+}
+
 export function normalizeSubscriptionStatus(data: Record<string, unknown>): SubscriptionStatus {
   const rawPlan = String(data.plan || 'free');
   const plan = normalizePlanId(rawPlan);
@@ -155,7 +174,7 @@ export function normalizeSubscriptionStatus(data: Record<string, unknown>): Subs
     rawPlan,
     subscriptionStatus,
     livestockLimit: (data.livestockLimit as number | null) ?? null,
-    features: (data.features as string[]) || [],
+    features: Array.from(new Set([...((data.features as string[]) || []), ...BASELINE_FEATURES])),
     trialStartDate: data.trialStartDate as string | undefined,
     subscriptionStartDate: data.subscriptionStartDate as string | undefined,
     subscriptionEndDate: data.subscriptionEndDate as string | undefined,

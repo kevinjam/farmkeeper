@@ -60,7 +60,7 @@ function loadPaddleScript(): Promise<void> {
     const existing = document.querySelector<HTMLScriptElement>('script[data-paddle-js]');
     if (existing) {
       existing.addEventListener('load', () => resolve());
-      existing.addEventListener('error', () => reject(new Error('Failed to load Paddle.js')));
+      existing.addEventListener('error', () => reject(new Error('Could not start secure checkout.')));
       return;
     }
     const script = document.createElement('script');
@@ -68,7 +68,7 @@ function loadPaddleScript(): Promise<void> {
     script.async = true;
     script.dataset.paddleJs = 'true';
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load Paddle.js'));
+    script.onerror = () => reject(new Error('Could not start secure checkout.'));
     document.body.appendChild(script);
   });
 }
@@ -79,7 +79,7 @@ async function openPaddleOverlay(opts: {
   environment: 'sandbox' | 'production';
 }): Promise<void> {
   await loadPaddleScript();
-  if (!window.Paddle) throw new Error('Paddle.js failed to initialize');
+  if (!window.Paddle) throw new Error('Could not start secure checkout.');
 
   window.Paddle.Environment.set(opts.environment);
   window.Paddle.Initialize({
@@ -217,7 +217,7 @@ export default function PaymentModal({
         const env =
           response.data.paddleEnvironment === 'production' ? 'production' : 'sandbox';
         if (!token) {
-          throw new Error('Paddle client token missing. Set PADDLE_CLIENT_TOKEN in backend .env');
+          throw new Error('Card checkout is unavailable. Try again in a moment.');
         }
         await openPaddleOverlay({
           transactionId: response.data.transactionId,
@@ -248,7 +248,8 @@ export default function PaymentModal({
 
       setPaymentStep('success');
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : 'Payment failed');
+      const raw = err instanceof Error ? err.message : 'Payment failed';
+      setErrorMessage(/paddle/i.test(raw) ? 'Could not start card checkout. Try again in a moment.' : raw);
       setPaymentStep('error');
     }
   };
@@ -280,7 +281,7 @@ export default function PaymentModal({
       {
         id: 'card' as const,
         title: 'Credit / debit card',
-        sub: isInternational ? 'Powered by Paddle' : 'Visa, Mastercard via Paddle',
+        sub: isInternational ? 'Visa, Mastercard, Amex' : 'Visa, Mastercard',
         icon: isInternational ? Globe : CreditCard,
         hidden: !availableMethods.includes('card'),
       },
@@ -354,8 +355,7 @@ export default function PaymentModal({
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">Card payment</p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        International billing is in USD via Paddle. Mobile money is not available for
-                        your country.
+                        Billed in USD. Mobile money is not available in your country.
                       </p>
                     </div>
                   </div>
@@ -452,7 +452,7 @@ export default function PaymentModal({
           <div className="py-8 text-center">
             <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-primary-600" />
             <p className="font-semibold text-gray-900 dark:text-white">
-              {paymentMethod === 'card' ? 'Complete checkout in the Paddle window' : 'Waiting for payment'}
+              {paymentMethod === 'card' ? 'Complete checkout in the secure window' : 'Waiting for payment'}
             </p>
             <p className="mt-2 text-sm text-gray-500">
               {paymentMethod === 'card'

@@ -25,6 +25,7 @@ import {
   FarmActivity,
   formatRelativeTime,
   getActivityCategory,
+  getActivityHref,
   getActivityLabel,
   groupActivitiesByDate,
 } from '@/lib/activity';
@@ -42,6 +43,8 @@ const ICONS: Record<string, typeof Activity> = {
 function getTypeIcon(type: ActivityType) {
   if (type === 'egg_collection') return Egg;
   if (type === 'egg_sale') return TrendingUp;
+  if (type === 'crop_harvested') return Sprout;
+  if (type === 'crop_sale') return TrendingUp;
   if (type === 'expense_added') return TrendingDown;
   if (type === 'income_recorded') return TrendingUp;
   if (type === 'livestock_added') return PlusCircle;
@@ -49,12 +52,11 @@ function getTypeIcon(type: ActivityType) {
   return ICONS[getActivityCategory(type)] || Activity;
 }
 
-function ActivityRow({ item }: { item: FarmActivity }) {
+function ActivityRow({ item, href }: { item: FarmActivity; href?: string | null }) {
   const category = getActivityCategory(item.activityType);
   const styles = ACTIVITY_STYLES[category] || ACTIVITY_STYLES.other;
   const Icon = getTypeIcon(item.activityType);
-
-  return (
+  const content = (
     <div className="flex gap-3 px-4 py-3.5 md:px-4 md:py-4">
       <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${styles.iconWrap}`}>
         <Icon className="h-5 w-5" strokeWidth={2} />
@@ -75,6 +77,15 @@ function ActivityRow({ item }: { item: FarmActivity }) {
       </div>
     </div>
   );
+
+  if (href) {
+    return (
+      <Link href={href} className="block hover:bg-gray-50 dark:hover:bg-gray-800/60">
+        {content}
+      </Link>
+    );
+  }
+  return content;
 }
 
 interface RecentActivityCardProps {
@@ -177,8 +188,22 @@ export default function RecentActivityCard({
             </div>
             <p className="text-base font-semibold text-gray-900 dark:text-white">No activity yet</p>
             <p className="mx-auto mt-1 max-w-xs text-sm text-gray-500 dark:text-gray-400">
-              Add livestock, record eggs, or log expenses — updates will show up here automatically.
+              Add a crop or livestock so your farm activity starts showing up here.
             </p>
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
+              <Link
+                href={farmPath('/dashboard/crops/add')}
+                className="btn btn-primary inline-flex min-h-11 items-center justify-center"
+              >
+                Add crop
+              </Link>
+              <Link
+                href={farmPath('/dashboard/livestock/add')}
+                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-gray-300 px-4 text-sm font-semibold text-gray-800 dark:border-gray-600 dark:text-gray-100"
+              >
+                Add livestock
+              </Link>
+            </div>
           </div>
         ) : (
           <>
@@ -189,9 +214,10 @@ export default function RecentActivityCard({
                     {group.label}
                   </p>
                   <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                    {group.items.map((item) => (
-                      <ActivityRow key={item._id} item={item} />
-                    ))}
+                    {group.items.map((item) => {
+                      const path = getActivityHref(item);
+                      return <ActivityRow key={item._id} item={item} href={path ? farmPath(path) : null} />;
+                    })}
                   </div>
                 </div>
               ))}

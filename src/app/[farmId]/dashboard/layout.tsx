@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useParams, useRouter } from 'next/navigation';
 import {
@@ -14,19 +14,23 @@ import {
   BarChart3,
   Settings,
   Menu,
-  Plus,
   Sprout,
+  Wheat,
   Lock,
   Crown,
   LogOut,
   UserRound,
+  CircleHelp,
+  Search,
+  BookOpen,
 } from 'lucide-react';
 import { useTranslations } from '@/hooks/useTranslations';
 import { apiClient } from '@/lib/api';
 import { getCountryByCode, normalizeCountryCode } from '@/lib/countries';
-import { hasFeatureAccess, canAccessDashboardPath, getGatedFeatureForDashboardPath } from '@/lib/features';
+import { hasFeatureAccess, canAccessDashboardPath, getGatedFeatureForDashboardPath, BASELINE_FEATURES } from '@/lib/features';
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 import FeatureGate from '@/components/billing/FeatureGate';
+import QuickAddFab from '@/components/dashboard/QuickAddFab';
 import { PresenceHeartbeat } from '@/components/presence-heartbeat';
 import { normalizePlanId, PlanId } from '@/lib/billing';
 import {
@@ -37,118 +41,190 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-// Navigation items for sidebar with subscription requirements
-const getNavigationItems = (t: (key: string) => string) => [
+type NavItem = {
+  name: string;
+  href: string;
+  icon: ReactNode;
+  requiredFeatures: string[];
+};
+
+type NavSection = {
+  id: string;
+  label?: string;
+  pin?: 'bottom';
+  items: NavItem[];
+};
+
+/** Sidebar grouped by farm work, not by app modules. */
+const getNavigationSections = (t: (key: string) => string): NavSection[] => [
   {
-    name: t('navigation.dashboard'),
-    href: '/dashboard',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-      </svg>
-    ),
-    requiredFeatures: [], // Available to all
+    id: 'home',
+    items: [
+      {
+        name: t('navigation.dashboard'),
+        href: '/dashboard',
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+        ),
+        requiredFeatures: [],
+      },
+    ],
   },
   {
-    name: t('navigation.livestock'),
-    href: '/dashboard/livestock',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-      </svg>
-    ),
-    requiredFeatures: ['livestock'], // Available to all plans
+    id: 'animals',
+    label: t('navigation.sectionAnimals'),
+    items: [
+      {
+        name: t('navigation.livestock'),
+        href: '/dashboard/livestock',
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+        ),
+        requiredFeatures: ['livestock'],
+      },
+      {
+        name: t('navigation.feedManagement'),
+        href: '/dashboard/feed',
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h18v18H3zM8 8h.01M12 8h.01M16 8h.01M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01" />
+          </svg>
+        ),
+        requiredFeatures: ['feed_management'],
+      },
+      {
+        name: t('navigation.eggsSales'),
+        href: '/dashboard/eggs',
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+          </svg>
+        ),
+        requiredFeatures: ['eggs_sales'],
+      },
+    ],
   },
   {
-    name: t('navigation.tasks'),
-    href: '/dashboard/tasks',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-      </svg>
-    ),
-    requiredFeatures: [],
+    id: 'crops',
+    label: t('navigation.sectionCrops'),
+    items: [
+      {
+        name: t('navigation.crops'),
+        href: '/dashboard/crops',
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4M8 16H4M8 8H4M12.5 4.2c.4.2.8.4 1.2.8L16 7.5l3-2.9c.7-.7 1.7-1.1 2.7-.7 1 .4 1.6 1.1 1.8 2.1.2 1-.1 2-.8 2.6L19.5 12l3.2 3.4c.7.7 1 1.7.8 2.6-.2 1-.8 1.8-1.8 2.1-1 .4-2 0-2.7-.7L16 16.5l-2.3 2.5c-.4.4-.8.6-1.2.8" />
+          </svg>
+        ),
+        requiredFeatures: ['crops'],
+      },
+      {
+        name: t('navigation.harvests'),
+        href: '/dashboard/harvests',
+        icon: <Wheat className="h-6 w-6" />,
+        requiredFeatures: ['crops'],
+      },
+    ],
   },
   {
-    name: t('navigation.crops'),
-    href: '/dashboard/crops',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4M8 16H4M8 8H4M12.5 4.2c.4.2.8.4 1.2.8L16 7.5l3-2.9c.7-.7 1.7-1.1 2.7-.7 1 .4 1.6 1.1 1.8 2.1.2 1-.1 2-.8 2.6L19.5 12l3.2 3.4c.7.7 1 1.7.8 2.6-.2 1-.8 1.8-1.8 2.1-1 .4-2 0-2.7-.7L16 16.5l-2.3 2.5c-.4.4-.8.6-1.2.8" />
-      </svg>
-    ),
-    requiredFeatures: ['crops'], // Available to all plans
+    id: 'work',
+    label: t('navigation.sectionWork'),
+    items: [
+      {
+        name: t('navigation.tasks'),
+        href: '/dashboard/tasks',
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+          </svg>
+        ),
+        requiredFeatures: [],
+      },
+      {
+        name: t('navigation.weather'),
+        href: '/dashboard/weather',
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+          </svg>
+        ),
+        requiredFeatures: ['weather'],
+      },
+    ],
   },
   {
-    name: t('navigation.finances'),
-    href: '/dashboard/finances',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-    requiredFeatures: ['finances'],
+    id: 'money',
+    label: t('navigation.sectionMoney'),
+    items: [
+      {
+        name: t('navigation.finances'),
+        href: '/dashboard/finances',
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        ),
+        requiredFeatures: ['finances'],
+      },
+      {
+        name: t('navigation.profitability'),
+        href: '/dashboard/profitability',
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+          </svg>
+        ),
+        requiredFeatures: ['finances'],
+      },
+      {
+        name: t('navigation.analytics'),
+        href: '/dashboard/analytics',
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        ),
+        requiredFeatures: ['analytics'],
+      },
+    ],
   },
   {
-    name: t('navigation.feedManagement'),
-    href: '/dashboard/feed',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h18v18H3zM8 8h.01M12 8h.01M16 8h.01M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01" />
-      </svg>
-    ),
-    requiredFeatures: ['feed_management'],
-  },
-  {
-    name: t('navigation.eggsSales'),
-    href: '/dashboard/eggs',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-      </svg>
-    ),
-    requiredFeatures: ['eggs_sales'],
-  },
-  {
-    name: t('navigation.weather'),
-    href: '/dashboard/weather',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-      </svg>
-    ),
-    requiredFeatures: ['weather'], // Available to all plans
-  },
-  {
-    name: t('navigation.analytics'),
-    href: '/dashboard/analytics',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-      </svg>
-    ),
-    requiredFeatures: ['analytics'],
-  },
-  {
-    name: t('navigation.planBilling'),
-    href: '/dashboard/billing',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-      </svg>
-    ),
-    requiredFeatures: [],
-  },
-  {
-    name: t('navigation.settings'),
-    href: '/dashboard/settings',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    ),
-    requiredFeatures: ['settings'], // Available to all plans
+    id: 'account',
+    label: t('navigation.sectionAccount'),
+    pin: 'bottom',
+    items: [
+      {
+        name: t('navigation.helpSupport'),
+        href: '/dashboard/help',
+        icon: <CircleHelp className="h-6 w-6" />,
+        requiredFeatures: [],
+      },
+      {
+        name: t('navigation.planBilling'),
+        href: '/dashboard/billing',
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+          </svg>
+        ),
+        requiredFeatures: [],
+      },
+      {
+        name: t('navigation.settings'),
+        href: '/dashboard/settings',
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        ),
+        requiredFeatures: ['settings'],
+      },
+    ],
   },
 ];
 
@@ -182,17 +258,82 @@ function ProfileAvatar({
   );
 }
 
+function HelpHeaderMenu({
+  helpHref,
+  label,
+}: {
+  helpHref: string;
+  label: string;
+}) {
+  const pathname = usePathname();
+  const itemClass =
+    'cursor-pointer rounded-lg px-3 py-2.5 focus:bg-gray-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500 dark:focus:bg-gray-800';
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label={label}
+          aria-haspopup="menu"
+          title={label}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+        >
+          <CircleHelp className="h-5 w-5" aria-hidden />
+          <span className="sr-only">{label}</span>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        sideOffset={8}
+        aria-labelledby="help-menu-heading"
+        className="w-64 rounded-xl border border-gray-200 bg-white p-0 shadow-lg dark:border-gray-700 dark:bg-gray-900"
+      >
+        <div className="border-b border-gray-100 px-4 py-3 dark:border-gray-800">
+          <p id="help-menu-heading" className="text-sm font-semibold text-gray-900 dark:text-white">
+            How can we help?
+          </p>
+        </div>
+        <div className="p-1.5" role="none">
+          <DropdownMenuItem asChild className={itemClass}>
+            <Link href={`${helpHref}?section=search`} className="flex items-center gap-2.5">
+              <Search className="h-4 w-4 text-gray-500" aria-hidden />
+              <span>Search Help</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild className={itemClass}>
+            <Link href={`${helpHref}?section=support&from=${encodeURIComponent(pathname)}`} className="flex items-center gap-2.5">
+              <CircleHelp className="h-4 w-4 text-gray-500" aria-hidden />
+              <span>Get Support</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild className={itemClass}>
+            <Link href={`${helpHref}?section=learn`} className="flex items-center gap-2.5">
+              <BookOpen className="h-4 w-4 text-gray-500" aria-hidden />
+              <span>Learn FarmKeeper</span>
+            </Link>
+          </DropdownMenuItem>
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 function UserProfileMenu({
   name,
   email,
   image,
   profileHref,
+  helpHref,
+  helpLabel,
   size = 'md',
 }: {
   name: string;
   email: string;
   image?: string;
   profileHref: string;
+  helpHref: string;
+  helpLabel: string;
   size?: 'sm' | 'md';
 }) {
   return (
@@ -231,6 +372,12 @@ function UserProfileMenu({
             <Link href={profileHref} className="flex items-center gap-2.5">
               <UserRound className="h-4 w-4 text-gray-500" />
               <span>Profile settings</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild className="cursor-pointer rounded-lg px-3 py-2.5">
+            <Link href={helpHref} className="flex items-center gap-2.5">
+              <CircleHelp className="h-4 w-4 text-gray-500" />
+              <span>{helpLabel}</span>
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator className="my-1 bg-gray-100 dark:bg-gray-800" />
@@ -287,11 +434,15 @@ export default function DashboardLayout({
   const isDashboardHome =
     pathnameWithoutLocale === `/${farmId}/dashboard` ||
     pathnameWithoutLocale === `/${farmId}/dashboard/`;
+  const isHelpRoute = pathnameWithoutLocale.includes(`/${farmId}/dashboard/help`);
+  const isBillingRoute = pathnameWithoutLocale.includes(`/${farmId}/dashboard/billing`);
+  const isFillRoute = isHelpRoute || isBillingRoute;
 
   const features = subscriptionStatus?.features ?? [];
   const unlockAll = subscriptionStatus?.unlockAllFeatures ?? false;
   // Show every module; locked ones stay visible with a soft lock (upsell path).
-  const navItems = getNavigationItems(t);
+  const navSections = getNavigationSections(t);
+  const navItems = navSections.flatMap((section) => section.items);
   const gatedFeature = subscriptionStatus
     ? getGatedFeatureForDashboardPath(pathnameWithoutLocale, farmId)
     : null;
@@ -300,7 +451,6 @@ export default function DashboardLayout({
       gatedFeature &&
       !canAccessDashboardPath(pathnameWithoutLocale, farmId, features, unlockAll)
   );
-  const canRecordEggs = hasFeatureAccess(features, 'eggs_sales', unlockAll);
   const analyticsLocked = !hasFeatureAccess(features, 'analytics', unlockAll);
   const showUnlockPremium =
     subscriptionStatus !== null &&
@@ -309,6 +459,8 @@ export default function DashboardLayout({
   const isUgandaFarm = getCountryByCode(farmCountryCode).paymentRegion === 'uganda';
   const farmerStartPrice = isUgandaFarm ? 'UGX 3,500' : '$2';
   const profileHref = `${buildFarmPath(farmId, '/dashboard/settings', locale)}?tab=profile`;
+  const helpHref = buildFarmPath(farmId, '/dashboard/help', locale);
+  const helpLabel = t('navigation.helpSupport');
   const billingPlansHref = `${buildFarmPath(farmId, '/dashboard/billing', locale)}?tab=plans`;
 
   const mobileNavItems = [
@@ -353,7 +505,7 @@ export default function DashboardLayout({
         const data = response.data;
         setSubscriptionStatus({
           plan: normalizePlanId(data.rawPlan || data.plan || 'free'),
-          features: data.features || [],
+          features: Array.from(new Set([...(data.features || []), ...BASELINE_FEATURES])),
           livestockLimit: data.livestockLimit ?? null,
           unlockAllFeatures: Boolean(data.unlockAllFeatures),
           daysLeft: data.daysLeft ?? 0,
@@ -501,18 +653,70 @@ export default function DashboardLayout({
   };
 
   const visibleMobileNavItems = mobileNavItems;
+  const mainSections = navSections.filter((section) => section.pin !== 'bottom');
+  const accountSection = navSections.find((section) => section.pin === 'bottom');
+
+  const renderSidebarLink = (item: NavItem, compact = false) => {
+    const fullHref = buildFarmPath(farmId, item.href, locale);
+    const farmPath = `/${farmId}${item.href}`;
+    const isDashboardRoot = item.href === '/dashboard';
+    const isActive = isDashboardRoot
+      ? pathnameWithoutLocale === farmPath
+      : pathnameWithoutLocale === farmPath ||
+        pathnameWithoutLocale.startsWith(`${farmPath}/`);
+    const isLocked =
+      subscriptionStatus !== null &&
+      !hasFeatureAccess(features, item.requiredFeatures, unlockAll);
+    return (
+      <Link
+        key={item.href}
+        href={fullHref}
+        className={`flex items-center rounded-md text-sm font-medium ${
+          compact ? 'px-2 py-1.5' : 'min-h-11 px-2 py-2 lg:min-h-0'
+        } ${
+          isLocked
+            ? isActive
+              ? 'bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200'
+              : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/60'
+            : isActive
+              ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300'
+              : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+        }`}
+        aria-current={isActive ? 'page' : undefined}
+        aria-disabled={isLocked || undefined}
+        title={isLocked ? 'Included on a higher plan — tap to upgrade' : undefined}
+        onClick={() => setIsSidebarOpen(false)}
+      >
+        <div
+          className={`mr-3 [&_svg]:h-5 [&_svg]:w-5 ${
+            isLocked
+              ? 'text-gray-400 dark:text-gray-500'
+              : isActive
+                ? 'text-primary-600 dark:text-primary-400'
+                : ''
+          }`}
+        >
+          {item.icon}
+        </div>
+        <span className="flex-1 truncate">{item.name}</span>
+        {isLocked ? (
+          <Lock className="ml-2 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
+        ) : null}
+      </Link>
+    );
+  };
 
   return (
     <SubscriptionProvider value={subscriptionContextValue}>
     <PresenceHeartbeat />
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className={`${isFillRoute ? 'h-dvh overflow-hidden' : 'min-h-screen'} bg-gray-50 dark:bg-gray-900`}>
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-lg transform ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-white dark:bg-gray-800 shadow-lg transform ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } transition-transform duration-300 ease-in-out lg:translate-x-0`}
       >
-        <div className="flex items-center justify-between px-4 py-5 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-4 py-3.5 dark:border-gray-700">
           <div className="flex items-center">
             <div className="h-8 w-8 bg-primary-600 rounded-md flex items-center justify-center">
               <span className="text-white font-bold">FK</span>
@@ -529,65 +733,42 @@ export default function DashboardLayout({
             </svg>
           </button>
         </div>
-        
-        <div className="px-4 py-4">
+
+        <div className="shrink-0 px-4 py-2">
           <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400">FARM</h2>
           <h3 className="text-base font-semibold text-primary-600 truncate">{farmName}</h3>
         </div>
-        
-        <nav className="px-4 py-2 space-y-1 overflow-y-auto max-h-[calc(100vh-13rem)]">
-          {navItems.map((item) => {
-            const fullHref = buildFarmPath(farmId, item.href, locale);
-            const farmPath = `/${farmId}${item.href}`;
-            const isDashboardRoot = item.href === '/dashboard';
-            const isActive = isDashboardRoot
-              ? pathnameWithoutLocale === farmPath
-              : pathnameWithoutLocale === farmPath ||
-                pathnameWithoutLocale.startsWith(`${farmPath}/`);
-            const isLocked =
-              subscriptionStatus !== null &&
-              !hasFeatureAccess(features, item.requiredFeatures, unlockAll);
-            return (
-              <div key={item.name}>
-                <Link
-                  href={fullHref}
-                  className={`flex items-center px-2 py-2 rounded-md text-sm font-medium ${
-                    isLocked
-                      ? isActive
-                        ? 'bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200'
-                        : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/60'
-                      : isActive
-                        ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300'
-                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
-                  }`}
-                  aria-current={isActive ? 'page' : undefined}
-                  aria-disabled={isLocked || undefined}
-                  title={isLocked ? 'Included on a higher plan — tap to upgrade' : undefined}
-                  onClick={() => setIsSidebarOpen(false)}
-                >
-                  <div
-                    className={`mr-3 ${
-                      isLocked
-                        ? 'text-gray-400 dark:text-gray-500'
-                        : isActive
-                          ? 'text-primary-600 dark:text-primary-400'
-                          : ''
-                    }`}
-                  >
-                    {item.icon}
-                  </div>
-                  <span className="flex-1 truncate">{item.name}</span>
-                  {isLocked && (
-                    <Lock className="ml-2 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
-                  )}
-                </Link>
-              </div>
-            );
-          })}
+
+        <nav
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-2 scrollbar-hide"
+          aria-label="Farm"
+        >
+          {mainSections.map((section) => (
+            <div key={section.id} className={section.label ? 'mt-3.5' : ''}>
+              {section.label ? (
+                <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                  {section.label}
+                </p>
+              ) : null}
+              <div className="space-y-1">{section.items.map((item) => renderSidebarLink(item))}</div>
+            </div>
+          ))}
         </nav>
-        
-        <div className="absolute bottom-0 w-full border-t border-gray-200 dark:border-gray-700">
-          <div className="px-4 py-4 flex items-center">
+
+        <div className="shrink-0 border-t border-gray-200 dark:border-gray-700">
+          {accountSection ? (
+            <div className="px-3 pt-3">
+              {accountSection.label ? (
+                <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                  {accountSection.label}
+                </p>
+              ) : null}
+              <div className="space-y-1">
+                {accountSection.items.map((item) => renderSidebarLink(item))}
+              </div>
+            </div>
+          ) : null}
+          <div className="px-4 py-3 flex items-center">
             <div className="h-8 w-8 overflow-hidden rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center ring-1 ring-primary-500/20">
               {userImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -624,14 +805,14 @@ export default function DashboardLayout({
         </div>
       </aside>
       
-      <div className="lg:pl-64 flex flex-col min-h-screen">
+      <div className={`lg:pl-64 flex flex-col ${isFillRoute ? 'h-full overflow-hidden' : 'min-h-screen'}`}>
         {/* Desktop / tablet header — unchanged */}
         <header className="hidden md:block sticky top-0 z-10 bg-white dark:bg-gray-800 shadow-sm border-b border-gray-100 dark:border-gray-700/80">
           <div className="px-3 sm:px-4 lg:px-5 py-4 flex justify-between items-center gap-3">
             <button
               type="button"
               onClick={() => setIsSidebarOpen(true)}
-              className="lg:hidden flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              className="lg:hidden flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
               aria-label="Open sidebar"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -660,11 +841,14 @@ export default function DashboardLayout({
                   Unlock Premium
                 </Link>
               )}
+              <HelpHeaderMenu helpHref={helpHref} label={helpLabel} />
               <UserProfileMenu
                 name={userName}
                 email={userEmail}
                 image={userImage}
                 profileHref={profileHref}
+                helpHref={helpHref}
+                helpLabel={helpLabel}
                 size="md"
               />
             </div>
@@ -676,7 +860,7 @@ export default function DashboardLayout({
           <button
             type="button"
             onClick={() => setIsSidebarOpen(true)}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-gray-700 dark:text-gray-200 active:scale-95 transition-transform"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-gray-700 dark:text-gray-200 active:scale-95 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
             aria-label="Open menu"
           >
             <Menu className="h-6 w-6" />
@@ -707,6 +891,8 @@ export default function DashboardLayout({
               email={userEmail}
               image={userImage}
               profileHref={profileHref}
+              helpHref={helpHref}
+              helpLabel={helpLabel}
               size="sm"
             />
           </div>
@@ -733,7 +919,13 @@ export default function DashboardLayout({
             </div>
           )}
 
-        <main className="flex-1 px-3 py-3 sm:px-4 sm:py-6 lg:px-5 lg:py-8 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
+        <main
+          className={
+            isFillRoute
+              ? 'flex min-h-0 flex-1 flex-col overflow-hidden p-3 max-md:overflow-y-auto max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]'
+              : 'flex-1 px-3 py-3 sm:px-4 sm:py-6 lg:px-5 lg:py-8 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]'
+          }
+        >
           {gatedFeature && !subscriptionStatus ? (
             <div className="flex items-center justify-center py-24 text-gray-500 dark:text-gray-400">
               Loading…
@@ -786,16 +978,10 @@ export default function DashboardLayout({
           })}
         </nav>
 
-        {/* FAB — dashboard home only, mobile */}
-        {isDashboardHome && canRecordEggs && (
-          <Link
-            href={buildFarmPath(farmId, '/dashboard/eggs/record', locale)}
-            className="md:hidden fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary-600 text-white shadow-lg shadow-primary-600/35 ring-1 ring-white/20 active:scale-95 transition-transform"
-            aria-label="Add record"
-          >
-            <Plus className="h-7 w-7" strokeWidth={2.5} />
-          </Link>
-        )}
+        {/* FAB — dashboard home, mobile */}
+        {isDashboardHome ? (
+          <QuickAddFab farmId={farmId} locale={locale} features={features} unlockAll={unlockAll} />
+        ) : null}
       </div>
     </div>
     </SubscriptionProvider>

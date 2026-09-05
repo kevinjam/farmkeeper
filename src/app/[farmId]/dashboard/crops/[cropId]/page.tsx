@@ -1,73 +1,72 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Archive, Coffee, Pencil, Sprout, Trash2 } from 'lucide-react';
+import CropActivitiesPanel from '@/components/crops/CropActivitiesPanel';
+import CropExpensesPanel from '@/components/crops/CropExpensesPanel';
+import CropHarvestSalesPanel from '@/components/crops/CropHarvestSalesPanel';
+import CropInsightsPanel from '@/components/crops/CropInsightsPanel';
+import CropProfitabilityPanel from '@/components/crops/CropProfitabilityPanel';
+import CropRemoveDialog from '@/components/crops/CropRemoveDialog';
+import { CROP_NOTICE, NoticeBanner, setFlashNotice, useFlashNotice } from '@/components/NoticeBanner';
 import { apiClient } from '@/lib/api';
+import { formatCropActivityDate } from '@/lib/cropActivities';
 import { useFarmPaths } from '@/hooks/useFarmPaths';
-import { formatCropTypeLabel } from '@/lib/crops';
+import {
+  cropFieldName,
+  cropPlantingDate,
+  cropStatusBadgeClass,
+  formatCropArea,
+  formatCropDate,
+  formatCropStatusLabel,
+  formatCropTypeLabel,
+  type CropRecord,
+} from '@/lib/crops';
 
-interface Crop {
-  _id: string;
-  name: string;
-  cropType: string;
-  variety?: string;
-  area: number;
-  areaUnit: string;
-  status: string;
-  plantedDate?: string;
-  expectedHarvestDate?: string;
-  actualHarvestDate?: string;
-  yield?: number;
-  yieldUnit?: string;
-  location?: string;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-function getStatusColor(status: string) {
-  switch (status) {
-    case 'growing':
-      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/70 dark:text-emerald-200';
-    case 'harvested':
-      return 'bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-100';
-    case 'planted':
-      return 'bg-sky-100 text-sky-900 dark:bg-sky-900/60 dark:text-sky-100';
-    case 'failed':
-      return 'bg-red-100 text-red-800 dark:bg-red-900/70 dark:text-red-200';
-    default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-  }
-}
-
-function formatDate(dateString?: string) {
-  if (!dateString) return 'Not set';
-  return new Date(dateString).toLocaleDateString('en-UG', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+function MetaCell({
+  label,
+  children,
+  className = '',
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`bg-white px-3 py-2.5 dark:bg-gray-800 ${className}`}>
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        {label}
+      </p>
+      <div className="mt-0.5 truncate text-sm font-semibold text-gray-900 dark:text-white">
+        {children}
+      </div>
+    </div>
+  );
 }
 
 export default function CropView({ params }: { params: { farmId: string; cropId: string } }) {
   const { farmId, cropId } = params;
   const router = useRouter();
   const { farmPath } = useFarmPaths(farmId);
-  const [crop, setCrop] = useState<Crop | null>(null);
+  const [crop, setCrop] = useState<CropRecord | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [removeOpen, setRemoveOpen] = useState(false);
+  const [isWorking, setIsWorking] = useState(false);
+  const [activityStats, setActivityStats] = useState<{ count: number; lastDate: string | null } | null>(null);
+  const { message: notice, setMessage: setNotice, clear: clearNotice } = useFlashNotice();
 
-  const fetchCrop = async () => {
+  const fetchCrop = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await apiClient.getCrop(farmId, cropId);
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Crop not found');
       }
-      setCrop(response.data as Crop);
+      setCrop(response.data as CropRecord);
       setError(null);
     } catch (err) {
       console.error('Error fetching crop:', err);
@@ -76,34 +75,57 @@ export default function CropView({ params }: { params: { farmId: string; cropId:
     } finally {
       setIsLoading(false);
     }
+  }, [farmId, cropId]);
+
+  const handleArchive = async (archived: boolean) => {
+    try {
+      setIsWorking(true);
+      setActionError(null);
+      const response = await apiClient.updateCrop(farmId, cropId, { archived });
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to update crop');
+      }
+      setCrop((prev) => (prev ? { ...prev, archived } : prev));
+      setRemoveOpen(false);
+      setNotice(archived ? CROP_NOTICE.archived : CROP_NOTICE.restored);
+    } catch (err) {
+      console.error('Error updating crop:', err);
+      setActionError(err instanceof Error ? err.message : 'Failed to update crop');
+    } finally {
+      setIsWorking(false);
+    }
   };
 
   const handleDelete = async () => {
     try {
-      setIsDeleting(true);
+      setIsWorking(true);
+      setActionError(null);
       const response = await apiClient.deleteCrop(farmId, cropId);
       if (!response.success) {
         throw new Error(response.error || 'Failed to delete crop');
       }
+      setFlashNotice(CROP_NOTICE.deleted);
       router.push(farmPath('/dashboard/crops'));
     } catch (err) {
       console.error('Error deleting crop:', err);
-      setError(err instanceof Error ? err.message : 'Failed to delete crop');
-      setIsDeleting(false);
-      setDeleteConfirm(false);
+      setActionError(err instanceof Error ? err.message : 'Failed to delete crop');
+      setIsWorking(false);
+      setRemoveOpen(false);
     }
   };
 
   useEffect(() => {
     void fetchCrop();
-  }, [farmId, cropId]);
+  }, [fetchCrop]);
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-4xl py-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 w-1/3 rounded bg-gray-200 dark:bg-gray-700" />
-          <div className="h-48 rounded-xl bg-gray-200 dark:bg-gray-700" />
+      <div className="flex flex-col gap-3 max-md:pb-[calc(6rem+env(safe-area-inset-bottom))] md:py-2">
+        <div className="h-4 w-28 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+        <div className="h-36 animate-pulse rounded-xl bg-gray-200 dark:bg-gray-700" />
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
+          <div className="h-64 animate-pulse rounded-xl bg-gray-200 dark:bg-gray-700 lg:col-span-8" />
+          <div className="hidden h-40 animate-pulse rounded-xl bg-gray-200 dark:bg-gray-700 lg:col-span-4 lg:block" />
         </div>
       </div>
     );
@@ -111,7 +133,7 @@ export default function CropView({ params }: { params: { farmId: string; cropId:
 
   if (error || !crop) {
     return (
-      <div className="mx-auto max-w-4xl py-8">
+      <div className="max-md:mt-2 max-md:pb-[calc(6rem+env(safe-area-inset-bottom))] md:py-2">
         <div className="rounded-2xl border border-red-200 bg-red-50 p-5 dark:border-red-900/50 dark:bg-red-950/40">
           <p className="font-medium text-red-800 dark:text-red-200">{error || 'Crop not found'}</p>
           <div className="mt-4 flex gap-3">
@@ -127,136 +149,140 @@ export default function CropView({ params }: { params: { farmId: string; cropId:
     );
   }
 
-  return (
-    <div className="mx-auto max-w-4xl max-md:pb-8 md:py-2">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <Link
-            href={farmPath('/dashboard/crops')}
-            className="text-sm font-medium text-primary-600 hover:text-primary-800 dark:text-primary-400"
-          >
-            ← Back to crops
-          </Link>
-          <h1 className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{crop.name}</h1>
-          {crop.variety ? <p className="text-gray-600 dark:text-gray-400">{crop.variety}</p> : null}
-        </div>
-        <div className="flex gap-2">
-          <Link
-            href={farmPath(`/dashboard/crops/${cropId}/edit`)}
-            className="inline-flex min-h-11 items-center rounded-xl bg-primary-600 px-4 text-sm font-semibold text-white"
-          >
-            Edit
-          </Link>
-          <button
-            type="button"
-            onClick={() => setDeleteConfirm(true)}
-            className="inline-flex min-h-11 items-center rounded-xl border border-red-300 bg-white px-4 text-sm font-semibold text-red-700 dark:border-red-700 dark:bg-gray-800 dark:text-red-300"
-          >
-            Delete
-          </button>
-        </div>
-      </div>
+  const TypeIcon = crop.cropType === 'coffee' ? Coffee : Sprout;
+  const fieldName = cropFieldName(crop);
+  const plantingDate = cropPlantingDate(crop);
+  const activityCount = activityStats?.count ?? crop.activityCount ?? 0;
+  const lastActivity = activityStats ? activityStats.lastDate : crop.lastActivityDate;
+  const typeBits = [formatCropTypeLabel(crop.cropType), crop.variety, formatCropArea(crop.area, crop.areaUnit)]
+    .filter(Boolean)
+    .join(' · ');
 
-      <div className="overflow-hidden rounded-2xl bg-white shadow dark:bg-gray-800">
-        <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Crop details</h2>
+  return (
+    <div className="flex flex-col gap-3 max-md:pb-[calc(9rem+env(safe-area-inset-bottom))] md:py-2">
+      {notice ? (
+        <NoticeBanner tone="success" onDismiss={clearNotice}>
+          {notice}
+        </NoticeBanner>
+      ) : null}
+      {actionError ? (
+        <NoticeBanner tone="error" onDismiss={() => setActionError(null)}>
+          {actionError}
+        </NoticeBanner>
+      ) : null}
+
+      <Link
+        href={farmPath('/dashboard/crops')}
+        className="w-fit text-sm font-medium text-primary-600 hover:text-primary-800 dark:text-primary-400"
+      >
+        ← Back to crops
+      </Link>
+
+      <div className="overflow-hidden bg-white shadow-md dark:bg-gray-800 md:rounded-xl md:shadow-lg max-md:rounded-2xl max-md:border max-md:border-gray-200/90 dark:max-md:border-gray-700/80">
+        <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-start sm:justify-between md:px-5">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
+              <TypeIcon className="h-5 w-5" strokeWidth={2} />
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="truncate text-lg font-bold text-gray-900 dark:text-white md:text-xl">
+                  {crop.name}
+                </h1>
+                <span
+                  className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${cropStatusBadgeClass(crop.status)}`}
+                >
+                  {formatCropStatusLabel(crop.status)}
+                </span>
+                {crop.archived ? (
+                  <span className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900 dark:bg-amber-900/60 dark:text-amber-100">
+                    Archived
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-0.5 truncate text-[13px] text-gray-500 dark:text-gray-400">{typeBits}</p>
+            </div>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2 max-sm:w-full">
+            <Link
+              href={farmPath(`/dashboard/crops/${cropId}/edit`)}
+              className="btn btn-primary inline-flex flex-1 items-center justify-center gap-1.5 max-md:min-h-11 max-md:rounded-xl max-md:px-3 sm:flex-none md:min-h-9"
+            >
+              <Pencil className="h-4 w-4" strokeWidth={2} />
+              Edit
+            </Link>
+            <button
+              type="button"
+              onClick={() => setRemoveOpen(true)}
+              className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border bg-white text-sm font-semibold hover:bg-gray-50 dark:bg-gray-700 dark:hover:bg-gray-600 max-md:min-h-11 max-md:px-3 sm:flex-none md:min-h-9 md:rounded-lg md:px-3 ${
+                crop.archived
+                  ? 'border-red-200 text-red-700 dark:border-red-900/50 dark:text-red-300'
+                  : 'border-amber-200 text-amber-800 dark:border-amber-800 dark:text-amber-200'
+              }`}
+            >
+              {crop.archived ? (
+                <Trash2 className="h-4 w-4" strokeWidth={2} />
+              ) : (
+                <Archive className="h-4 w-4" strokeWidth={2} />
+              )}
+              {crop.archived ? 'Remove' : 'Archive'}
+            </button>
+          </div>
         </div>
-        <div className="grid gap-6 p-6 md:grid-cols-3">
-          <div className="space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Basic</h3>
-            <div>
-              <p className="text-sm text-gray-500">Type</p>
-              <p className="font-medium capitalize text-gray-900 dark:text-white">{formatCropTypeLabel(crop.cropType)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Status</p>
-              <span className={`mt-1 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${getStatusColor(crop.status)}`}>
-                {crop.status}
-              </span>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Area</p>
-              <p className="font-medium text-gray-900 dark:text-white">
-                {crop.area} {crop.areaUnit}
-              </p>
-            </div>
-            {crop.location ? (
-              <div>
-                <p className="text-sm text-gray-500">Location</p>
-                <p className="font-medium text-gray-900 dark:text-white">{crop.location}</p>
-              </div>
-            ) : null}
-          </div>
-          <div className="space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Dates</h3>
-            <div>
-              <p className="text-sm text-gray-500">Planted</p>
-              <p className="font-medium text-gray-900 dark:text-white">{formatDate(crop.plantedDate)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Expected harvest</p>
-              <p className="font-medium text-gray-900 dark:text-white">{formatDate(crop.expectedHarvestDate)}</p>
-            </div>
-            {crop.actualHarvestDate ? (
-              <div>
-                <p className="text-sm text-gray-500">Actual harvest</p>
-                <p className="font-medium text-gray-900 dark:text-white">{formatDate(crop.actualHarvestDate)}</p>
-              </div>
-            ) : null}
-          </div>
-          <div className="space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Record</h3>
-            {crop.yield != null ? (
-              <div>
-                <p className="text-sm text-gray-500">Yield</p>
-                <p className="font-medium text-gray-900 dark:text-white">
-                  {crop.yield} {crop.yieldUnit || 'units'}
-                </p>
-              </div>
-            ) : null}
-            <div>
-              <p className="text-sm text-gray-500">Created</p>
-              <p className="font-medium text-gray-900 dark:text-white">{formatDate(crop.createdAt)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Last updated</p>
-              <p className="font-medium text-gray-900 dark:text-white">{formatDate(crop.updatedAt)}</p>
-            </div>
-          </div>
+
+        <div className="grid grid-cols-2 gap-px border-t border-gray-200 bg-gray-200 dark:border-gray-700 dark:bg-gray-700 lg:grid-cols-5">
+          <MetaCell label="Field">{fieldName || 'Not assigned'}</MetaCell>
+          <MetaCell label="Planting">{formatCropDate(plantingDate)}</MetaCell>
+          <MetaCell label="Harvest">{formatCropDate(crop.expectedHarvestDate)}</MetaCell>
+          <MetaCell label="Activities">{activityCount}</MetaCell>
+          <MetaCell label="Last activity" className="col-span-2 lg:col-span-1">
+            {activityCount ? formatCropActivityDate(lastActivity) : '—'}
+          </MetaCell>
         </div>
+
         {crop.notes ? (
-          <div className="border-t border-gray-200 px-6 py-5 dark:border-gray-700">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Notes</h3>
-            <p className="mt-2 whitespace-pre-wrap text-gray-900 dark:text-white">{crop.notes}</p>
+          <div className="border-t border-gray-200 px-4 py-2.5 dark:border-gray-700 md:px-5">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              Notes
+            </p>
+            <p className="mt-0.5 whitespace-pre-wrap text-sm leading-snug text-gray-700 dark:text-gray-300">
+              {crop.notes}
+            </p>
           </div>
         ) : null}
       </div>
 
-      {deleteConfirm ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
-          <div className="w-full max-w-md rounded-t-3xl bg-white p-6 shadow-xl dark:bg-gray-800 sm:rounded-2xl">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Delete {crop.name}?</h3>
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">This cannot be undone.</p>
-            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                disabled={isDeleting}
-                onClick={() => setDeleteConfirm(false)}
-                className="min-h-11 rounded-xl border border-gray-300 px-4 text-sm font-semibold dark:border-gray-600"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={isDeleting}
-                onClick={() => void handleDelete()}
-                className="min-h-11 rounded-xl bg-red-600 px-4 text-sm font-semibold text-white disabled:opacity-50"
-              >
-                {isDeleting ? 'Deleting…' : 'Delete'}
-              </button>
-            </div>
-          </div>
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-12 lg:items-start">
+        <div className="order-2 lg:order-1 lg:col-span-8">
+          <CropActivitiesPanel
+            farmId={farmId}
+            cropId={cropId}
+            cropName={crop.name}
+            onStatsChange={setActivityStats}
+          />
         </div>
+        <CropInsightsPanel
+          farmId={farmId}
+          cropId={cropId}
+          className="order-1 lg:order-2 lg:col-span-4"
+        />
+      </div>
+
+      <CropHarvestSalesPanel farmId={farmId} cropId={cropId} />
+      <CropProfitabilityPanel farmId={farmId} cropId={cropId} />
+      <CropExpensesPanel farmId={farmId} cropId={cropId} />
+
+      {removeOpen ? (
+        <CropRemoveDialog
+          cropName={crop.name}
+          archived={Boolean(crop.archived)}
+          isWorking={isWorking}
+          onClose={() => setRemoveOpen(false)}
+          onArchive={() => void handleArchive(true)}
+          onRestore={() => void handleArchive(false)}
+          onDelete={() => void handleDelete()}
+        />
       ) : null}
     </div>
   );

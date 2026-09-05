@@ -7,6 +7,8 @@ export type ActivityType =
   | 'crop_added'
   | 'crop_updated'
   | 'crop_harvested'
+  | 'crop_sale'
+  | 'crop_activity'
   | 'task_created'
   | 'task_completed'
   | 'expense_added'
@@ -20,6 +22,8 @@ export interface FarmActivity {
   activityType: ActivityType;
   description: string;
   createdAt: string;
+  entityId?: string;
+  entityType?: string;
   user?: { name?: string; email?: string };
   metadata?: {
     quantity?: number;
@@ -32,7 +36,7 @@ export interface FarmActivity {
 export const ACTIVITY_FILTER_TYPES: Record<Exclude<ActivityFilter, 'all'>, ActivityType[]> = {
   livestock: ['livestock_added', 'livestock_updated', 'livestock_deleted'],
   eggs: ['egg_collection', 'egg_sale'],
-  crops: ['crop_added', 'crop_updated', 'crop_harvested'],
+  crops: ['crop_added', 'crop_updated', 'crop_harvested', 'crop_sale', 'crop_activity'],
   finances: ['expense_added', 'income_recorded'],
   tasks: ['task_created', 'task_completed'],
 };
@@ -70,6 +74,10 @@ export function getActivityLabel(type: ActivityType): string {
       return 'Crop updated';
     case 'crop_harvested':
       return 'Harvest';
+    case 'crop_sale':
+      return 'Crop sale';
+    case 'crop_activity':
+      return 'Crop work';
     case 'task_created':
       return 'Task created';
     case 'task_completed':
@@ -173,4 +181,16 @@ export function groupActivitiesByDate(activities: FarmActivity[]) {
   return (['today', 'yesterday', 'this_week', 'older'] as const)
     .filter((key) => groups[key].length > 0)
     .map((key) => ({ key, label: DATE_GROUP_LABELS[key], items: groups[key] }));
+}
+
+export function getActivityHref(activity: FarmActivity): string | null {
+  const id = activity.entityId ? String(activity.entityId) : '';
+  if (!id) return null;
+  if (activity.activityType === 'crop_harvested') {
+    return `/dashboard/harvests/${id}`;
+  }
+  if (activity.activityType === 'crop_sale') {
+    return `/dashboard/harvests/sales/${id}`;
+  }
+  return null;
 }

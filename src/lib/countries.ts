@@ -63,7 +63,7 @@ export function getPricingForCountry(countryCode: string) {
     currency,
     paymentNote: isUganda
       ? 'Pay with MTN Mobile Money, Airtel Money, or card.'
-      : 'Pay securely with Visa, Mastercard, or Amex via Paddle.',
+      : 'Pay securely with Visa, Mastercard, or Amex.',
     plans: [
       {
         name: 'Free',

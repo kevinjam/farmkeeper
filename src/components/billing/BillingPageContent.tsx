@@ -28,6 +28,7 @@ import {
   FEATURE_LABELS,
   formatAmount,
   formatBillingDate,
+  formatPaymentMethod,
   getPlanLabel,
   getStatusBadge,
   getUpgradeTarget,
@@ -118,15 +119,15 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
   const paymentMethodsDisplay = useMemo(() => {
     if (billingMeta?.region === 'international') {
       return [
-        { title: 'Card (Paddle)', sub: 'Visa, Mastercard, Amex' },
-        { title: 'Secure checkout', sub: 'Encrypted by Paddle' },
+        { title: 'Card', sub: 'Visa, Mastercard, Amex' },
+        { title: 'Secure checkout', sub: 'Encrypted card payments' },
         { title: 'Global billing', sub: getCountryByCode(countryCode).name },
       ];
     }
     return [
       { title: 'MTN Mobile Money', sub: '*165*99#' },
       { title: 'Airtel Money', sub: '*185*99#' },
-      { title: 'Card (Paddle)', sub: 'Visa, Mastercard' },
+      { title: 'Card', sub: 'Visa, Mastercard' },
     ];
   }, [billingMeta?.region, countryCode]);
 
@@ -184,7 +185,7 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
 
   if (loading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
+      <div className="flex min-h-0 flex-1 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
       </div>
     );
@@ -192,8 +193,8 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
 
   if (error && !status) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-12 text-center">
-        <XCircle className="mx-auto h-12 w-12 text-red-500" />
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 text-center">
+        <XCircle className="h-12 w-12 text-red-500" />
         <p className="mt-4 font-medium text-red-600">{error}</p>
         <Button className="mt-6" onClick={() => refreshAll()}>
           Retry
@@ -203,28 +204,27 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
   }
 
   return (
-    <div className="max-md:pb-[calc(9rem+env(safe-area-inset-bottom))] md:mx-auto md:max-w-6xl md:px-6 md:py-8 lg:px-8">
-      {/* Hero */}
-      <div className="overflow-hidden bg-white shadow-md dark:bg-gray-800 md:rounded-2xl md:shadow-lg max-md:rounded-2xl max-md:border max-md:border-gray-200/90 dark:max-md:border-gray-700/80">
-        <div className="max-md:bg-gradient-to-br max-md:from-emerald-500/12 max-md:via-white max-md:to-white max-md:p-4 max-md:dark:from-emerald-500/12 max-md:dark:via-gray-800 max-md:dark:to-gray-800 md:p-8">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
-                <CreditCard className="h-6 w-6" />
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="shrink-0 overflow-hidden rounded-2xl border border-gray-200/90 bg-white shadow-sm dark:border-gray-700/80 dark:bg-gray-800">
+        <div className="bg-gradient-to-br from-emerald-500/12 via-white to-white px-4 py-3 dark:from-emerald-500/12 dark:via-gray-800 dark:to-gray-800 md:px-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
+                <CreditCard className="h-5 w-5" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white md:text-3xl">Plan &amp; billing</h1>
-                <p className="mt-0.5 text-[13px] text-gray-600 dark:text-gray-300 md:text-base">
+              <div className="min-w-0">
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white md:text-xl">Plan &amp; billing</h1>
+                <p className="truncate text-[13px] text-gray-600 dark:text-gray-300">
                   Manage your subscription, payments, and invoices in one place.
                 </p>
               </div>
             </div>
             {status && badge && (
-              <div className="flex items-center gap-2 md:flex-col md:items-end">
-                <StatusPill tone={badge.tone} label={badge.label} />
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+              <div className="flex shrink-0 items-center gap-2">
+                <p className="hidden text-sm text-gray-500 dark:text-gray-400 sm:block">
                   {getPlanLabel(status.plan)} plan
                 </p>
+                <StatusPill tone={badge.tone} label={badge.label} />
               </div>
             )}
           </div>
@@ -232,13 +232,14 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
       </div>
 
       {error && (
-        <div className="mx-3 mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300 md:mx-0 md:mt-4">
+        <div className="mt-3 shrink-0 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
           {error}
         </div>
       )}
 
+      <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-gray-200/90 bg-white shadow-sm dark:border-gray-700/80 dark:bg-gray-800">
       {/* Tabs */}
-      <div className="sticky top-0 z-10 mt-4 border-b border-gray-200 bg-gray-50/95 backdrop-blur dark:border-gray-800 dark:bg-gray-900/95 max-md:rounded-t-2xl max-md:border max-md:border-b-0 md:mt-6 md:rounded-t-2xl md:border md:border-b-0 md:bg-white md:dark:bg-gray-800">
+      <div className="shrink-0 border-b border-gray-200 dark:border-gray-700">
         <nav className="flex gap-1 overflow-x-auto p-2 scrollbar-hide" aria-label="Billing sections">
           {TABS.map((item) => {
             const Icon = item.icon;
@@ -263,10 +264,10 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
         </nav>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 max-md:rounded-b-2xl max-md:border max-md:border-t-0 max-md:shadow-md dark:max-md:border-gray-700/80 md:rounded-b-2xl md:border md:border-t-0 md:p-6 md:shadow-lg">
+      <div className={`min-h-0 flex-1 ${tab === 'plans' ? 'overflow-hidden p-3 md:p-4' : 'overflow-y-auto p-4 md:p-5'}`}>
         {/* Overview */}
         {tab === 'overview' && status && plans && (
-          <div className="space-y-4 p-4 md:space-y-6 md:p-0">
+          <div className="space-y-4">
             {(status.isTrialExpired ||
               (status.isFarmerTrial && status.daysLeft <= 7) ||
               (status.plan === 'free' && status.isTrialExpired)) && (
@@ -408,8 +409,8 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
                 </CardTitle>
                 <CardDescription>
                   {billingMeta?.region === 'international'
-                    ? 'International card payments via Paddle'
-                    : 'Uganda mobile money + card via Flutterwave & Paddle'}
+                    ? 'Visa, Mastercard, or Amex'
+                    : 'MTN, Airtel, or card'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-3 md:grid-cols-3">
@@ -426,49 +427,29 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
 
         {/* Plans */}
         {tab === 'plans' && status && plans && (
-          <div className="space-y-4 p-4 md:space-y-6 md:p-0">
-            {/* Current plan summary */}
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/30">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
-                    <Crown className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
-                      Your current plan
-                    </p>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">
-                      {plans[status.plan].name}
-                      {status.isFarmerTrial && (
-                        <span className="ml-2 text-sm font-medium text-emerald-700 dark:text-emerald-400">
-                          (free trial)
-                        </span>
-                      )}
-                    </p>
-                    <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-300">
-                      {status.isFarmerTrial
-                        ? `${status.daysLeft} day${status.daysLeft === 1 ? '' : 's'} left · then ${plans.farmer.price}/${plans.farmer.period}`
-                        : status.plan === 'free'
-                          ? plans.free.description
-                          : `${plans[status.plan].price}/${plans[status.plan].period}`}
-                    </p>
-                  </div>
-                </div>
-                {badge && <StatusPill tone={badge.tone} label={badge.label} />}
+          <div className="flex h-full min-h-0 flex-col overflow-hidden max-md:overflow-y-auto">
+            <div className="shrink-0">
+              <div>
+                <h2 className="text-base font-bold text-gray-900 dark:text-white">Choose a plan</h2>
+                <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+                  {status.isFarmerTrial
+                    ? `${status.daysLeft} day${status.daysLeft === 1 ? '' : 's'} left on your Farmer trial`
+                    : `You are on ${plans[status.plan].name}`}
+                  {status.plan !== 'free' && !status.isFarmerTrial
+                    ? ` · ${plans[status.plan].price}/${plans[status.plan].period}`
+                    : ''}
+                </p>
               </div>
-            </div>
-
-            <div className="flex justify-center">
               <div
                 role="group"
                 aria-label="Billing period"
-                className="inline-flex rounded-full border border-gray-200 bg-gray-100/80 p-1 dark:border-gray-700 dark:bg-gray-800/80"
+                className="mt-3 flex justify-center"
               >
+              <div className="inline-flex rounded-full border border-gray-200 bg-gray-100/80 p-0.5 dark:border-gray-700 dark:bg-gray-800/80">
                 <button
                   type="button"
                   onClick={() => setBillingCycle('month')}
-                  className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
+                  className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${
                     billingCycle === 'month'
                       ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
                       : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
@@ -479,7 +460,7 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
                 <button
                   type="button"
                   onClick={() => setBillingCycle('year')}
-                  className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
+                  className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${
                     billingCycle === 'year'
                       ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
                       : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
@@ -488,9 +469,10 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
                   Yearly
                 </button>
               </div>
+              </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3 md:gap-6">
+            <div className="mt-4 grid grid-cols-1 items-stretch gap-4 md:grid-cols-3">
             {(['free', 'farmer', 'premium'] as PlanId[]).map((planId) => {
               const plan = plans[planId];
               const isFree = planId === 'free';
@@ -509,44 +491,45 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
               return (
                 <Card
                   key={planId}
-                  className={`relative flex flex-col max-md:rounded-2xl ${
+                  className={`relative flex h-full flex-col dark:bg-gray-900/70 max-md:rounded-2xl ${
                     isCurrent
-                      ? 'border-2 border-emerald-500 shadow-lg ring-2 ring-emerald-500/20'
+                      ? 'border-2 border-emerald-500 shadow-sm ring-1 ring-emerald-500/20'
                       : plan.popular
-                        ? 'border-2 border-primary-500 shadow-md'
-                        : ''
+                        ? 'border-2 border-primary-500 shadow-sm'
+                        : 'border-gray-200 dark:border-gray-700'
                   }`}
                 >
                   {isCurrent ? (
-                    <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-600 hover:bg-emerald-600">
+                    <Badge className="absolute right-3 top-3 bg-emerald-600 hover:bg-emerald-600">
                       Your plan
                     </Badge>
                   ) : plan.popular ? (
-                    <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-600">Most popular</Badge>
+                    <Badge className="absolute right-3 top-3 bg-primary-600">Most popular</Badge>
                   ) : null}
-                  <CardHeader className="text-center">
-                    <CardTitle>{plan.name}</CardTitle>
+                  <CardHeader className="space-y-1 p-5 pb-3">
+                    <CardTitle className="pr-20 text-xl">{plan.name}</CardTitle>
                     <CardDescription>{plan.description}</CardDescription>
-                    <p className="pt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                    <p className="pt-2 text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
                       {displayPrice}
                       <span className="text-base font-normal text-gray-500"> /{displayPeriod}</span>
                     </p>
                   </CardHeader>
-                  <CardContent className="flex flex-1 flex-col">
-                    <ul className="mb-6 flex-1 space-y-2">
+                  <CardContent className="flex flex-1 flex-col p-5 pt-0">
+                    <ul className="grid grid-cols-1 gap-x-4 gap-y-2 xl:grid-cols-2">
                       {plan.features.map((feature) => (
                         <li key={feature} className="flex items-center gap-2 text-sm">
-                          <CheckCircle className="h-4 w-4 text-emerald-500" />
+                          <CheckCircle className="h-4 w-4 shrink-0 text-emerald-500" />
                           {FEATURE_LABELS[feature] || feature}
                         </li>
                       ))}
                       {plan.limitations?.map((limit) => (
                         <li key={limit} className="flex items-center gap-2 text-sm text-gray-500">
-                          <XCircle className="h-4 w-4 text-gray-400" />
+                          <XCircle className="h-4 w-4 shrink-0 text-gray-400" />
                           {limit}
                         </li>
                       ))}
                     </ul>
+                    <div className="mt-auto pt-5">
                     {planId === 'free' ? (
                       <Button className="min-h-11 w-full rounded-xl" variant="outline" disabled={isCurrent}>
                         {isCurrent ? 'Your current plan' : 'Default after trial ends'}
@@ -574,17 +557,21 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
                         {isCurrent ? 'Your current plan' : `Get Premium — ${displayPrice}/${periodShort}`}
                       </Button>
                     )}
+                    </div>
                   </CardContent>
                 </Card>
               );
             })}
             </div>
+            <p className="mt-3 shrink-0 text-center text-xs text-gray-500 dark:text-gray-400">
+              Secure checkout · Cancel anytime
+            </p>
           </div>
         )}
 
         {/* History */}
         {tab === 'history' && (
-          <div className="p-4 md:p-0">
+          <div>
             {historyLoading ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
@@ -611,7 +598,7 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
                             {getPlanLabel(payment.plan)} · {formatAmount(payment.amount, payment.currency)}
                           </p>
                           <p className="mt-0.5 text-xs text-gray-500">
-                            {formatBillingDate(payment.createdAt)} · {payment.paymentMethod.replace('_', ' ')}
+                            {formatBillingDate(payment.createdAt)} · {formatPaymentMethod(payment.paymentMethod)}
                           </p>
                           {payment.invoiceNumber && (
                             <p className="mt-1 text-[11px] font-medium text-gray-600 dark:text-gray-300">
@@ -666,7 +653,7 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
                           <td className="whitespace-nowrap px-4 py-3 text-sm">{formatBillingDate(payment.createdAt)}</td>
                           <td className="px-4 py-3 text-sm capitalize">{payment.plan}</td>
                           <td className="px-4 py-3 text-sm font-medium">{formatAmount(payment.amount, payment.currency)}</td>
-                          <td className="px-4 py-3 text-sm capitalize">{payment.paymentMethod.replace('_', ' ')}</td>
+                          <td className="px-4 py-3 text-sm">{formatPaymentMethod(payment.paymentMethod)}</td>
                           <td className="px-4 py-3 font-mono text-xs text-gray-500">
                             {payment.invoiceNumber || payment.reference || '—'}
                           </td>
@@ -701,6 +688,7 @@ export default function BillingPageContent({ farmId }: { farmId: string }) {
             )}
           </div>
         )}
+      </div>
       </div>
 
       {plans && (

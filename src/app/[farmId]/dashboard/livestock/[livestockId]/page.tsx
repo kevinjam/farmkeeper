@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
 import { apiClient } from '@/lib/api';
 import { useFarmPaths } from '@/hooks/useFarmPaths';
 
@@ -293,42 +294,15 @@ export default function LivestockViewPage({
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
-            <div className="mt-3 text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900">
-                <svg className="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-              </div>
-              <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white mt-2">Delete {livestock.name}</h3>
-              <div className="mt-2 px-7 py-3">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Are you sure you want to delete this livestock record? This action cannot be undone.
-                </p>
-              </div>
-              <div className="items-center px-4 py-3">
-                <button
-                  onClick={handleDeleteLivestock}
-                  disabled={isDeleting}
-                  className="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-24 mr-2 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300 disabled:opacity-50"
-                >
-                  {isDeleting ? 'Deleting...' : 'Delete'}
-                </button>
-                <button
-                  onClick={() => setDeleteConfirm(false)}
-                  disabled={isDeleting}
-                  className="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-24 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300 disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {deleteConfirm ? (
+        <ConfirmDeleteDialog
+          title={`Delete ${livestock.name}?`}
+          body="This cannot be undone. The animal record will be removed from your farm."
+          isWorking={isDeleting}
+          onClose={() => setDeleteConfirm(false)}
+          onDelete={() => void handleDeleteLivestock()}
+        />
+      ) : null}
     </div>
   );
 }

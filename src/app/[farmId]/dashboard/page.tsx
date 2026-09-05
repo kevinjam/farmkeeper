@@ -13,8 +13,14 @@ import UpcomingTasksCard from '@/components/dashboard/UpcomingTasksCard';
 import RecentActivityCard from '@/components/dashboard/RecentActivityCard';
 import FarmLocationPrompt from '@/components/dashboard/FarmLocationPrompt';
 import PhonePrompt from '@/components/dashboard/PhonePrompt';
+import DashboardTodayStrip from '@/components/dashboard/DashboardTodayStrip';
+import DashboardWeatherCard from '@/components/dashboard/DashboardWeatherCard';
+import SetupGuideCard from '@/components/dashboard/SetupGuideCard';
+import NextStepCard from '@/components/dashboard/NextStepCard';
+import { useFarmNextStep } from '@/hooks/useFarmNextStep';
+import { sortQuickActions } from '@/lib/nextStep';
 
-type StatVariant = 'livestock' | 'eggs' | 'profit' | 'feed';
+type StatVariant = 'livestock' | 'crops' | 'eggs' | 'profit' | 'feed';
 
 const lockedCardChrome =
   'border-amber-300/70 bg-gradient-to-br from-amber-50/90 via-white to-white dark:border-amber-800/50 dark:from-amber-950/35 dark:via-gray-900 dark:to-gray-900/95';
@@ -28,6 +34,12 @@ const statVariantMobile: Record<
     iconWrap: 'bg-emerald-500/20 text-emerald-700 dark:bg-emerald-500/25 dark:text-emerald-300',
     value: 'text-emerald-950 dark:text-emerald-100',
     accentLine: 'bg-emerald-500/50',
+  },
+  crops: {
+    card: 'border-teal-500/35 bg-gradient-to-br from-teal-500/12 via-white to-white dark:from-teal-500/20 dark:via-gray-900 dark:to-gray-900/95 shadow-teal-900/10',
+    iconWrap: 'bg-teal-500/20 text-teal-800 dark:bg-teal-500/25 dark:text-teal-200',
+    value: 'text-teal-950 dark:text-teal-50',
+    accentLine: 'bg-teal-500/50',
   },
   eggs: {
     card: 'border-amber-400/40 bg-gradient-to-br from-amber-400/15 via-white to-white dark:from-amber-500/18 dark:via-gray-900 dark:to-gray-900/95 shadow-amber-900/10',
@@ -148,10 +160,10 @@ const StatCard = ({
 
   const desktopCard = (
     <div
-      className={`hidden md:block relative rounded-lg shadow p-4 dark:border ${
+      className={`relative hidden rounded-lg p-4 shadow dark:border md:block ${
         locked
           ? 'border border-amber-200/90 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/25'
-          : 'bg-white dark:bg-gray-800 dark:border-gray-700/60'
+          : 'bg-white dark:border-gray-700/60 dark:bg-gray-800'
       }`}
     >
       {locked && (
@@ -160,43 +172,49 @@ const StatCard = ({
           Locked
         </span>
       )}
-      <div className="flex justify-between items-start gap-3">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{title}</p>
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
           {loading && !locked ? (
-            <div className="mt-2 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse w-20" />
+            <div className="mt-1 h-7 w-20 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700" />
           ) : (
-            <h3
-              className={`text-xl font-bold mt-1 tracking-tight ${
-                locked
-                  ? 'text-amber-900/45 dark:text-amber-200/40 blur-[1.5px] select-none'
-                  : 'text-gray-900 dark:text-white'
-              }`}
-            >
-              {displayValue}
-            </h3>
+            <div className="mt-1 flex min-w-0 items-baseline gap-2">
+              <h3
+                className={`text-xl font-bold tracking-tight ${
+                  locked
+                    ? 'select-none text-amber-900/45 blur-[1.5px] dark:text-amber-200/40'
+                    : 'text-gray-900 dark:text-white'
+                }`}
+              >
+                {displayValue}
+              </h3>
+              {locked ? (
+                <p className="text-[11px] font-medium text-amber-700 dark:text-amber-300">
+                  Upgrade to unlock
+                </p>
+              ) : showChange ? (
+                <p
+                  className={`inline-flex items-center text-[11px] font-medium ${
+                    positive ? 'text-green-600' : 'text-red-600'
+                  }`}
+                >
+                  {positive ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="mr-0.5 h-3 w-3 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586l3.293-3.293A1 1 0 0112 7z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="mr-0.5 h-3 w-3 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M12 13a1 1 0 110 2H7a1 1 0 01-1-1v-5a1 1 0 112 0v2.586l4.293-4.293a1 1 0 011.414 0L16 9.586l4.293-4.293a1 1 0 011.414 1.414l-5 5a1 1 0 01-1.414 0L13 9.414l-3.293 3.293A1 1 0 0112 13z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  {change}
+                </p>
+              ) : null}
+            </div>
           )}
-          {locked ? (
-            <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">
-              Upgrade to unlock this metric
-            </p>
-          ) : showChange ? (
-            <p className={`text-xs mt-2 flex items-center ${positive ? 'text-green-600' : 'text-red-600'}`}>
-              {positive ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586l3.293-3.293A1 1 0 0112 7z" clipRule="evenodd" />
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M12 13a1 1 0 110 2H7a1 1 0 01-1-1v-5a1 1 0 112 0v2.586l4.293-4.293a1 1 0 011.414 0L16 9.586l4.293-4.293a1 1 0 011.414 1.414l-5 5a1 1 0 01-1.414 0L13 9.414l-3.293 3.293A1 1 0 0112 13z" clipRule="evenodd" />
-                </svg>
-              )}
-              {change} from last month
-            </p>
-          ) : null}
         </div>
         <div
-          className={`p-2 rounded-lg shrink-0 ${
+          className={`shrink-0 rounded-lg p-2 ${
             locked
               ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200'
               : 'bg-primary-100 dark:bg-primary-900'
@@ -219,7 +237,7 @@ const StatCard = ({
     return (
       <Link
         href={href}
-        className="min-w-0 block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 rounded-xl"
+        className="block min-w-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
         title={locked ? 'Upgrade to unlock' : undefined}
       >
         {content}
@@ -230,7 +248,6 @@ const StatCard = ({
   return <div className="min-w-0">{content}</div>;
 };
 
-// New Quick Link Card Component
 const QuickLinkCard = ({
   href,
   icon,
@@ -275,25 +292,19 @@ const QuickLinkCard = ({
   </Link>
 );
 
-
 function DashboardContent({ params }: { params: { farmId: string } }) {
   const { farmId: farmSlug } = params;
   const { farmPath } = useFarmPaths(farmSlug);
   const { features, unlockAllFeatures, loaded: subscriptionLoaded } = useSubscriptionContext();
   const canUse = (feature: string) => hasFeatureAccess(features, feature, unlockAllFeatures);
+  const { recommendation, loading: nextStepLoading } = useFarmNextStep(farmSlug);
 
-  if (!farmSlug) {
-    return (
-      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-8 mx-auto max-w-xl text-center" role="alert">
-        <span className="block sm:inline">Error: Farm ID is missing. Please log in again or select a farm from your account.</span>
-      </div>
-    );
-  }
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [totalLivestock, setTotalLivestock] = useState<number>(0);
+  const [totalCrops, setTotalCrops] = useState<number>(0);
   const [eggsToday, setEggsToday] = useState<number>(0);
   const [financialAnalytics, setFinancialAnalytics] = useState<any>(null);
   const [financialLoading, setFinancialLoading] = useState(true);
@@ -312,55 +323,97 @@ function DashboardContent({ params }: { params: { farmId: string } }) {
     return `${currency} ${amount.toLocaleString()}`;
   };
 
-  const quickLinks = useMemo(
-    () =>
-      [
-        {
-          label: 'Add Livestock',
-          href: farmPath('/dashboard/livestock/add'),
-          feature: 'livestock',
-          icon: (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-          ),
-        },
-        {
-          label: 'Record Eggs',
-          href: farmPath('/dashboard/eggs/record'),
-          feature: 'eggs_sales',
-          icon: (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-          ),
-        },
-        {
-          label: 'Add Expense',
-          href: farmPath('/dashboard/finances/expense'),
-          feature: 'finances',
-          icon: (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          ),
-        },
-        {
-          label: 'Record Sale',
-          href: farmPath('/dashboard/finances/income'),
-          feature: 'finances',
-          icon: (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-          ),
-        },
-      ].map((link) => ({
-        ...link,
-        locked: !canUse(link.feature),
-      })),
-    [farmPath, features, unlockAllFeatures]
-  );
+  const quickLinks = useMemo(() => {
+    const harvestIcon = (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+      </svg>
+    );
+    const cropIcon = (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+      </svg>
+    );
+    const extras =
+      recommendation?.id === 'add-crop'
+        ? [
+            {
+              key: 'add-crop',
+              label: 'Add Crop',
+              href: farmPath('/dashboard/crops/add'),
+              feature: 'crops',
+              icon: cropIcon,
+            },
+          ]
+        : recommendation?.id === 'add-harvest'
+          ? [
+              {
+                key: 'add-harvest',
+                label: 'Record Harvest',
+                href: farmPath('/dashboard/harvests/add'),
+                feature: 'crops',
+                icon: harvestIcon,
+              },
+            ]
+          : [];
+
+    const links = [
+      ...extras,
+      {
+        key: 'add-livestock',
+        label: 'Add Livestock',
+        href: farmPath('/dashboard/livestock/add'),
+        feature: 'livestock',
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+        ),
+      },
+      {
+        key: 'record-eggs',
+        label: 'Record Eggs',
+        href: farmPath('/dashboard/eggs/record'),
+        feature: 'eggs_sales',
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+        ),
+      },
+      {
+        key: 'add-expense',
+        label: 'Add Expense',
+        href: farmPath('/dashboard/finances/expense'),
+        feature: 'finances',
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        ),
+      },
+      {
+        key: 'record-sale',
+        label: 'Record Sale',
+        href: farmPath(
+          recommendation?.id === 'sell-produce' || recommendation?.id === 'record-sale'
+            ? '/dashboard/harvests/sales/add'
+            : '/dashboard/finances/income'
+        ),
+        feature: 'finances',
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+          </svg>
+        ),
+      },
+    ].map((link) => ({
+      ...link,
+      locked: !canUse(link.feature),
+    }));
+
+    return sortQuickActions(links, recommendation?.id);
+  }, [farmPath, features, unlockAllFeatures, recommendation?.id]);
 
   const displayStats = useMemo(() => {
     const eggsLocked = !canUse('eggs_sales');
@@ -380,6 +433,20 @@ function DashboardContent({ params }: { params: { farmId: string } }) {
         icon: (
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        ),
+      },
+      {
+        title: 'Total Crops',
+        value: totalCrops.toString(),
+        positive: true,
+        loading: statsLoading,
+        variant: 'crops' as StatVariant,
+        locked: false,
+        href: farmPath('/dashboard/crops'),
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v3m0 12v3m9-9h-3M6 12H3m15.364-6.364l-2.121 2.121M8.757 15.243l-2.121 2.121m12.728 0l-2.121-2.121M8.757 8.757L6.636 6.636M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
           </svg>
         ),
       },
@@ -435,10 +502,12 @@ function DashboardContent({ params }: { params: { farmId: string } }) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
           </svg>
         ),
+        hideOnMobile: true,
       },
     ];
   }, [
     totalLivestock,
+    totalCrops,
     eggsToday,
     statsLoading,
     financialAnalytics,
@@ -483,9 +552,14 @@ function DashboardContent({ params }: { params: { farmId: string } }) {
     try {
       setStatsLoading(true);
 
-      const livestockResponse = await apiClient.getTotalLivestock();
+      const livestockResponse = await apiClient.getTotalLivestock(farmSlug);
       if (livestockResponse.success) {
         setTotalLivestock(livestockResponse.data?.totalLivestock || 0);
+      }
+
+      const cropsResponse = await apiClient.getTotalCrops(farmSlug);
+      if (cropsResponse.success) {
+        setTotalCrops(cropsResponse.data?.totalCrops || 0);
       }
 
       if (canUse('eggs_sales')) {
@@ -548,6 +622,14 @@ const fetchFinancialAnalytics = async () => {
     checkUserStatus();
   }, [router, features, unlockAllFeatures, subscriptionLoaded]);
 
+  if (!farmSlug) {
+    return (
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-8 mx-auto max-w-xl text-center" role="alert">
+        <span className="block sm:inline">Error: Farm ID is missing. Please log in again or select a farm from your account.</span>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-6 max-md:space-y-4">
@@ -555,11 +637,13 @@ const fetchFinancialAnalytics = async () => {
           <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded-lg w-1/2 mb-2"></div>
           <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded-lg w-3/4"></div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 max-md:gap-3">
-          {[...Array(4)].map((_, index) => (
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 max-md:gap-3">
+          {[...Array(5)].map((_, index) => (
             <div
               key={index}
-              className="h-[7.25rem] rounded-xl border border-gray-200/80 bg-gray-100/80 p-3 dark:border-gray-700 dark:bg-gray-800/80 md:h-auto md:rounded-lg md:p-4 animate-pulse"
+              className={`h-[7.25rem] rounded-xl border border-gray-200/80 bg-gray-100/80 p-3 dark:border-gray-700 dark:bg-gray-800/80 md:h-auto md:rounded-lg md:p-4 animate-pulse ${
+                index === 4 ? 'max-lg:hidden' : ''
+              }`}
             >
               <div className="hidden md:block h-4 bg-gray-300 dark:bg-gray-600 rounded-lg w-1/2 mb-2" />
               <div className="h-7 max-md:w-16 bg-gray-300 dark:bg-gray-600 rounded-lg md:h-8 md:w-1/3 mb-2 md:mb-2" />
@@ -582,48 +666,44 @@ const fetchFinancialAnalytics = async () => {
 
   return (
     <div className="space-y-6 max-md:space-y-4">
-      {/* Welcome message */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg max-md:rounded-2xl shadow max-md:shadow-md p-6 max-md:px-4 max-md:py-3.5 border border-transparent max-md:border-gray-100/90 dark:max-md:border-gray-700/80">
-        <h2 className="text-2xl max-md:text-[1.2rem] font-bold text-gray-800 dark:text-white leading-snug">
-          Welcome to your Farm Dashboard
-        </h2>
-        <p className="text-gray-600 dark:text-gray-300 mt-2 max-md:mt-1 text-sm max-md:text-[13px] leading-relaxed">
-          Here&apos;s what&apos;s happening on your farm today.
-        </p>
+      <div className="rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800 max-md:rounded-2xl max-md:border max-md:border-gray-100/90 max-md:shadow-md dark:max-md:border-gray-700/80">
+        <h2 className="text-lg font-bold text-gray-800 dark:text-white">Farm dashboard</h2>
+        <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">What&apos;s happening on the farm today</p>
       </div>
 
+      <SetupGuideCard farmId={farmSlug} />
+      <NextStepCard farmId={farmSlug} recommendation={recommendation} loading={nextStepLoading} />
       <FarmLocationPrompt farmId={farmSlug} />
       <PhonePrompt farmId={farmSlug} />
 
-      {/* Stats section — mobile: 2×2 compact tiles; md+: responsive row */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+      {/* Stats — mobile/tablet: 2×2; lg+: include feed stock */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-5">
         {displayStats.map((stat) => (
-          <StatCard
-            key={stat.title}
-            title={stat.title}
-            value={stat.value}
-            change={stat.change}
-            positive={stat.positive}
-            loading={stat.loading}
-            icon={stat.icon}
-            variant={stat.variant}
-            locked={stat.locked}
-            href={stat.href}
-          />
+          <div key={stat.title} className={stat.hideOnMobile ? 'max-lg:hidden' : undefined}>
+            <StatCard
+              title={stat.title}
+              value={stat.value}
+              change={stat.change}
+              positive={stat.positive}
+              loading={stat.loading}
+              icon={stat.icon}
+              variant={stat.variant}
+              locked={stat.locked}
+              href={stat.href}
+            />
+          </div>
         ))}
       </div>
-      
-      {/* Main dashboard content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-md:gap-4">
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
         <UpcomingTasksCard farmId={farmSlug} limit={3} />
 
-        {/* Quick Links */}
-        <div className="space-y-6 max-md:space-y-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-md:rounded-2xl shadow max-md:shadow-md border border-transparent max-md:border-gray-100/90 dark:max-md:border-gray-700/80 overflow-hidden">
-            <div className="px-4 py-3 max-md:py-3.5 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg max-md:text-base font-bold text-gray-900 dark:text-white">Quick Actions</h3>
+        <div className="flex h-full flex-col gap-4">
+          <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800 max-md:rounded-2xl max-md:border max-md:border-gray-100/90 max-md:shadow-md dark:max-md:border-gray-700/80">
+            <div className="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white max-md:text-base">Quick Actions</h3>
             </div>
-            <div className="p-4 max-md:p-3 grid grid-cols-2 gap-3 max-md:gap-3">
+            <div className="grid grid-cols-2 gap-3 p-4 max-md:p-3">
               {quickLinks.map((link) => (
                 <QuickLinkCard
                   key={link.label}
@@ -635,40 +715,13 @@ const fetchFinancialAnalytics = async () => {
               ))}
             </div>
           </div>
-          <Link
-            href={farmPath('/dashboard/weather')}
-            className="flex items-center justify-between rounded-lg max-md:rounded-2xl border border-sky-200/80 bg-sky-50 px-4 py-3.5 text-sky-900 shadow-sm transition-colors hover:bg-sky-100 dark:border-sky-900/50 dark:bg-sky-950/40 dark:text-sky-100 dark:hover:bg-sky-950/70"
-          >
-            <div>
-              <p className="text-sm font-semibold">Farm weather</p>
-              <p className="text-xs text-sky-800/80 dark:text-sky-200/70">Live forecast for your location</p>
-            </div>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
+          <DashboardWeatherCard farmId={farmSlug} />
         </div>
-        
+
         <RecentActivityCard farmId={farmSlug} limit={3} />
       </div>
-      
-      {/* Call to Action Section */}
-      <div className="bg-primary-600 text-white rounded-lg max-md:rounded-2xl shadow-lg max-md:shadow-primary-900/25 p-6 max-md:p-5">
-        <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
-          <div className="md:mb-0">
-            <h3 className="text-xl max-md:text-lg font-bold leading-snug">Ready to optimize your farm operations?</h3>
-            <p className="mt-1.5 text-sm max-md:text-[15px] text-white/90 leading-relaxed">
-              Complete your farm profile to get personalized recommendations.
-            </p>
-          </div>
-          <Link
-            href={farmPath('/dashboard/settings?tab=profile')}
-            className="inline-flex min-h-12 items-center justify-center rounded-xl bg-white px-5 text-primary-700 font-semibold hover:bg-gray-100 active:scale-[0.98] transition-transform text-center"
-          >
-            Complete Profile
-          </Link>
-        </div>
-      </div>
+
+      <DashboardTodayStrip farmId={farmSlug} />
     </div>
   );
 }

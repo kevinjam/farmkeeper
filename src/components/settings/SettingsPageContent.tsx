@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Building2,
   ChevronRight,
+  CircleHelp,
   CreditCard,
   KeyRound,
   Loader2,
@@ -504,6 +505,24 @@ export default function SettingsPageContent({ farmSlug }: { farmSlug: string }) 
                   </div>
                   <ChevronRight className="h-5 w-5 text-gray-400" />
                 </Link>
+
+                <Link
+                  href={farmPath('/dashboard/help')}
+                  className="flex items-center justify-between rounded-xl border border-gray-200 p-4 transition hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800/60 md:p-5"
+                >
+                  <div className="flex items-center gap-3">
+                    <CircleHelp className="h-5 w-5 text-primary-600" />
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {t('navigation.helpSupport', 'Help & Support')}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {t('help.settingsHint', 'Get answers and contact support')}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-gray-400" />
+                </Link>
                 </div>
               </>
             )}
@@ -581,7 +600,26 @@ export default function SettingsPageContent({ farmSlug }: { farmSlug: string }) 
             )}
 
             {settings && (
-              <SaveBar isSaving={isSaving} onSave={handleSaveSettings} label={t('settings.saveSettings')} savingLabel={t('settings.saving')} />
+              <>
+                <Link
+                  href={farmPath('/dashboard/help')}
+                  className="flex items-center justify-between rounded-xl border border-gray-200 p-4 transition hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800/60 md:p-5"
+                >
+                  <div className="flex items-center gap-3">
+                    <CircleHelp className="h-5 w-5 text-primary-600" />
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {t('navigation.helpSupport', 'Help & Support')}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {t('help.settingsHint', 'Get answers and contact support')}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-gray-400" />
+                </Link>
+                <SaveBar isSaving={isSaving} onSave={handleSaveSettings} label={t('settings.saveSettings')} savingLabel={t('settings.saving')} />
+              </>
             )}
           </div>
         )}

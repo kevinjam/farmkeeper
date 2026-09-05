@@ -19,8 +19,10 @@ import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api';
 import {
   FarmTask,
+  TASK_AREA_LABELS,
   getDueLabel,
   getPriorityLabel,
+  getTaskArea,
   getTaskIconKey,
   sortTasksForDisplay,
 } from '@/lib/tasks';
@@ -34,6 +36,8 @@ const ICONS = {
   water: Droplets,
   clean: Sparkles,
   sales: ShoppingBag,
+  crops: Sprout,
+  harvest: Wheat,
   general: ClipboardList,
 } as const;
 
@@ -44,7 +48,15 @@ const ICON_STYLES = {
   water: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
   clean: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
   sales: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
+  crops: 'bg-lime-100 text-lime-800 dark:bg-lime-900/40 dark:text-lime-300',
+  harvest: 'bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200',
   general: 'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300',
+};
+
+const AREA_STYLES = {
+  crops: 'bg-lime-100 text-lime-800 dark:bg-lime-950/50 dark:text-lime-300',
+  animals: 'bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200',
+  farm: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
 };
 
 const DUE_STYLES = {
@@ -93,6 +105,11 @@ function TaskRow({
           <p className="mt-0.5 line-clamp-2 text-sm text-gray-500 dark:text-gray-400">{task.description}</p>
         )}
         <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span
+            className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${AREA_STYLES[getTaskArea(task.title)]}`}
+          >
+            {TASK_AREA_LABELS[getTaskArea(task.title)]}
+          </span>
           <span
             className={`text-[11px] font-medium ${
               task.priority === 'high'
@@ -254,7 +271,7 @@ export default function UpcomingTasksCard({
               </div>
               <p className="text-base font-semibold text-gray-900 dark:text-white">All clear for now</p>
               <p className="mx-auto mt-1 max-w-xs text-sm text-gray-500 dark:text-gray-400">
-                Add feeding rounds, egg collection, or vet visits so your team knows what&apos;s next.
+                Add field work, feeding, or harvest so your team knows what&apos;s next.
               </p>
               <Button type="button" className="mt-5 gap-2" onClick={() => setShowAddModal(true)}>
                 <Plus className="h-4 w-4" />

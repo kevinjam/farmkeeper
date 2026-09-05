@@ -2,6 +2,7 @@
 
 import { createContext, useContext, ReactNode } from 'react';
 import { PlanId } from '@/lib/billing';
+import { BASELINE_FEATURES } from '@/lib/features';
 
 export interface SubscriptionContextValue {
   plan: PlanId;
@@ -16,7 +17,7 @@ export interface SubscriptionContextValue {
 
 const defaultValue: SubscriptionContextValue = {
   plan: 'free',
-  features: [],
+  features: [...BASELINE_FEATURES],
   unlockAllFeatures: false,
   livestockLimit: null,
   daysLeft: 0,

@@ -1,15 +1,18 @@
-/** Map expense form labels to backend finance categories. */
+import { EXPENSE_CATEGORIES } from './expenses';
+
+/** Map expense form labels to backend finance categories (legacy add-expense form). */
 export const EXPENSE_CATEGORY_MAP: Record<string, string> = {
-  Feed: 'feed_purchase',
-  'Medication & Vaccines': 'veterinary',
+  Feed: 'feed',
+  'Medication & Vaccines': 'medicine',
   Bedding: 'other',
   'Utilities (Water/Electricity)': 'utilities',
-  'Labor & Salaries': 'labor',
+  'Labor & Salaries': 'labour',
   'Equipment Purchase': 'equipment',
-  'Equipment Maintenance': 'maintenance',
+  'Equipment Maintenance': 'repairs',
   'Marketing & Packaging': 'other',
-  Transportation: 'other',
+  Transportation: 'transport',
   Other: 'other',
+  ...Object.fromEntries(EXPENSE_CATEGORIES.map((item) => [item.label, item.value])),
 };
 
 /** Map income form labels to backend finance categories. */
