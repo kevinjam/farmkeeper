@@ -36,7 +36,7 @@ function RedirectContent() {
           <>
             <div className="w-16 h-16 border-t-4 border-b-4 border-primary-600 rounded-full animate-spin mx-auto mb-4"></div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Redirecting...</h2>
-            <p className="text-gray-600 dark:text-gray-400">You'll be redirected to your dashboard momentarily.</p>
+            <p className="text-gray-600 dark:text-gray-400">You&apos;ll be redirected to your dashboard momentarily.</p>
           </>
         )}
       </div>

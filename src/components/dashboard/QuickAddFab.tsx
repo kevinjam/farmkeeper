@@ -13,7 +13,7 @@ import {
   Plus,
   type LucideIcon,
 } from 'lucide-react';
-import { buildFarmPath } from '@/lib/farmPaths';
+import { buildFarmPath, type AppLocale } from '@/lib/farmPaths';
 import { hasFeatureAccess } from '@/lib/features';
 
 type QuickAction = {
@@ -31,7 +31,7 @@ export default function QuickAddFab({
   unlockAll,
 }: {
   farmId: string;
-  locale: string;
+  locale: AppLocale;
   features: string[];
   unlockAll: boolean;
 }) {
